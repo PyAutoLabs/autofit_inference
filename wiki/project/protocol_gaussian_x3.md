@@ -187,12 +187,20 @@ Per (search × settings × config), never per best seed:
 
 | Dataset | Backend | Nautilus ×3 | DynestyStatic ×3 | MAP | Agreement |
 |---|---|---|---|---|---|
-| gaussian_x3_blend | numpy | pending | pending | pending | pending |
-| gaussian_x3_blend | jax_cpu | pending | pending | pending | pending |
-| gaussian_x3_separated | numpy | pending | pending | pending | pending |
-| gaussian_x3_separated | jax_cpu | pending | pending | pending | pending |
+| gaussian_x3_blend | numpy | complete | complete | complete | Nautilus: ln Z spread 0.019 nat, medians 0.015 σ. All six: medians 0.062 σ, ln Z spread 2.33 nat (DynestyStatic) → reference = the Nautilus runs |
+| gaussian_x3_blend | jax_cpu | pending (stopped: beyond the B2 budget) | complete | complete | pending |
+| gaussian_x3_separated | numpy | pending (B3, before its wave-1 rows) | pending | pending | pending |
+| gaussian_x3_separated | jax_cpu | pending (B3, before its wave-1 rows) | pending | pending | pending |
 
-Constant-likelihood `ln 3!` validation: pending.
+Constant-likelihood `ln 3!` validation (`results/reference/constant_likelihood.json`):
+Nautilus counts the excluded volume (offset `−ln 3!`; measured −1.825 on numpy and JAX at
+`n_live=2000`; a first `n_live=500` attempt measured −1.972, outside the window, and is
+kept under `attempts`); DynestyStatic draws its initial live points from the allowed
+region only (offset `0`, measured 0.000 on both backends).
+
+Observation recorded for the pilot, not a criterion: DynestyStatic at PyAutoFit's
+default `rwalk` (`walks=5`, `nlive=1000`) reproduces the posterior (medians within
+0.06 σ) but its ln Z scatters by 2.3 nat (numpy) and 5.6 nat (JAX) across seeds.
 
 ## 11. Amendments
 
