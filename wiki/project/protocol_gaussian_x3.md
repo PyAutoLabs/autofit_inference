@@ -157,6 +157,14 @@ convention (the blend's assertions; the control's disjoint priors, A1):
   wave-2 row. Wave-1 verdicts stay stamped `@1`.
 - Until then a timeout is censored as a failure at **10× the median wall of
   Nautilus `n_live=100` on the same config — PLACEHOLDER**.
+- **Status at the B3 wrap-up (2026-10-08).** The pilot was stopped by the wrap-up
+  ruling at 223 of its 520 expected runs (the rest deferred to wave 2 on RAL
+  `--partition=ral`; NSS to phase A3b). `results/calibration/gaussian_x3_wave1.json`
+  records the evidence the pre-declared rules give on those rows: 17 calibration rows
+  (< 20), so the σ-ratio band and the ppc tolerance stay at their `@1` values. **The
+  `@2` freeze is not made in B3**: it is deferred until the pilot's deferred runs are
+  in, and still lands before the first wave-2 row. The pilot ran on PyAutoFit main
+  `0dbf258c4f5e`, before phase A2 (PyAutoFit#1679, gradients under JAX).
 
 ## 8. Headline numbers
 
