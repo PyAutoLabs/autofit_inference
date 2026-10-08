@@ -53,6 +53,26 @@ BUDGET_REASON = (
 )
 
 
+#: Planned cells whose remaining seeds were deliberately not run after the first
+#: attempts showed a deterministic failure, keyed by ``(dataset, sampler)``: the reason
+#: replaces :data:`BUDGET_REASON` for their un-run seeds (the attempts that ran stay).
+CELL_REASONS: dict[tuple[str, str], str] = {
+    ("gaussian_x3_blend", "blackjax_nuts_warm"): (
+        "not run after seed 0: BlackJAXNUTS on the asserted blend fails deterministically "
+        "at trace time (TracerBoolConversionError in the NUTS log_l: the ordered-centre "
+        "assertion is evaluated as a Python bool), as the cold leg shows on every seed; "
+        "each warm attempt would first spend ~20 min on its Nautilus provider"
+    ),
+}
+
+
+def missing_reason(cell: Cell) -> str:
+    """Why an expected run of ``cell`` has no row."""
+    if cell.status == "deferred":
+        return cell.reason or BUDGET_REASON
+    return CELL_REASONS.get((cell.dataset, cell.sampler), BUDGET_REASON)
+
+
 @dataclass(frozen=True)
 class Cell:
     dataset: str

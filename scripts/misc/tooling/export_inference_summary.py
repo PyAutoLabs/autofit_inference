@@ -265,7 +265,7 @@ def expected_coverage(rows: list[dict]) -> dict:
                 "id": "/".join(cell.key),
                 "task": cell.task,
                 "seeds": [],
-                "reason": cell.reason if cell.status == "deferred" else pilot.BUDGET_REASON,
+                "reason": pilot.missing_reason(cell),
             },
         )
         entry["seeds"].append(seed)

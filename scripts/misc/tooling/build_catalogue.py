@@ -67,6 +67,13 @@ UNSUPPORTED = {
     "Drawer": "not benchmarked: Drawer is a sanity floor that answers no task (protocol §1)",
 }
 BOOTSTRAP_RESAMPLES = 10_000
+#: The failure kind of a run stopped by SIGTERM (the pilot's operational wall cap; on
+#: RAL, SLURM's --time).
+BUDGET_KILL = "Terminated"
+#: The pilot's operational caps (``timeout -s TERM``): the seed-0 probe batch, then the
+#: main batch. Both are below the protocol §7 placeholder timeout (10x the median wall of
+#: Nautilus n_live=100 on the same config).
+PILOT_CAPS = "1800 s for the seed-0 probe, 3600 s after"
 
 
 def load_manifest(path: Path = MANIFEST_PATH) -> dict:
@@ -160,9 +167,7 @@ def leg_summary(cell: pilot.Cell, rows: list[dict], refs: dict, offsets) -> dict
         "convergence": dict(sorted(convergence.items())),
         "failures": dict(sorted(failures.items())),
         "deferred_seeds": missing,
-        "deferred_reason": (cell.reason if cell.status == "deferred" else pilot.BUDGET_REASON)
-        if missing
-        else None,
+        "deferred_reason": pilot.missing_reason(cell) if missing else None,
         "pyautofit_commits": sorted({r.get("pyautofit_commit") or "unknown" for r in rows}),
         "median_total_wall_s": statistics.median(walls) if walls else None,
     }
@@ -197,6 +202,15 @@ def search_status(cls: str, legs: list[dict], harness: list[str]) -> tuple[str, 
         for leg in legs:
             kinds.update(leg["failures"])
         detail = ", ".join(f"{k or 'failed'} ×{n}" for k, n in sorted(kinds.items()))
+        if set(kinds) == {BUDGET_KILL}:
+            # Killed by the pilot's own wall cap, below the §7 timeout: the search did
+            # not fail by the protocol, the laptop budget ran out. The rows stay (each is
+            # a failed attempt in its leg's counts); the search is not called failed.
+            return "deferred", (
+                f"{attempted} attempted, every one stopped at the pilot's operational wall "
+                f"cap ({PILOT_CAPS}), below the protocol §7 timeout: budget-censored on a "
+                "loaded laptop, rows kept; to be measured in wave 2 under the frozen timeout"
+            )
         return "failed", f"{attempted} attempted, none usable ({detail})"
     reasons = sorted({leg["deferred_reason"] for leg in legs if leg["deferred_reason"]})
     return "deferred", "; ".join(reasons) or pilot.BUDGET_REASON

@@ -577,6 +577,14 @@ def _read_json(path: Path):
         return None
 
 
+def scrub_paths(text: str) -> str:
+    """Replace the machine-specific workspace prefix in a failure message (a traceback
+    names library files by absolute path) with ``<workspace>``: committed rows carry no
+    machine-specific absolute paths (AGENTS.md)."""
+    workspace = str(_ROOT.resolve().parent)
+    return str(text).replace(workspace, "<workspace>")
+
+
 #: The fields whose value is the search's answer: a non-finite one means the search
 #: returned no usable optimum or posterior, whatever PyAutoFit's completion marker says.
 RESULT_FIELDS = ("max_log_likelihood", "max_log_posterior")
@@ -1007,6 +1015,7 @@ def run_search(
             "provider_wall_s": (timing.get("provider") or {}).get("total_wall_s"),
         }
         row = sanitise_nonfinite(row)
+        row["status"] = scrub_paths(row["status"])
         row["scientific"] = protocol.verdict(row, reference, offsets)
         json_path = results_path(
             cli.results_root or root,
