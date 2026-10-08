@@ -1,0 +1,294 @@
+"""The ``gaussian_x3`` benchmark model: three 1D Gaussians plus a constant background.
+
+This module is the single definition of the model, the likelihood and the priors that
+every leaf, reference run and test in this repo fits. The numbers are pre-registered in
+``wiki/project/protocol_gaussian_x3.md``; change them there first, never here alone.
+
+The model (10 free parameters)
+------------------------------
+
+- ``g0``, ``g1``, ``g2`` — three ``af.ex.Gaussian`` (``centre``, ``normalization``,
+  ``sigma``) with broad, shared priors: centre ``U(0, 100)``, normalization
+  ``LogUniform(1e-2, 1e2)``, sigma ``U(0.5, 30)``.
+- ``background`` — a thin :class:`Background` (``level``), prior ``U(-1, 1)``.
+
+The label convention is chosen **per dataset** (protocol §3, amendment A1 in §11):
+
+- ``gaussian_x3_blend`` — the user-facing model, D15 option (a): shared centre priors
+  ``U(0, 100)``, so the components are exchangeable (every good fit has ``3! = 6``
+  label-permuted copies), broken by ordered-centre assertions
+  ``g0.centre < g1.centre < g2.centre``.
+- ``gaussian_x3_separated`` — the control, D15 option (b): **disjoint centre priors**
+  ``g0 U(0, 35)``, ``g1 U(35, 65)``, ``g2 U(65, 100)`` and **no assertions**. The model
+  is identifiable by its priors alone, so no prior volume is excluded and there is no
+  ``ln 3!`` offset (``assertion_mechanism: disjoint_priors``).
+
+For the blend, How PyAutoFit enforces
+them depends on the backend: on numpy a violated assertion raises inside
+``instance_from_vector`` and ``Fitness`` returns the resample sentinel; on JAX the
+assertions are a traced boolean applied with ``xp.where`` to the figure of merit
+(``autofit/non_linear/fitness.py``, ``Fitness.call``). The two mechanisms see different
+effective prior volumes, so log evidences are compared only within one backend.
+
+The likelihood
+--------------
+
+Gaussian noise with the normalisation term kept, so the log evidence is an absolute,
+comparable number::
+
+    ln L = -0.5 * sum( ((d - m) / n)^2 + ln(2 pi n^2) )
+
+where ``m = g0(x) + g1(x) + g2(x) + level`` on ``x = 0..99``.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import autofit as af
+import numpy as np
+
+#: Model identity recorded in every row.
+MODEL_ID = "gaussian_x3"
+MODEL_DESCRIPTION = "3 af.ex.Gaussian + Background(level), 10 free, ordered-centre assertions"
+
+#: Component names, in centre order (the assertion order).
+COMPONENTS = ("g0", "g1", "g2")
+
+#: Pre-registered priors (protocol §Model).
+CENTRE_PRIOR = (0.0, 100.0)
+
+#: The separated control's disjoint centre priors, one per component in centre order
+#: (protocol §2, amendment A1). Truth centres 20 / 50 / 80 sit 15 px inside each edge.
+DISJOINT_CENTRE_PRIORS = ((0.0, 35.0), (35.0, 65.0), (65.0, 100.0))
+
+#: Label convention per dataset (protocol §3): D15 option (a) or (b).
+LABEL_CONVENTION = {
+    "gaussian_x3_blend": "ordered_assertions",
+    "gaussian_x3_separated": "disjoint_priors",
+}
+NORMALIZATION_PRIOR = (1.0e-2, 1.0e2)
+SIGMA_PRIOR = (0.5, 30.0)
+BACKGROUND_PRIOR = (-1.0, 1.0)
+
+PRIORS_RECORD = {
+    "centre": f"U({CENTRE_PRIOR[0]:g}, {CENTRE_PRIOR[1]:g})",
+    "normalization": f"LogUniform({NORMALIZATION_PRIOR[0]:g}, {NORMALIZATION_PRIOR[1]:g})",
+    "sigma": f"U({SIGMA_PRIOR[0]:g}, {SIGMA_PRIOR[1]:g})",
+    "background.level": f"U({BACKGROUND_PRIOR[0]:g}, {BACKGROUND_PRIOR[1]:g})",
+    "assertions": "g0.centre < g1.centre < g2.centre",
+}
+
+
+def label_convention(dataset: str = "gaussian_x3_blend") -> str:
+    try:
+        return LABEL_CONVENTION[dataset]
+    except KeyError:
+        raise ValueError(f"no label convention registered for dataset {dataset!r}") from None
+
+
+def priors_record(dataset: str = "gaussian_x3_blend") -> dict:
+    """The priors (and assertions) a row on ``dataset`` was fitted with."""
+    if label_convention(dataset) == "ordered_assertions":
+        return dict(PRIORS_RECORD)
+    record = dict(PRIORS_RECORD)
+    record.pop("centre")
+    for name, (lo, hi) in zip(COMPONENTS, DISJOINT_CENTRE_PRIORS):
+        record[f"{name}.centre"] = f"U({lo:g}, {hi:g})"
+    record["assertions"] = "none (disjoint centre priors)"
+    return record
+
+
+def model_description(dataset: str = "gaussian_x3_blend") -> str:
+    if label_convention(dataset) == "ordered_assertions":
+        return MODEL_DESCRIPTION
+    return "3 af.ex.Gaussian + Background(level), 10 free, disjoint centre priors, no assertions"
+
+
+def assertion_mechanism(dataset: str = "gaussian_x3_blend", use_jax: bool = False) -> str:
+    """How the label convention is enforced: ``raise_resample`` (numpy assertions),
+    ``xp_where_penalty`` (JAX assertions) or ``disjoint_priors`` (no assertions)."""
+    if label_convention(dataset) == "disjoint_priors":
+        return "disjoint_priors"
+    return "xp_where_penalty" if use_jax else "raise_resample"
+
+
+#: The parameter keys of a row, in the model's own vector order (checked by
+#: :func:`parameter_keys` against ``model.paths`` at run time).
+PARAMETER_KEYS = (
+    "g0.centre",
+    "g0.normalization",
+    "g0.sigma",
+    "g1.centre",
+    "g1.normalization",
+    "g1.sigma",
+    "g2.centre",
+    "g2.normalization",
+    "g2.sigma",
+    "background.level",
+)
+
+
+class Background:
+    """A constant level added to every pixel — the tenth parameter."""
+
+    def __init__(self, level: float = 0.0):
+        self.level = level
+
+    def model_data_from(self, xvalues, xp=np):
+        return xp.zeros_like(xvalues, dtype=float) + self.level
+
+    def _tree_flatten(self):
+        return (self.level,), None
+
+    @classmethod
+    def _tree_unflatten(cls, aux_data, children):
+        return cls(*children)
+
+
+def model_data_from(instance, xvalues, xp=np):
+    """The summed model curve for an instance (or any object with ``g0..g2`` and
+    ``background`` attributes)."""
+    total = instance.background.model_data_from(xvalues=xvalues, xp=xp)
+    for name in COMPONENTS:
+        total = total + getattr(instance, name).model_data_from(xvalues=xvalues, xp=xp)
+    return total
+
+
+def build_model(assertions: bool = True, dataset: str = "gaussian_x3_blend"):
+    """The 10-parameter ``af.Collection`` for ``dataset``'s label convention.
+
+    Blend: shared centre priors plus the ordered-centre assertions; ``assertions=False``
+    gives the exchangeable model (used only by the constant-likelihood convention check).
+    Separated: disjoint centre priors and never any assertion (``assertions`` is ignored).
+    """
+    disjoint = label_convention(dataset) == "disjoint_priors"
+    components = {}
+    for index, name in enumerate(COMPONENTS):
+        gaussian = af.Model(af.ex.Gaussian)
+        lo, hi = DISJOINT_CENTRE_PRIORS[index] if disjoint else CENTRE_PRIOR
+        gaussian.centre = af.UniformPrior(lower_limit=lo, upper_limit=hi)
+        gaussian.normalization = af.LogUniformPrior(
+            lower_limit=NORMALIZATION_PRIOR[0], upper_limit=NORMALIZATION_PRIOR[1]
+        )
+        gaussian.sigma = af.UniformPrior(lower_limit=SIGMA_PRIOR[0], upper_limit=SIGMA_PRIOR[1])
+        components[name] = gaussian
+    background = af.Model(Background)
+    background.level = af.UniformPrior(
+        lower_limit=BACKGROUND_PRIOR[0], upper_limit=BACKGROUND_PRIOR[1]
+    )
+    model = af.Collection(**components, background=background)
+    if assertions and not disjoint:
+        model.add_assertion(model.g0.centre < model.g1.centre)
+        model.add_assertion(model.g1.centre < model.g2.centre)
+    return model
+
+
+def parameter_keys(model) -> list[str]:
+    """Dotted keys (``g0.centre`` …) in the model's vector order."""
+    return [".".join(path) for path in model.paths]
+
+
+class AnalysisGaussianX3(af.Analysis):
+    """Gaussian log likelihood of the summed model curve, noise normalisation kept.
+
+    Module-level (not built in a factory) so DynestyStatic's checkpoint can pickle it.
+    Import this module only after the backend environment is set
+    (``_autofit_inference_cli.set_backend_env``).
+    """
+
+    def __init__(self, data, noise_map, use_jax: bool = False):
+        super().__init__(use_jax=use_jax)
+        self.data = np.asarray(data, dtype=float)
+        self.noise_map = np.asarray(noise_map, dtype=float)
+        self.xvalues = np.arange(self.data.shape[0], dtype=float)
+        self.log_noise_normalization = float(np.sum(np.log(2.0 * np.pi * self.noise_map**2)))
+
+    def log_likelihood_function(self, instance):
+        xp = self._xp
+        model_data = model_data_from(instance, xp.asarray(self.xvalues), xp=xp)
+        chi_squared = xp.sum(((xp.asarray(self.data) - model_data) / self.noise_map) ** 2)
+        return -0.5 * (chi_squared + self.log_noise_normalization)
+
+
+class TrackedAnalysisGaussianX3(AnalysisGaussianX3):
+    """``AnalysisGaussianX3`` that hands every evaluated log likelihood to an MLTracker.
+
+    Only the numpy callback path can do this (under JAX the likelihood runs inside
+    ``jit``/``vmap``, so ``tracker`` is ``None`` there and times are estimated, protocol
+    §8). Assertion-violating points never reach the likelihood, so the tracker counts
+    only evaluations that passed the assertions. Module-level so Dynesty can pickle it.
+    """
+
+    def __init__(self, data, noise_map, use_jax: bool = False, tracker=None):
+        super().__init__(data=data, noise_map=noise_map, use_jax=use_jax)
+        self.tracker = tracker
+
+    def log_likelihood_function(self, instance):
+        value = super().log_likelihood_function(instance)
+        if self.tracker is not None:
+            self.tracker.record(float(value))
+        return value
+
+
+#: The constant-likelihood check's tie-breaking slope (nats): nested samplers stall on
+#: an exactly flat likelihood, so ``ln L = -TIE_BREAK * level^2`` with ``level`` in
+#: ``[-1, 1]``. Its exact evidence on the exchangeable prior is
+#: ``ln(sqrt(pi / TIE_BREAK) * erf(sqrt(TIE_BREAK)) / 2)``, about ``-TIE_BREAK / 3``.
+TIE_BREAK = 1.0e-3
+
+
+def constant_log_evidence_exact(tie_break: float = TIE_BREAK) -> float:
+    """``ln Z`` of the constant-likelihood analysis on the exchangeable model."""
+    import math
+
+    return math.log(math.sqrt(math.pi / tie_break) * math.erf(math.sqrt(tie_break)) / 2.0)
+
+
+class AnalysisConstant(af.Analysis):
+    """Near-constant log likelihood (``-TIE_BREAK * level^2``): its log evidence is the
+    log of the prior volume the sampler counts, which is how the protocol validates the
+    ``ln 3!`` label convention."""
+
+    def log_likelihood_function(self, instance):
+        level = instance.background.level
+        return -TIE_BREAK * level * level
+
+
+def load_dataset(dataset_path: Path) -> tuple[np.ndarray, np.ndarray, dict]:
+    """``(data, noise_map, truth)`` from a committed dataset directory."""
+    dataset_path = Path(dataset_path)
+    data = np.asarray(json.loads((dataset_path / "data.json").read_text()), dtype=float)
+    noise_map = np.asarray(json.loads((dataset_path / "noise_map.json").read_text()), dtype=float)
+    truth = json.loads((dataset_path / "truth.json").read_text())
+    return data, noise_map, truth
+
+
+def truth_dict(truth_record: dict) -> dict[str, float]:
+    """Flatten ``truth.json`` into ``{"g0.centre": …, "background.level": …}``."""
+    return {key: float(value) for key, value in truth_record["parameters"].items()}
+
+
+def relabel_vector(vector, keys=PARAMETER_KEYS):
+    """Sort one parameter vector's Gaussian components by centre (convention D15(c)).
+
+    The ordered-centre assertions already make this the identity for a sample that
+    satisfies them; it matters for exchangeable models and for searches that report
+    samples outside the assertion region.
+    """
+    values = dict(zip(keys, vector))
+    triples = sorted(
+        (
+            (values[f"{name}.centre"], values[f"{name}.normalization"], values[f"{name}.sigma"])
+            for name in COMPONENTS
+        ),
+        key=lambda triple: triple[0],
+    )
+    out = {}
+    for name, (centre, normalization, sigma) in zip(COMPONENTS, triples):
+        out[f"{name}.centre"] = centre
+        out[f"{name}.normalization"] = normalization
+        out[f"{name}.sigma"] = sigma
+    out["background.level"] = values["background.level"]
+    return [out[key] for key in keys]

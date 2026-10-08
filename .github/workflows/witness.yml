@@ -1,0 +1,82 @@
+# witness.yml — the CI witness of search-extensibility phase B2.
+#
+# One seed of Nautilus (n_live=100, numpy) on the committed gaussian_x3_blend dataset,
+# judged by the exporter against the committed numpy reference posterior under protocol
+# gaussian_x3@1; the job fails unless the emitted row is `accepted`. The row is written
+# to a scratch root and never committed (wave-1 rows are phase B3).
+#
+# PyAutoFit and PyAutoNerves are checked out at main and put on PYTHONPATH (the RAL /
+# laptop model: never pip-install PyAuto*); only their third-party dependencies are
+# installed, read from each pyproject.toml.
+
+name: witness
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  nautilus-blend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout autofit_inference
+        uses: actions/checkout@v4
+        with:
+          path: autofit_inference
+          fetch-depth: 0
+
+      - name: Checkout PyAutoNerves
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoNerves
+          path: PyAutoNerves
+
+      - name: Checkout PyAutoFit
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoFit
+          path: PyAutoFit
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install third-party dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python - <<'PY' > requirements.txt
+          import tomllib
+          deps = []
+          for repo in ("PyAutoNerves", "PyAutoFit"):
+              with open(f"{repo}/pyproject.toml", "rb") as handle:
+                  deps += tomllib.load(handle)["project"]["dependencies"]
+          print("\n".join(d for d in deps if not d.startswith("autonerves")))
+          PY
+          echo "nautilus-sampler==1.0.5" >> requirements.txt
+          pip install -r requirements.txt
+
+      - name: Nautilus n_live=100, numpy, seed 0, gaussian_x3_blend
+        working-directory: autofit_inference
+        env:
+          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit
+          NUMBA_CACHE_DIR: /tmp/numba_cache
+          MPLCONFIGDIR: /tmp/matplotlib
+          OMP_NUM_THREADS: "1"
+        run: |
+          python scripts/gaussian_x3_blend/searches/nautilus/gaussian_x3.py \
+            --config-name local_numpy_fp64 --settings n_live_100 --seed 0 \
+            --output-dir "$RUNNER_TEMP/output" --results-root "$RUNNER_TEMP/witness"
+
+      - name: Exporter verdict must be `accepted`
+        working-directory: autofit_inference
+        run: |
+          python scripts/misc/tooling/export_inference_summary.py \
+            --rows-root "$RUNNER_TEMP/witness" --output "$RUNNER_TEMP/witness/summary.json" \
+            --require-accepted

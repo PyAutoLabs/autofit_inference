@@ -2,15 +2,20 @@
 #
 # TEMPLATE — copy to `submit_<name>` and fill in. Do not submit this file.
 #
-# CPU jobs run on --partition=ral. There is NO `cpu` partition on RAL, and bulk CPU arrays
-# never go on `gpu` (nor `ral,gpu`): they starve the A100s. Check `sinfo` before
-# inventing a partition name.
+# CPU jobs run on --partition=ral ONLY. There is NO `cpu` partition on RAL, and CPU
+# arrays NEVER go on `gpu`, `ral,gpu` or `gpu,ral` — the human's hard rule of
+# 2026-09-30 (CPU arrays on ral,gpu took all 124 CPUs on euclid-ral-gpu-1/-2 and left
+# the 8 A100s idle but unschedulable for hours). Protocol gaussian_x3@1 §9 repeats it for
+# wave 2. There is no batch_gpu template: this repo has no GPU leg.
 #
-# Name the copy for what it runs, e.g. submit_<benchmark>_<search>.
+# Name the copy for what it runs and the config it runs it as, e.g.
+#   submit_gaussian_x3_blend_nautilus_ral_numpy_fp64
 #
-# Copied from autolens_inference/hpc/batch_cpu/template. The wall-clock basis gate
-# (`# WALL-BASIS:` + check_submits.py) arrives with the harness in a later phase; until
-# then, size --time by a measured probe, never by a rate measured on another benchmark.
+# WALL-BASIS: — one row per cell this submit runs. See ../../scripts/misc/wall/README.md.
+#   This template runs nothing, so its row is a shape to copy, not a claim.
+#   `unmeasured` is the honest state today: wall/rates.py starts EMPTY.
+#   cell: gaussian_x3_blend/searches/nautilus/gaussian_x3  device: ral_cpu  precision: fp64
+#   lanes: 1  steps: 20000  source: unmeasured  probe-first: yes
 
 #SBATCH -J <job_name>
 #SBATCH --partition=ral
@@ -27,6 +32,8 @@ export AP_ROOT=/mnt/ral/jnightin/autofit_inference
 source $AP_ROOT/activate.sh
 
 export JAX_PLATFORMS=cpu
+# Every submit exports this explicitly: without it an fp64 config silently runs fp32.
+# The driver re-exports it from the config name (fp32 legs set it False) before import.
 export JAX_ENABLE_X64=True
 
 # NPROC throttles JAX's CPU thread pool. Unset, this job takes the whole node.
@@ -37,9 +44,11 @@ date
 
 cd $AP_ROOT
 
-# Replace with the real invocation:
+# Replace with the real invocation. The config name's `ral` field is refused outside a
+# SLURM job, and `local` inside one:
 #
-# python3 scripts/<task>/<leaf>.py --seed $SLURM_ARRAY_TASK_ID
+# python3 scripts/<dataset_class>/searches/<sampler>/gaussian_x3.py \
+#     --config-name ral_numpy_fp64 --seed $SLURM_ARRAY_TASK_ID --cores $SLURM_CPUS_PER_TASK
 
 echo "Finished."
 date
