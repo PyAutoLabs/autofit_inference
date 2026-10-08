@@ -1,0 +1,8 @@
+# PyAutoConf overrides for runs launched from this repo (copied from autolens_inference).
+hpc:
+  hpc_mode: false                   # NEVER delete the unzipped output tree: with hpc_mode on, PyAutoFit removes the run directory and leaves only the .zip, which breaks every loose-file reader. This repo is judged on samples and posteriors, so the tree stays.
+output:
+  remove_files: false               # keep every output file; outputs are the evidence here, not a by-product.
+  samples_to_csv: true              # write the samples table beside the run so a result row can be rebuilt without unpickling the search.
+version:
+  workspace_version_check: false    # this repo tracks PyAutoFit main, not a release tag; the mismatch warning is expected noise.
