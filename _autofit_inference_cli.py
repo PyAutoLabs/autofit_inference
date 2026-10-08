@@ -88,6 +88,7 @@ class InferenceCLI:
     cores: int
     compile_cache: str
     settings: str | None
+    results_root: Path | None = None
 
 
 def parse_config_name(config_name: str) -> tuple[str, str, str]:
@@ -137,6 +138,12 @@ def build_parser(default_config_name: str = "local_numpy_fp64") -> argparse.Argu
     )
     parser.add_argument("--dataset", choices=DATASETS, default=None)
     parser.add_argument("--output-dir", type=Path, default=None)
+    parser.add_argument(
+        "--results-root",
+        type=Path,
+        default=None,
+        help="write results/searches/... under this root instead of the repo (CI witness)",
+    )
     parser.add_argument("--cores", type=int, default=None)
     parser.add_argument("--compile-cache", choices=COMPILE_CACHES, default="warm")
     parser.add_argument(
@@ -171,6 +178,7 @@ def parse_inference_cli(
         cores=args.cores if args.cores is not None else default_cores(),
         compile_cache=args.compile_cache,
         settings=args.settings,
+        results_root=args.results_root,
     )
 
 

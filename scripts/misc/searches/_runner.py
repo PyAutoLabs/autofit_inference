@@ -710,7 +710,13 @@ def run_search(
         }
         row["scientific"] = protocol.verdict(row, reference, offsets)
         json_path = results_path(
-            root, dataset_class, data_seed, sampler, settings_name, cli.config_name, seed
+            cli.results_root or root,
+            dataset_class,
+            data_seed,
+            sampler,
+            settings_name,
+            cli.config_name,
+            seed,
         )
         json_path.parent.mkdir(parents=True, exist_ok=True)
         json_path.write_text(json.dumps(row, indent=2) + "\n")
