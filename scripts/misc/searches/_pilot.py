@@ -54,9 +54,19 @@ BUDGET_REASON = (
 
 
 #: Planned cells whose remaining seeds were deliberately not run after the first
-#: attempts showed a deterministic failure, keyed by ``(dataset, sampler)``: the reason
-#: replaces :data:`BUDGET_REASON` for their un-run seeds (the attempts that ran stay).
-CELL_REASONS: dict[tuple[str, str], str] = {
+#: attempts showed a deterministic failure or an over-budget wall, keyed by
+#: ``(dataset, sampler)`` or ``(dataset, sampler, backend)`` (the narrower key wins): the
+#: reason replaces :data:`BUDGET_REASON` for their un-run seeds (the attempts that ran
+#: stay).
+_ZEUS_JAX_REASON = (
+    "not run after seed 0: Zeus on the JAX leg was stopped at the pilot's operational "
+    "wall cap on both datasets (blend at the 1800 s probe cap, separated at 3600 s; the "
+    "numpy leg finishes in ~1600 s), so each further seed would spend the cap and censor; "
+    "measured in wave 2 under the frozen timeout"
+)
+CELL_REASONS: dict[tuple, str] = {
+    ("gaussian_x3_blend", "zeus", "jax_cpu"): _ZEUS_JAX_REASON,
+    ("gaussian_x3_separated", "zeus", "jax_cpu"): _ZEUS_JAX_REASON,
     ("gaussian_x3_blend", "blackjax_nuts_warm"): (
         "not run after seed 0: BlackJAXNUTS on the asserted blend fails deterministically "
         "at trace time (TracerBoolConversionError in the NUTS log_l: the ordered-centre "
@@ -70,7 +80,10 @@ def missing_reason(cell: Cell) -> str:
     """Why an expected run of ``cell`` has no row."""
     if cell.status == "deferred":
         return cell.reason or BUDGET_REASON
-    return CELL_REASONS.get((cell.dataset, cell.sampler), BUDGET_REASON)
+    return CELL_REASONS.get(
+        (cell.dataset, cell.sampler, cell.backend),
+        CELL_REASONS.get((cell.dataset, cell.sampler), BUDGET_REASON),
+    )
 
 
 @dataclass(frozen=True)

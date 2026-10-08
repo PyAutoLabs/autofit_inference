@@ -207,11 +207,18 @@ def criterion_modes(row: dict, reference: dict) -> tuple[bool | None, str]:
 NO_EXCLUDED_VOLUME = ("disjoint_priors",)
 
 
+def run_evidence_offset(run: dict, offsets: dict | None) -> float | None:
+    """The §3 offset for a row or reference run: ``0`` for a mechanism that excludes no
+    prior volume (:data:`NO_EXCLUDED_VOLUME`), else the measured sampler/backend offset.
+    The reference builder and :func:`criterion_evidence` must both use this, so a row and
+    its reference are normalised by the same rule."""
+    if run.get("assertion_mechanism") in NO_EXCLUDED_VOLUME:
+        return 0.0
+    return evidence_offset(offsets, run.get("sampler", ""), run.get("backend", ""))
+
+
 def criterion_evidence(row: dict, reference: dict, offsets: dict | None) -> tuple[bool | None, str]:
-    if row.get("assertion_mechanism") in NO_EXCLUDED_VOLUME:
-        offset = 0.0
-    else:
-        offset = evidence_offset(offsets, row.get("sampler", ""), row.get("backend", ""))
+    offset = run_evidence_offset(row, offsets)
     got = normalised_log_evidence(row.get("log_evidence"), offset)
     ref = _num(reference.get("log_evidence_normalised"))
     if offset is None:
