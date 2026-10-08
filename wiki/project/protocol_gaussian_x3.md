@@ -38,6 +38,10 @@ Defined once, in `scripts/misc/models/gaussian_x3.py`.
 - Priors, shared by the three Gaussians: centre `U(0, 100)`, normalization
   `LogUniform(1e-2, 1e2)`, sigma `U(0.5, 30)`; background level `U(-1, 1)`.
 - Ordered-centre assertions `g0.centre < g1.centre < g2.centre` (§3).
+- **The `gaussian_x3_separated` control (amendment A1, §11)** replaces the shared centre
+  prior with disjoint ones, `g0 U(0, 35)`, `g1 U(35, 65)`, `g2 U(65, 100)` (truth
+  centres 20 / 50 / 80, each 15 px inside its range), and has **no** assertions; every
+  other prior is as above. The model is chosen per dataset in `build_model(dataset=…)`.
 - Likelihood: Gaussian noise with the normalisation kept,
   `ln L = -0.5 Σ [((d − m)/n)² + ln(2π n²)]`, on `x = 0..99`.
 - Point/MAP searches optimise the **log posterior** (PyAutoFit's MLE searches add the
@@ -47,9 +51,14 @@ Defined once, in `scripts/misc/models/gaussian_x3.py`.
 ## 3. Label convention (D15)
 
 The three Gaussians are exchangeable: every good fit has `3! = 6` label-permuted
-copies.
+copies. The convention is chosen per dataset (amendment A1, §11): `gaussian_x3_blend`
+uses (a); the `gaussian_x3_separated` control uses D15 option **(b)**, disjoint centre
+priors with no assertions (`assertion_mechanism: disjoint_priors`), which excludes no
+prior volume, so its `ln 3!` offset is `0` by construction and is not measured. Both
+record (c).
 
-- **(a) The model fitted is the user-facing one**, with the ordered-centre assertions.
+- **(a) The model fitted is the user-facing one** (the blend), with the ordered-centre
+  assertions.
   Their enforcement differs by backend: on numpy a violated assertion raises inside
   `instance_from_vector` and `Fitness` returns the resample sentinel; on JAX the
   assertions are a traced boolean applied with `xp.where` to the figure of merit. The
@@ -122,7 +131,8 @@ Feeds Insight `scientific.convergence` (`converged` / `not_converged` /
 
 ## 6. Reference posteriors and the MAP reference
 
-Computed **per dataset and per backend** (numpy and JAX), with the §3 assertions:
+Computed **per dataset and per backend** (numpy and JAX), with the dataset's §3 label
+convention (the blend's assertions; the control's disjoint priors, A1):
 
 - 3 long `Nautilus` runs (`n_live=2000`, seeds 0, 1, 2) and 3 long `DynestyStatic`
   runs (`nlive=1000`; PyAutoFit forwards no seed to Dynesty, so its seeds label the run
@@ -204,4 +214,17 @@ default `rwalk` (`walks=5`, `nlive=1000`) reproduces the posterior (medians with
 
 ## 11. Amendments
 
-None.
+Amendments made before any row they could affect exists. Each names the sections it
+changes; the change rule (top) still governs anything after a wave-1 row.
+
+- **A1 — 2026-10-08, the separated control is D15 option (b).** Changes §2 (the
+  control's priors), §3 (per-dataset convention) and §6 (the reference's convention).
+  *Why:* the epic report's D15 decision (§8.2) makes `gaussian_x3_separated` the
+  disjoint-prior control, option (b), so a low blend success rate can be attributed to
+  the problem or to the search; the first B2 implementation fitted the control with the
+  blend's shared `U(0, 100)` centre priors and ordering assertions, which keeps the
+  assertion-volume and prior-geometry effects the control exists to remove (review
+  finding 10). *What:* disjoint centre priors `U(0, 35)`, `U(35, 65)`, `U(65, 100)`, no
+  assertions, `assertion_mechanism: disjoint_priors`, evidence offset `0` by
+  construction. *Timing:* no `gaussian_x3_separated` reference run, reference or row
+  existed when it was made (§10), so nothing is rerun and no verdict changes.

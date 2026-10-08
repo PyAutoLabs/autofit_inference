@@ -119,6 +119,14 @@ def test_reference_limitations_accompany_every_verdict():
     assert protocol.verdict(row(), REFERENCE, OFFSETS)["reference_limitations"] == []
 
 
+def test_disjoint_priors_need_no_measured_offset():
+    reference = dict(REFERENCE, assertion_mechanism="disjoint_priors")
+    out = protocol.acceptance(
+        row(assertion_mechanism="disjoint_priors", log_evidence=100.0), reference, None
+    )
+    assert out["acceptance"] == "accepted", out
+
+
 def test_incomplete_run_is_rejected_and_not_converged():
     bad = row(status="failed: RuntimeError: boom", completed=False)
     assert protocol.acceptance(bad, REFERENCE, OFFSETS)["acceptance"] == "rejected"

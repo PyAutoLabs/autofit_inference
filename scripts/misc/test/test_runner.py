@@ -126,10 +126,13 @@ def test_admission_vector_reaches_the_likelihood_and_medians_do_not():
     import numpy as np
     from models import gaussian_x3 as gx3
 
+    for dataset in ("gaussian_x3_blend", "gaussian_x3_separated"):
+        separated = gx3.build_model(dataset=dataset)
+        fitness, truths = _blend_fitness(separated, dataset)
+        vector = runner.admission_vector(gx3.parameter_keys(separated), truths)
+        assert fitness.call(np.asarray(vector)) > runner.RESAMPLE_SENTINEL / 10
     model = gx3.build_model()
-    fitness, truths = _blend_fitness(model)
-    vector = runner.admission_vector(gx3.parameter_keys(model), truths)
-    assert fitness.call(np.asarray(vector)) > runner.RESAMPLE_SENTINEL / 10
+    fitness, _ = _blend_fitness(model)
     medians = np.asarray(model.physical_values_from_prior_medians, dtype=float)
     assert fitness.call(medians) == runner.RESAMPLE_SENTINEL
 
@@ -203,3 +206,27 @@ def test_sigterm_writes_a_failure_row_with_its_wall(tmp_path, monkeypatch):
     (path,) = (tmp_path / "results" / "searches").rglob("*.json")
     row = json.loads(path.read_text())
     assert row["status"].startswith("failed: Terminated") and 0.1 <= row["total_wall_s"] < 5
+
+
+def test_separated_control_is_disjoint_priors_without_assertions():
+    """Review finding 10 / D15 option (b): the control is identified by its priors."""
+    import pytest
+
+    pytest.importorskip("autofit")
+    from models import gaussian_x3 as gx3
+
+    blend = gx3.build_model(dataset="gaussian_x3_blend")
+    separated = gx3.build_model(dataset="gaussian_x3_separated")
+    assert len(blend.assertions) == 2 and len(separated.assertions) == 0
+    edges = [
+        (getattr(separated, n).centre.lower_limit, getattr(separated, n).centre.upper_limit)
+        for n in gx3.COMPONENTS
+    ]
+    assert edges == list(gx3.DISJOINT_CENTRE_PRIORS)
+    assert all(a[1] <= b[0] for a, b in zip(edges, edges[1:]))
+    _, _, truth = gx3.load_dataset(ROOT / "dataset" / "gaussian_x3_separated")
+    for name, (lo, hi) in zip(gx3.COMPONENTS, edges):
+        assert lo < truth["parameters"][f"{name}.centre"] < hi
+    assert gx3.assertion_mechanism("gaussian_x3_separated", use_jax=True) == "disjoint_priors"
+    assert gx3.assertion_mechanism("gaussian_x3_blend", use_jax=True) == "xp_where_penalty"
+    assert gx3.priors_record("gaussian_x3_separated")["g2.centre"] == "U(65, 100)"

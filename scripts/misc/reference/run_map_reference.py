@@ -59,7 +59,7 @@ def main(argv=None) -> int:
     from models import gaussian_x3 as gx3
 
     data, noise_map, truth_record = gx3.load_dataset(auto_simulate_if_missing(args.dataset))
-    model = gx3.build_model()
+    model = gx3.build_model(dataset=args.dataset)
     keys = gx3.parameter_keys(model)
     analysis = gx3.AnalysisGaussianX3(data=data, noise_map=noise_map, use_jax=backend == "jax_cpu")
     output_root = (_ROOT / "output").resolve()

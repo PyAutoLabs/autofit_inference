@@ -24,7 +24,8 @@ ordered-centre assertions `g0.centre < g1.centre < g2.centre`, on two committed 
 (`dataset/`, reproducible from `scripts/misc/simulators/gaussian_x3.py`):
 
 - `gaussian_x3_blend` — centres 25 / 45 / 60, σ 3 / 6 / 10; g1 and g2 overlap.
-- `gaussian_x3_separated` — the disjoint control (centres 20 / 50 / 80, σ 3 / 4 / 5).
+- `gaussian_x3_separated` — the disjoint control (centres 20 / 50 / 80, σ 3 / 4 / 5),
+  fitted with disjoint centre priors and no assertions (D15 option (b); protocol §11 A1).
 
 Every run is judged by the pre-registered protocol
 [`wiki/project/protocol_gaussian_x3.md`](wiki/project/protocol_gaussian_x3.md)

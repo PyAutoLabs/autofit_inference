@@ -75,7 +75,7 @@ def main(argv=None) -> int:
     np.random.seed(args.seed)
     dataset_dir = auto_simulate_if_missing(args.dataset)
     data, noise_map, truth_record = gx3.load_dataset(dataset_dir)
-    model = gx3.build_model()
+    model = gx3.build_model(dataset=args.dataset)
     keys = gx3.parameter_keys(model)
     assert tuple(keys) == gx3.PARAMETER_KEYS, keys
     analysis = gx3.AnalysisGaussianX3(data=data, noise_map=noise_map, use_jax=backend == "jax_cpu")
@@ -135,9 +135,9 @@ def main(argv=None) -> int:
         "dataset": args.dataset,
         "data_seed": truth_record.get("data_seed"),
         "model": gx3.MODEL_ID,
-        "model_description": gx3.MODEL_DESCRIPTION,
-        "priors": gx3.PRIORS_RECORD,
-        "assertion_mechanism": "xp_where_penalty" if backend == "jax_cpu" else "raise_resample",
+        "model_description": gx3.model_description(args.dataset),
+        "priors": gx3.priors_record(args.dataset),
+        "assertion_mechanism": gx3.assertion_mechanism(args.dataset, backend == "jax_cpu"),
         "sampler": args.sampler,
         "settings": settings,
         "seed": args.seed,

@@ -202,8 +202,16 @@ def criterion_modes(row: dict, reference: dict) -> tuple[bool | None, str]:
     return missed == 0, f"(b)4 reference modes covered {len(ref_modes) - missed}/{len(ref_modes)}"
 
 
+#: The separated control's mechanism (D15 option (b), amendment A1): disjoint centre
+#: priors and no assertions exclude no prior volume, so the offset is 0 by construction.
+NO_EXCLUDED_VOLUME = ("disjoint_priors",)
+
+
 def criterion_evidence(row: dict, reference: dict, offsets: dict | None) -> tuple[bool | None, str]:
-    offset = evidence_offset(offsets, row.get("sampler", ""), row.get("backend", ""))
+    if row.get("assertion_mechanism") in NO_EXCLUDED_VOLUME:
+        offset = 0.0
+    else:
+        offset = evidence_offset(offsets, row.get("sampler", ""), row.get("backend", ""))
     got = normalised_log_evidence(row.get("log_evidence"), offset)
     ref = _num(reference.get("log_evidence_normalised"))
     if offset is None:

@@ -573,7 +573,7 @@ def run_search(
     if reference and reference.get("max_log_likelihood") is not None:
         target_log_l = float(reference["max_log_likelihood"])
 
-    model = gx3.build_model()
+    model = gx3.build_model(dataset=dataset_class)
     keys = gx3.parameter_keys(model)
     tracker = MLTracker()
     analysis = gx3.TrackedAnalysisGaussianX3(
@@ -759,9 +759,9 @@ def run_search(
             "settings_name": settings_name,
             "settings": settings,
             "model": model_type,
-            "model_description": gx3.MODEL_DESCRIPTION,
-            "priors": gx3.PRIORS_RECORD,
-            "assertion_mechanism": "xp_where_penalty" if use_jax else "raise_resample",
+            "model_description": gx3.model_description(dataset_class),
+            "priors": gx3.priors_record(dataset_class),
+            "assertion_mechanism": gx3.assertion_mechanism(dataset_class, use_jax),
             "config_name": cli.config_name,
             "where": cli.where,
             "backend": cli.backend,

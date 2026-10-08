@@ -12,9 +12,18 @@ The model (10 free parameters)
   ``LogUniform(1e-2, 1e2)``, sigma ``U(0.5, 30)``.
 - ``background`` — a thin :class:`Background` (``level``), prior ``U(-1, 1)``.
 
-The components are exchangeable, so every good fit has ``3! = 6`` label-permuted copies.
-The user-facing model breaks the symmetry with ordered-centre assertions
-``g0.centre < g1.centre < g2.centre`` (protocol convention D15(a)). How PyAutoFit enforces
+The label convention is chosen **per dataset** (protocol §3, amendment A1 in §11):
+
+- ``gaussian_x3_blend`` — the user-facing model, D15 option (a): shared centre priors
+  ``U(0, 100)``, so the components are exchangeable (every good fit has ``3! = 6``
+  label-permuted copies), broken by ordered-centre assertions
+  ``g0.centre < g1.centre < g2.centre``.
+- ``gaussian_x3_separated`` — the control, D15 option (b): **disjoint centre priors**
+  ``g0 U(0, 35)``, ``g1 U(35, 65)``, ``g2 U(65, 100)`` and **no assertions**. The model
+  is identifiable by its priors alone, so no prior volume is excluded and there is no
+  ``ln 3!`` offset (``assertion_mechanism: disjoint_priors``).
+
+For the blend, How PyAutoFit enforces
 them depends on the backend: on numpy a violated assertion raises inside
 ``instance_from_vector`` and ``Fitness`` returns the resample sentinel; on JAX the
 assertions are a traced boolean applied with ``xp.where`` to the figure of merit
@@ -49,6 +58,16 @@ COMPONENTS = ("g0", "g1", "g2")
 
 #: Pre-registered priors (protocol §Model).
 CENTRE_PRIOR = (0.0, 100.0)
+
+#: The separated control's disjoint centre priors, one per component in centre order
+#: (protocol §2, amendment A1). Truth centres 20 / 50 / 80 sit 15 px inside each edge.
+DISJOINT_CENTRE_PRIORS = ((0.0, 35.0), (35.0, 65.0), (65.0, 100.0))
+
+#: Label convention per dataset (protocol §3): D15 option (a) or (b).
+LABEL_CONVENTION = {
+    "gaussian_x3_blend": "ordered_assertions",
+    "gaussian_x3_separated": "disjoint_priors",
+}
 NORMALIZATION_PRIOR = (1.0e-2, 1.0e2)
 SIGMA_PRIOR = (0.5, 30.0)
 BACKGROUND_PRIOR = (-1.0, 1.0)
@@ -60,6 +79,40 @@ PRIORS_RECORD = {
     "background.level": f"U({BACKGROUND_PRIOR[0]:g}, {BACKGROUND_PRIOR[1]:g})",
     "assertions": "g0.centre < g1.centre < g2.centre",
 }
+
+
+def label_convention(dataset: str = "gaussian_x3_blend") -> str:
+    try:
+        return LABEL_CONVENTION[dataset]
+    except KeyError:
+        raise ValueError(f"no label convention registered for dataset {dataset!r}") from None
+
+
+def priors_record(dataset: str = "gaussian_x3_blend") -> dict:
+    """The priors (and assertions) a row on ``dataset`` was fitted with."""
+    if label_convention(dataset) == "ordered_assertions":
+        return dict(PRIORS_RECORD)
+    record = dict(PRIORS_RECORD)
+    record.pop("centre")
+    for name, (lo, hi) in zip(COMPONENTS, DISJOINT_CENTRE_PRIORS):
+        record[f"{name}.centre"] = f"U({lo:g}, {hi:g})"
+    record["assertions"] = "none (disjoint centre priors)"
+    return record
+
+
+def model_description(dataset: str = "gaussian_x3_blend") -> str:
+    if label_convention(dataset) == "ordered_assertions":
+        return MODEL_DESCRIPTION
+    return "3 af.ex.Gaussian + Background(level), 10 free, disjoint centre priors, no assertions"
+
+
+def assertion_mechanism(dataset: str = "gaussian_x3_blend", use_jax: bool = False) -> str:
+    """How the label convention is enforced: ``raise_resample`` (numpy assertions),
+    ``xp_where_penalty`` (JAX assertions) or ``disjoint_priors`` (no assertions)."""
+    if label_convention(dataset) == "disjoint_priors":
+        return "disjoint_priors"
+    return "xp_where_penalty" if use_jax else "raise_resample"
+
 
 #: The parameter keys of a row, in the model's own vector order (checked by
 #: :func:`parameter_keys` against ``model.paths`` at run time).
@@ -103,13 +156,19 @@ def model_data_from(instance, xvalues, xp=np):
     return total
 
 
-def build_model(assertions: bool = True):
-    """The 10-parameter ``af.Collection``. ``assertions=False`` gives the exchangeable
-    model (used only by the constant-likelihood convention check)."""
+def build_model(assertions: bool = True, dataset: str = "gaussian_x3_blend"):
+    """The 10-parameter ``af.Collection`` for ``dataset``'s label convention.
+
+    Blend: shared centre priors plus the ordered-centre assertions; ``assertions=False``
+    gives the exchangeable model (used only by the constant-likelihood convention check).
+    Separated: disjoint centre priors and never any assertion (``assertions`` is ignored).
+    """
+    disjoint = label_convention(dataset) == "disjoint_priors"
     components = {}
-    for name in COMPONENTS:
+    for index, name in enumerate(COMPONENTS):
         gaussian = af.Model(af.ex.Gaussian)
-        gaussian.centre = af.UniformPrior(lower_limit=CENTRE_PRIOR[0], upper_limit=CENTRE_PRIOR[1])
+        lo, hi = DISJOINT_CENTRE_PRIORS[index] if disjoint else CENTRE_PRIOR
+        gaussian.centre = af.UniformPrior(lower_limit=lo, upper_limit=hi)
         gaussian.normalization = af.LogUniformPrior(
             lower_limit=NORMALIZATION_PRIOR[0], upper_limit=NORMALIZATION_PRIOR[1]
         )
@@ -120,7 +179,7 @@ def build_model(assertions: bool = True):
         lower_limit=BACKGROUND_PRIOR[0], upper_limit=BACKGROUND_PRIOR[1]
     )
     model = af.Collection(**components, background=background)
-    if assertions:
+    if assertions and not disjoint:
         model.add_assertion(model.g0.centre < model.g1.centre)
         model.add_assertion(model.g1.centre < model.g2.centre)
     return model
