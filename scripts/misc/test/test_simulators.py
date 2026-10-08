@@ -16,9 +16,14 @@ def test_committed_dataset_reproduces_from_seed(name):
     data, noise_map, _ = sim.simulate_arrays(components, seed)
     directory = ROOT / "dataset" / name
     committed = np.asarray(json.loads((directory / "data.json").read_text()))
-    np.testing.assert_array_equal(committed, data)
-    np.testing.assert_array_equal(
-        np.asarray(json.loads((directory / "noise_map.json").read_text())), noise_map
+    # rtol 1e-12, not bit equality: the seeded noise is exact, but exp() in the Gaussian
+    # profile can differ by an ULP across NumPy builds/platforms (noise sigma is 0.04).
+    np.testing.assert_allclose(committed, data, rtol=1e-12, atol=0)
+    np.testing.assert_allclose(
+        np.asarray(json.loads((directory / "noise_map.json").read_text())),
+        noise_map,
+        rtol=1e-12,
+        atol=0,
     )
     truth = json.loads((directory / "truth.json").read_text())
     assert truth["data_seed"] == seed
