@@ -68,3 +68,19 @@ def test_summarise_never_interchanges_logl_and_logp():
     )
     assert out["max_log_likelihood"] == 2.0 and out["max_log_likelihood_vector"][0] == 25.5
     assert out["max_log_posterior"] == 5.0 and out["max_log_posterior_vector"][0] == 25.0
+
+
+def test_modes_cluster_every_sample_and_keep_a_minority_mode():
+    """A 90 % / 10 % two-mode posterior whose minor mode has the lighter per-sample
+    weights: clustering only the heaviest samples would drop it (review finding 1)."""
+    rng = np.random.default_rng(0)
+    other = list(ORDERED)
+    other[6] = 80.0
+    rows = np.array([ORDERED] * 5000 + [other] * 5000, dtype=float)
+    rows[:, [0, 3, 6]] += rng.normal(0.0, 0.5, size=(10000, 3))
+    weights = np.r_[np.full(5000, 0.9 / 5000), np.full(5000, 0.1 / 5000)]
+    modes = post.mode_clusters(rows, weights, KEYS)
+    assert len(modes) == 2
+    assert abs(modes[0]["weight"] - 0.9) < 1e-9 and abs(modes[1]["weight"] - 0.1) < 1e-9
+    assert abs(modes[1]["centres"][2] - 80.0) < 2.0
+    assert abs(sum(m["weight"] for m in modes) - 1.0) < 1e-9

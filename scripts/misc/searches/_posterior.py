@@ -12,9 +12,10 @@ pre-registers:
 - **Label permutations** — the number of distinct centre orderings carrying at least
   :data:`MODE_MIN_WEIGHT` of the posterior weight in the *raw* samples.
 - **Modes found** — distinct clusters of the relabelled centre triple: greedy
-  clustering, heaviest sample first, a sample joining the first cluster whose seed is
-  within :data:`MODE_RADIUS_PX` pixels on every centre, counting clusters that carry at
-  least :data:`MODE_MIN_WEIGHT` of the weight.
+  clustering over **every** sample with its weight, heaviest sample first, a sample
+  joining the first cluster whose seed is within :data:`MODE_RADIUS_PX` pixels on every
+  centre, counting clusters that carry at least :data:`MODE_MIN_WEIGHT` of the weight.
+  No sample is discarded, so every cluster's weight is its true posterior mass.
 - **ESS** — Kish's ``(sum w)^2 / sum w^2`` over the normalised weights.
 """
 
@@ -28,9 +29,6 @@ MODE_MIN_WEIGHT = 0.01
 #: Two relabelled centre triples belong to one mode when every centre differs by at most
 #: this many pixels. Placeholder, calibrated in the pilot then frozen (protocol §Calibration).
 MODE_RADIUS_PX = 5.0
-
-#: At most this many samples enter the mode clustering (heaviest first).
-MODE_MAX_SAMPLES = 4000
 
 COMPONENTS = ("g0", "g1", "g2")
 
@@ -115,28 +113,34 @@ def mode_clusters(
     keys,
     radius: float = MODE_RADIUS_PX,
     min_weight: float = MODE_MIN_WEIGHT,
-    max_samples: int = MODE_MAX_SAMPLES,
 ) -> list[dict]:
-    """Clusters of the relabelled centre triple, heaviest first: ``[{centres, weight}]``."""
+    """Clusters of the relabelled centre triple, heaviest first: ``[{centres, weight}]``.
+
+    Every sample is clustered with its weight preserved (no truncation, no resampling).
+    The greedy rule is evaluated in vectorised form: the heaviest unassigned sample
+    seeds a cluster and every unassigned sample within ``radius`` of it on every centre
+    joins it. This is the same assignment as visiting samples heaviest first and joining
+    the first earlier seed in range, because a later seed never takes a sample an earlier
+    seed could claim. Clustering stops once the unassigned weight is below
+    ``min_weight``: no later cluster can reach the threshold, and later clusters never
+    change the weight of earlier ones, so the kept clusters are exact.
+    """
     w = normalised_weights(weights)
     relabelled = relabel_matrix(matrix, keys)[:, _centre_columns(keys)]
-    order = np.argsort(-w)[:max_samples]
-    seeds: list[np.ndarray] = []
-    totals: list[float] = []
-    for index in order:
-        point = relabelled[index]
-        for k, seed in enumerate(seeds):
-            if np.all(np.abs(point - seed) <= radius):
-                totals[k] += w[index]
-                break
-        else:
-            seeds.append(point)
-            totals.append(float(w[index]))
-    kept = [
-        {"centres": [float(c) for c in seed], "weight": float(total)}
-        for seed, total in zip(seeds, totals)
-        if total >= min_weight
-    ]
+    order = np.argsort(-w, kind="stable")
+    points, w = relabelled[order], w[order]
+    unassigned = np.ones(len(w), dtype=bool)
+    kept = []
+    while True:
+        remaining = np.flatnonzero(unassigned)
+        if remaining.size == 0 or w[remaining].sum() < min_weight:
+            break
+        seed = points[remaining[0]]
+        members = remaining[np.all(np.abs(points[remaining] - seed) <= radius, axis=1)]
+        unassigned[members] = False
+        total = float(w[members].sum())
+        if total >= min_weight:
+            kept.append({"centres": [float(c) for c in seed], "weight": total})
     return sorted(kept, key=lambda cluster: -cluster["weight"])
 
 
