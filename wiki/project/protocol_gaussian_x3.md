@@ -208,6 +208,13 @@ Nautilus counts the excluded volume (offset `−ln 3!`; measured −1.825 on num
 kept under `attempts`); DynestyStatic draws its initial live points from the allowed
 region only (offset `0`, measured 0.000 on both backends).
 
+Rebuilt 2026-10-08 after the B2 adversary review: the mode clustering now covers every
+sample with its weight (it had kept only the 4000 heaviest), so the blend/numpy reference
+mode weight is 1.000 (was 0.103, the retained mass) and every per-run `modes` weight is
+1.000 (was 0.26–0.74); the centres, `modes_found` (1), the pooled medians and σ, ln Z
+(137.061; normalised 138.853) and `ppc_chi2` (64.71) are unchanged. The reference now
+records its identity `data_seed: 1`, `assertion_mechanism: raise_resample`.
+
 Observation recorded for the pilot, not a criterion: DynestyStatic at PyAutoFit's
 default `rwalk` (`walks=5`, `nlive=1000`) reproduces the posterior (medians within
 0.06 σ) but its ln Z scatters by 2.3 nat (numpy) and 5.6 nat (JAX) across seeds.
