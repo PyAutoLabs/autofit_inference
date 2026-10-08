@@ -316,7 +316,8 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
         },
         "limitations": [
             "Verdicts are producer-asserted under protocol gaussian_x3@1, whose PLACEHOLDER thresholds are calibrated in the wave-1 pilot and then frozen",
-            "Log evidences are compared only within one backend and one assertion mechanism",
+            "Rows are judged only against a reference with the same dataset, backend, data seed and assertion mechanism; log evidences are compared only within one backend and one assertion mechanism",
+            "Nested-search convergence needs the search's own termination condition: Nautilus is read from its sampler; other nested searches are not_assessed until PyAutoFit exposes it (phase A3)",
             "Completion is execution, not convergence; convergence is reported separately from acceptance",
             "Sample archives remain in project storage; current availability unknown",
         ],
