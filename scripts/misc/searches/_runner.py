@@ -360,6 +360,22 @@ def time_calls(fn, arg, *, warmup: int = WARMUP_CALLS, n: int = TIMED_CALLS, blo
     return summary
 
 
+#: Fitness's resample sentinel; a timed call returning it measured the rejection path.
+RESAMPLE_SENTINEL = -1.0e99
+
+
+def admission_vector(keys, truths: dict) -> list[float]:
+    """The vector the admission bar times: the generating truth, in model order.
+
+    Never the prior medians: all three centre medians are 50, which violates the
+    ordered-centre assertions, so numpy ``Fitness`` short-circuits to the resample
+    sentinel (``autofit/non_linear/fitness.py``, the ``FitException`` branch) and the
+    timing measures the rejection path, not a likelihood evaluation. The truth satisfies
+    the assertions (and the separated control's disjoint priors) by construction.
+    """
+    return [float(truths[key]) for key in keys]
+
+
 TERMINATION_NOT_EXPOSED = "termination condition not exposed by PyAutoFit (phase A3)"
 
 
@@ -555,13 +571,14 @@ def run_search(
             analysis=gx3.AnalysisGaussianX3(data=data, noise_map=noise_map, use_jax=use_jax),
             paths=None,
             fom_is_log_likelihood=True,
-            resample_figure_of_merit=-1.0e99,
+            resample_figure_of_merit=RESAMPLE_SENTINEL,
             use_jax_vmap=use_jax and spec.vectorised,
             batch_size=n_batch,
         )
-        vector = np.asarray(model.physical_values_from_prior_medians, dtype=float)
+        vector = np.asarray(admission_vector(keys, truths), dtype=float)
         timing["vector"] = vector.tolist()
-        truth = [truths[k] for k in keys]
+        timing["vector_source"] = "truth (satisfies the assertions; never the prior medians)"
+        truth = vector.tolist()
         if use_jax:
             import jax
 
@@ -581,6 +598,8 @@ def run_search(
         else:
             timing["single"] = time_calls(fitness.call, vector)
             truth_value = float(fitness.call(truth))
+        if truth_value <= RESAMPLE_SENTINEL / 10:
+            raise RuntimeError("admission vector hit the resample sentinel: timing is invalid")
         nonlocal log_likelihood_at_truth
         log_likelihood_at_truth = truth_value
 

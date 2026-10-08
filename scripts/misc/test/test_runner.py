@@ -86,3 +86,34 @@ def test_nested_termination_reads_nautilus_state_and_flags_budget_stops():
     for name, internal in (("nautilus", None), ("dynesty_static", sampler())):
         out = runner.nested_termination(name, search, internal)
         assert out["met"] is None and out["reason"] == runner.TERMINATION_NOT_EXPOSED
+
+
+def _blend_fitness(model, dataset="gaussian_x3_blend"):
+    from autofit.non_linear.fitness import Fitness
+    from models import gaussian_x3 as gx3
+
+    data, noise_map, truth = gx3.load_dataset(ROOT / "dataset" / dataset)
+    fitness = Fitness(
+        model=model,
+        analysis=gx3.AnalysisGaussianX3(data=data, noise_map=noise_map),
+        paths=None,
+        fom_is_log_likelihood=True,
+        resample_figure_of_merit=runner.RESAMPLE_SENTINEL,
+    )
+    return fitness, gx3.truth_dict(truth)
+
+
+def test_admission_vector_reaches_the_likelihood_and_medians_do_not():
+    """Review finding 7: the timed vector must reach the likelihood, not the sentinel."""
+    import pytest
+
+    pytest.importorskip("autofit")
+    import numpy as np
+    from models import gaussian_x3 as gx3
+
+    model = gx3.build_model()
+    fitness, truths = _blend_fitness(model)
+    vector = runner.admission_vector(gx3.parameter_keys(model), truths)
+    assert fitness.call(np.asarray(vector)) > runner.RESAMPLE_SENTINEL / 10
+    medians = np.asarray(model.physical_values_from_prior_medians, dtype=float)
+    assert fitness.call(medians) == runner.RESAMPLE_SENTINEL
