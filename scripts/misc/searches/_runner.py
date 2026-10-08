@@ -53,6 +53,7 @@ Hazards carried over from autolens_inference
 from __future__ import annotations
 
 import json
+import math
 import os
 import signal
 import statistics
@@ -196,6 +197,20 @@ SAMPLERS: dict[str, SamplerSpec] = {
         seed_kwarg="seed",
         jax_native=True,
         numpy_supported=False,
+    ),
+    "blackjax_nuts_warm": SamplerSpec(
+        cls="BlackJAXNUTS",
+        task="posterior",
+        family="chain",
+        settings={"warmup_200_samples_500": {"num_warmup": 200, "num_samples": 500}},
+        default="warmup_200_samples_500",
+        seed_kwarg="seed",
+        jax_native=True,
+        numpy_supported=False,
+        note="warm start from a short Nautilus (n_live=100, same seed): its best point "
+        "starts the chain and its covariance seeds the mass matrix; the provider's wall is "
+        "recorded and counts toward wall per right answer (protocol §8)",
+        extra={"warm_from": ("nautilus", "n_live_100")},
     ),
     "smc": SamplerSpec(
         cls="SMC",
@@ -459,11 +474,93 @@ def nested_termination(sampler: str, search, internal) -> dict:
     return {"observable": False, "met": None, "reason": TERMINATION_NOT_EXPOSED}
 
 
-def build_search(af, spec: SamplerSpec, settings: dict, *, path_prefix, name, seed: int):
+def build_search(
+    af, spec: SamplerSpec, settings: dict, *, path_prefix, name, seed: int, extra_kwargs=None
+):
     kwargs = dict(settings)
+    kwargs.update(extra_kwargs or {})
     if spec.seed_kwarg is not None:
         kwargs[spec.seed_kwarg] = seed
     return getattr(af, spec.cls)(path_prefix=path_prefix, name=name, **kwargs)
+
+
+def run_warm_provider(af, spec, settings, warm_from, model, analysis, path_prefix, name, seed):
+    """Run the warm-start provider (a short search on the same model and Analysis), then
+    build the consumer search started from it.
+
+    The provider is a registered search and settings (``warm_from = (sampler,
+    settings_name)``), seeded with the consumer's seed and written under its own
+    ``<path_prefix>/provider_<sampler>`` so it never shares an output with a cold run.
+    Its ``search.fit`` wall is recorded and counts toward the consumer's wall per right
+    answer (§8). The consumer starts from the provider's maximum-likelihood point
+    (``Result.start_point_from``, jitter 0.05, the consumer's seed) and, for BlackJAX
+    NUTS, seeds its inverse mass matrix from the provider's covariance.
+    """
+    provider_name, provider_settings = warm_from
+    provider_spec = SAMPLERS[provider_name]
+    provider_kwargs = provider_spec.settings[provider_settings]
+    provider = build_search(
+        af,
+        provider_spec,
+        provider_kwargs,
+        path_prefix=str(Path(path_prefix) / f"provider_{provider_name}"),
+        name=provider_name,
+        seed=seed,
+    )
+    start = time.perf_counter()
+    provider_result = provider.fit(model=model, analysis=analysis)
+    provider_wall = time.perf_counter() - start
+    extra = {"initializer": provider_result.start_point_from(n_points=1, jitter=0.05, seed=seed)}
+    if spec.cls == "BlackJAXNUTS":
+        extra["inverse_mass_matrix"] = provider_result
+    consumer = build_search(
+        af, spec, settings, path_prefix=str(path_prefix), name=name, seed=seed, extra_kwargs=extra
+    )
+    record = {
+        "warm_start": {
+            "provider": provider_name,
+            "provider_settings": provider_settings,
+            "provider_settings_kwargs": provider_kwargs,
+            "start": "provider max-log-likelihood point, jitter 0.05",
+            "mass_matrix": "provider covariance" if spec.cls == "BlackJAXNUTS" else None,
+        },
+        "total_wall_s": provider_wall,
+        "log_evidence": _as_float(getattr(provider_result.samples, "log_evidence", None)),
+    }
+    return consumer, record
+
+
+def chain_diagnostics_for(spec: SamplerSpec, result, search, keys, post) -> dict:
+    """R-hat and bulk ESS for a chain search (protocol §5), from the sampler itself.
+
+    BlackJAX NUTS writes ``rhat_max`` / ``ess_bulk_min`` (``blackjax.diagnostics``) into
+    ``samples_info``; with one chain they are NaN and recorded as not available. Emcee and
+    Zeus expose their ``(steps, walkers, dim)`` chain on ``result.search_internal``; the
+    walkers stand in for chains (``_posterior.chain_diagnostics``, first half discarded).
+    SMC exposes no chain, so it stays ``not_assessed``.
+    """
+    import numpy as np
+
+    if spec.cls == "BlackJAXNUTS":
+        info = getattr(result.samples, "samples_info", None) or {}
+        rhat, ess = _as_float(info.get("rhat_max")), _as_float(info.get("ess_bulk_min"))
+        ok = rhat is not None and np.isfinite(rhat) and ess is not None and np.isfinite(ess)
+        return {
+            "rhat_max": rhat if ok else None,
+            "ess_bulk_min": ess if ok else None,
+            "basis": "PyAutoFit samples_info (blackjax.diagnostics, split chains)",
+            "reason": None if ok else "PyAutoFit reports NaN R-hat/ESS (single chain)",
+            "chains": getattr(search, "num_chains", None),
+        }
+    if spec.cls in ("Emcee", "Zeus"):
+        try:
+            chain = np.asarray(result.search_internal.get_chain(), dtype=float)
+        except Exception as exc:  # pragma: no cover — depends on the sampler object
+            return {"rhat_max": None, "ess_bulk_min": None, "reason": f"no chain: {exc}"}
+        out = post.chain_diagnostics(chain, keys)
+        out["basis"] = "harness: rank-normalised split R-hat and bulk ESS over walkers"
+        return out
+    return {"rhat_max": None, "ess_bulk_min": None, "reason": f"{spec.cls} exposes no chain"}
 
 
 def _as_float(value) -> float | None:
@@ -478,6 +575,71 @@ def _read_json(path: Path):
         return json.loads(Path(path).read_text())
     except (OSError, ValueError):
         return None
+
+
+def scrub_paths(text: str) -> str:
+    """Replace the machine-specific workspace prefix in a failure message (a traceback
+    names library files by absolute path) with ``<workspace>``: committed rows carry no
+    machine-specific absolute paths (AGENTS.md)."""
+    workspace = str(_ROOT.resolve().parent)
+    return str(text).replace(workspace, "<workspace>")
+
+
+#: The fields whose value is the search's answer: a non-finite one means the search
+#: returned no usable optimum or posterior, whatever PyAutoFit's completion marker says.
+RESULT_FIELDS = ("max_log_likelihood", "max_log_posterior")
+
+
+def _nonfinite_paths(value, prefix: str = "") -> list[str]:
+    if isinstance(value, float) and not math.isfinite(value):
+        return [prefix or "<root>"]
+    if isinstance(value, dict):
+        return [
+            p
+            for k, v in value.items()
+            for p in _nonfinite_paths(v, f"{prefix}.{k}" if prefix else str(k))
+        ]
+    if isinstance(value, list):
+        return [p for i, v in enumerate(value) for p in _nonfinite_paths(v, f"{prefix}[{i}]")]
+    return []
+
+
+def _null_nonfinite(value):
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {k: _null_nonfinite(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_null_nonfinite(v) for v in value]
+    return value
+
+
+def sanitise_nonfinite(row: dict) -> dict:
+    """Make a row strict JSON and keep a non-finite answer visible as a failure.
+
+    ``json.dumps`` would write ``Infinity``/``NaN``, which the exporter refuses (the row
+    would drop out of the summary as ``invalid``, silently shrinking the attempt count
+    §8 divides by). Every non-finite float becomes ``null``, its path is listed in
+    ``nonfinite_fields`` (with the original text in ``nonfinite_values``), and a run whose
+    *answer* (:data:`RESULT_FIELDS`) is non-finite is recorded as
+    ``failed: non-finite result`` — a failed attempt, never a dropped one. First seen in
+    the B3 pilot: LBFGS/BFGS on the asserted blend return ``max_log_likelihood = +inf``.
+    """
+    paths = _nonfinite_paths(row)
+    if not paths:
+        return row
+    values = {}
+    for path in paths:
+        if "." not in path and "[" not in path:
+            values[path] = repr(row[path])
+    out = _null_nonfinite(row)
+    out["nonfinite_fields"] = paths
+    out["nonfinite_values"] = values
+    bad = [f for f in RESULT_FIELDS if f in paths]
+    if bad and out.get("status") == "complete":
+        detail = ", ".join(f"{f}={values.get(f, 'non-finite')}" for f in bad)
+        out["status"] = f"failed: non-finite result ({detail})"
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -650,6 +812,7 @@ def run_search(
     ppc_chi2 = None
     log_evidence = None
     termination = None
+    chain_diag: dict = {}
     fit_start = None
     previous_sigterm = signal.signal(signal.SIGTERM, _raise_terminated)
     try:
@@ -657,6 +820,12 @@ def run_search(
             timing["note"] = "admission-bar timing skipped under PYAUTO_TEST_MODE"
         else:
             admission_bar()
+        warm_from = spec.extra.get("warm_from")
+        if warm_from is not None:
+            search, provider = run_warm_provider(
+                af, spec, settings, warm_from, model, analysis, path_prefix, search_name, seed
+            )
+            timing["provider"] = provider
         tracker.t0 = time.time()
         fit_start = time.perf_counter()
         result = search.fit(model=model, analysis=analysis)
@@ -685,6 +854,8 @@ def run_search(
             except Exception:
                 internal = None
             termination = nested_termination(sampler, search, internal)
+        if spec.family == "chain":
+            chain_diag = chain_diagnostics_for(spec, result, search, keys, post)
         draws = post.relabel_matrix(post.equal_weight_draws(matrix, weights, PPC_DRAWS, seed), keys)
         xvalues = np.arange(data.shape[0], dtype=float)
         curves = np.array(
@@ -814,6 +985,9 @@ def run_search(
             "ess_kish": ess,
             "ess_per_s": ess / wall_s if ess is not None and wall_s else None,
             "termination": termination,
+            "rhat_max": chain_diag.get("rhat_max"),
+            "ess_bulk_min": chain_diag.get("ess_bulk_min"),
+            "chain_diagnostics": chain_diag or None,
             "ppc_chi2": ppc_chi2,
             "truths": truths,
             "truth_delta_sigma": truth_delta_sigma_from(
@@ -836,7 +1010,12 @@ def run_search(
             "likelihood_share": likelihood_share(per_call_s, likelihood_evals, wall_s),
             "likelihood_share_basis": "estimated",
             "timing": timing,
+            # --- warm start (protocol §8: the provider's cost counts) ------------
+            "warm_start": (timing.get("provider") or {}).get("warm_start"),
+            "provider_wall_s": (timing.get("provider") or {}).get("total_wall_s"),
         }
+        row = sanitise_nonfinite(row)
+        row["status"] = scrub_paths(row["status"])
         row["scientific"] = protocol.verdict(row, reference, offsets)
         json_path = results_path(
             cli.results_root or root,

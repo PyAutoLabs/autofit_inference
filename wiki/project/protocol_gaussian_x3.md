@@ -157,6 +157,14 @@ convention (the blend's assertions; the control's disjoint priors, A1):
   wave-2 row. Wave-1 verdicts stay stamped `@1`.
 - Until then a timeout is censored as a failure at **10× the median wall of
   Nautilus `n_live=100` on the same config — PLACEHOLDER**.
+- **Status at the B3 wrap-up (2026-10-08).** The pilot was stopped by the wrap-up
+  ruling at 223 of its 520 expected runs (the rest deferred to wave 2 on RAL
+  `--partition=ral`; NSS to phase A3b). `results/calibration/gaussian_x3_wave1.json`
+  records the evidence the pre-declared rules give on those rows: 17 calibration rows
+  (< 20), so the σ-ratio band and the ppc tolerance stay at their `@1` values. **The
+  `@2` freeze is not made in B3**: it is deferred until the pilot's deferred runs are
+  in, and still lands before the first wave-2 row. The pilot ran on PyAutoFit main
+  `0dbf258c4f5e`, before phase A2 (PyAutoFit#1679, gradients under JAX).
 
 ## 8. Headline numbers
 
@@ -198,9 +206,9 @@ Per (search × settings × config), never per best seed:
 | Dataset | Backend | Nautilus ×3 | DynestyStatic ×3 | MAP | Agreement |
 |---|---|---|---|---|---|
 | gaussian_x3_blend | numpy | complete | complete | complete | Nautilus: ln Z spread 0.019 nat, medians 0.015 σ. All six: medians 0.062 σ, ln Z spread 2.33 nat (DynestyStatic) → reference = the Nautilus runs |
-| gaussian_x3_blend | jax_cpu | pending (stopped: beyond the B2 budget) | complete | complete | pending |
-| gaussian_x3_separated | numpy | pending (B3, before its wave-1 rows) | pending | pending | pending |
-| gaussian_x3_separated | jax_cpu | pending (B3, before its wave-1 rows) | pending | pending | pending |
+| gaussian_x3_blend | jax_cpu | pending (2 of 3: seeds 0 and 2 in B3; seed 1 deferred to wave 2 at the B3 wrap-up ruling) | complete | complete | pending |
+| gaussian_x3_separated | numpy | complete (B3) | complete (B3) | complete (ln P 175.706) | Nautilus: ln Z spread 0.006 nat, medians 0.010 σ. All six: medians 0.071 σ, ln Z spread 0.49 nat (DynestyStatic) → reference = the Nautilus runs (ln Z 122.931, offset 0: disjoint priors) |
+| gaussian_x3_separated | jax_cpu | complete (B3) | complete (B3) | complete (ln P 175.706) | Nautilus: identical to numpy (same seeds, same samples to 1e-12). All six: medians 0.062 σ, ln Z spread 1.32 nat (DynestyStatic) → reference = the Nautilus runs |
 
 Constant-likelihood `ln 3!` validation (`results/reference/constant_likelihood.json`):
 Nautilus counts the excluded volume (offset `−ln 3!`; measured −1.825 on numpy and JAX at

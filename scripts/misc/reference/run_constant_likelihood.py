@@ -38,8 +38,19 @@ from _autofit_inference_cli import (  # noqa: E402
     validate_cli,
 )
 
-SETTINGS = {"nautilus": {"n_live": 500, "seed": 0}, "dynesty_static": {"nlive": 500}}
-CLASSES = {"nautilus": "Nautilus", "dynesty_static": "DynestyStatic"}
+SETTINGS = {
+    "nautilus": {"n_live": 500, "seed": 0},
+    "dynesty_static": {"nlive": 500},
+    # B3: the pilot runs DynestyDynamic as an evidence search, so its offset is measured too.
+    "dynesty_dynamic": {"nlive_init": 500},
+}
+CLASSES = {
+    "nautilus": "Nautilus",
+    "dynesty_static": "DynestyStatic",
+    "dynesty_dynamic": "DynestyDynamic",
+}
+#: The live-point keyword ``--live`` overrides, per sampler.
+LIVE_KWARG = {"nautilus": "n_live", "dynesty_static": "nlive", "dynesty_dynamic": "nlive_init"}
 WINDOW_NAT = 0.1
 
 
@@ -88,7 +99,7 @@ def main(argv=None) -> int:
     for sampler in args.samplers:
         settings = dict(SETTINGS[sampler])
         if args.live is not None:
-            settings["n_live" if sampler == "nautilus" else "nlive"] = args.live
+            settings[LIVE_KWARG[sampler]] = args.live
         tag = "_".join(f"{k}{v}" for k, v in sorted(settings.items()))
         values = {}
         for label, assertions in (("assert", True), ("exch", False)):

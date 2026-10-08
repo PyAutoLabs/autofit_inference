@@ -1,0 +1,562 @@
+{
+  "autofit_version": "2026.8.17.1",
+  "capability_attributes": [
+    "jax_use",
+    "gradient",
+    "batched",
+    "honours_gradient_mode",
+    "posterior_kind",
+    "produces_evidence",
+    "resumable",
+    "warm_start",
+    "install_extra",
+    "upstream_url",
+    "citation_keys",
+    "status",
+    "test_mode_budget",
+    "objective_target",
+    "invalid_value"
+  ],
+  "families": {
+    "mcmc": "Markov chain Monte Carlo",
+    "mle": "Maximum likelihood / maximum a posteriori",
+    "nest": "Nested sampling"
+  },
+  "schema": "search-manifest@1",
+  "searches": [
+    {
+      "capabilities": {
+        "batched": false,
+        "citation_keys": [
+          "emcee"
+        ],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "",
+        "invalid_value": "-inf",
+        "jax_use": "none",
+        "objective_target": {
+          "quantity": "log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "chain",
+        "produces_evidence": false,
+        "resumable": true,
+        "status": "stable",
+        "test_mode_budget": {
+          "nsteps": 10,
+          "nwalkers": 20
+        },
+        "upstream_url": "https://github.com/dfm/emcee",
+        "warm_start": "consumer"
+      },
+      "class_path": "autofit.non_linear.search.mcmc.emcee.search.Emcee",
+      "example": "autofit_workspace:scripts/searches/mcmc.py#Search: Emcee",
+      "family": "mcmc",
+      "integration_test": "autofit_workspace_test:scripts/searches/Emcee.py",
+      "lazy": false,
+      "name": "Emcee",
+      "requires": [
+        "emcee"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": false,
+        "citation_keys": [
+          "zeus1",
+          "zeus2"
+        ],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "optional",
+        "invalid_value": "-inf",
+        "jax_use": "none",
+        "objective_target": {
+          "quantity": "log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "chain",
+        "produces_evidence": false,
+        "resumable": false,
+        "status": "stable",
+        "test_mode_budget": {
+          "nsteps": 10,
+          "nwalkers": 20
+        },
+        "upstream_url": "https://github.com/minaskar/zeus",
+        "warm_start": "consumer"
+      },
+      "class_path": "autofit.non_linear.search.mcmc.zeus.search.Zeus",
+      "example": "autofit_workspace:scripts/searches/mcmc.py#Search: Zeus",
+      "family": "mcmc",
+      "integration_test": "autofit_workspace_test:scripts/searches/Zeus.py",
+      "lazy": false,
+      "name": "Zeus",
+      "requires": [
+        "zeus"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": true,
+        "citation_keys": [
+          "blackjax"
+        ],
+        "gradient": "uses",
+        "honours_gradient_mode": false,
+        "install_extra": "optional",
+        "invalid_value": "-inf",
+        "jax_use": "required",
+        "objective_target": {
+          "quantity": "log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "chain",
+        "produces_evidence": false,
+        "resumable": false,
+        "status": "stable",
+        "test_mode_budget": {
+          "num_chains": 2,
+          "num_samples": 20,
+          "num_warmup": 20
+        },
+        "upstream_url": "https://github.com/blackjax-devs/blackjax",
+        "warm_start": "consumer"
+      },
+      "class_path": "autofit.non_linear.search.mcmc.blackjax.nuts.search.BlackJAXNUTS",
+      "example": "autofit_workspace:scripts/searches/mcmc.py#Search: BlackJAXNUTS",
+      "family": "mcmc",
+      "integration_test": "autofit_workspace_test:scripts/searches/BlackJAXNUTS.py",
+      "lazy": false,
+      "name": "BlackJAXNUTS",
+      "requires": [
+        "jax",
+        "blackjax"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": true,
+        "citation_keys": [
+          "blackjax"
+        ],
+        "gradient": "uses",
+        "honours_gradient_mode": false,
+        "install_extra": "optional",
+        "invalid_value": "-1e+99",
+        "jax_use": "required",
+        "objective_target": {
+          "quantity": "log_likelihood",
+          "space": "physical"
+        },
+        "posterior_kind": "weighted",
+        "produces_evidence": true,
+        "resumable": false,
+        "status": "experimental",
+        "test_mode_budget": {
+          "max_smc_steps": 5,
+          "num_mcmc_steps": 2,
+          "num_particles": 16
+        },
+        "upstream_url": "https://github.com/blackjax-devs/blackjax",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.mcmc.blackjax.smc.search.SMC",
+      "example": null,
+      "family": "mcmc",
+      "integration_test": "autofit_workspace_test:scripts/searches/SMC.py",
+      "lazy": true,
+      "name": "SMC",
+      "requires": [
+        "jax",
+        "blackjax"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": false,
+        "citation_keys": [
+          "dynesty"
+        ],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "",
+        "invalid_value": "-1e+99",
+        "jax_use": "optional",
+        "objective_target": {
+          "quantity": "log_likelihood",
+          "space": "unit_cube"
+        },
+        "posterior_kind": "weighted",
+        "produces_evidence": true,
+        "resumable": true,
+        "status": "stable",
+        "test_mode_budget": {
+          "maxcall": 1
+        },
+        "upstream_url": "https://github.com/joshspeagle/dynesty",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.nest.dynesty.search.static.DynestyStatic",
+      "example": "autofit_workspace:scripts/searches/nest.py#Search: DynestyStatic",
+      "family": "nest",
+      "integration_test": "autofit_workspace_test:scripts/searches/DynestyStatic.py",
+      "lazy": false,
+      "name": "DynestyStatic",
+      "requires": [
+        "dynesty"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": false,
+        "citation_keys": [
+          "dynesty"
+        ],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "",
+        "invalid_value": "-1e+99",
+        "jax_use": "optional",
+        "objective_target": {
+          "quantity": "log_likelihood",
+          "space": "unit_cube"
+        },
+        "posterior_kind": "weighted",
+        "produces_evidence": true,
+        "resumable": true,
+        "status": "stable",
+        "test_mode_budget": {
+          "maxcall": 1
+        },
+        "upstream_url": "https://github.com/joshspeagle/dynesty",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.nest.dynesty.search.dynamic.DynestyDynamic",
+      "example": "autofit_workspace:scripts/searches/nest.py#Search: DynestyDynamic",
+      "family": "nest",
+      "integration_test": "autofit_workspace_test:scripts/searches/DynestyDynamic.py",
+      "lazy": false,
+      "name": "DynestyDynamic",
+      "requires": [
+        "dynesty"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": true,
+        "citation_keys": [
+          "nautilus"
+        ],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "optional",
+        "invalid_value": "-1e+99",
+        "jax_use": "optional",
+        "objective_target": {
+          "quantity": "log_likelihood",
+          "space": "unit_cube"
+        },
+        "posterior_kind": "weighted",
+        "produces_evidence": true,
+        "resumable": true,
+        "status": "stable",
+        "test_mode_budget": {
+          "n_like_max": 1
+        },
+        "upstream_url": "https://github.com/johannesulf/nautilus",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.nest.nautilus.search.Nautilus",
+      "example": "autofit_workspace:scripts/searches/nest.py#Search: Nautilus",
+      "family": "nest",
+      "integration_test": "autofit_workspace_test:scripts/searches/Nautilus.py",
+      "lazy": false,
+      "name": "Nautilus",
+      "requires": [
+        "nautilus"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": true,
+        "citation_keys": [
+          "blackjax"
+        ],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "optional",
+        "invalid_value": "-1e+30",
+        "jax_use": "required",
+        "objective_target": {
+          "quantity": "log_likelihood",
+          "space": "physical"
+        },
+        "posterior_kind": "weighted",
+        "produces_evidence": true,
+        "resumable": true,
+        "status": "experimental",
+        "test_mode_budget": {
+          "termination": -1.0
+        },
+        "upstream_url": "https://github.com/blackjax-devs/blackjax",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.nest.nss.search.NSS",
+      "example": null,
+      "family": "nest",
+      "integration_test": "autofit_workspace_test:scripts/searches/NSS.py",
+      "lazy": true,
+      "name": "NSS",
+      "requires": [
+        "jax",
+        "blackjax"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": false,
+        "citation_keys": [],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "",
+        "invalid_value": "-inf",
+        "jax_use": "none",
+        "objective_target": {
+          "quantity": "log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "point",
+        "produces_evidence": false,
+        "resumable": false,
+        "status": "stable",
+        "test_mode_budget": {},
+        "upstream_url": "https://github.com/PyAutoLabs/PyAutoFit",
+        "warm_start": "neutral"
+      },
+      "class_path": "autofit.non_linear.search.mle.drawer.search.Drawer",
+      "example": "autofit_workspace:scripts/searches/mle.py#Search: Drawer",
+      "family": "mle",
+      "integration_test": "autofit_workspace_test:scripts/searches/Drawer.py",
+      "lazy": false,
+      "name": "Drawer",
+      "requires": []
+    },
+    {
+      "capabilities": {
+        "batched": false,
+        "citation_keys": [
+          "scipy"
+        ],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "",
+        "invalid_value": "inf",
+        "jax_use": "optional",
+        "objective_target": {
+          "quantity": "neg2_log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "point",
+        "produces_evidence": false,
+        "resumable": false,
+        "status": "stable",
+        "test_mode_budget": {},
+        "upstream_url": "https://github.com/scipy/scipy",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.mle.bfgs.search.BFGS",
+      "example": null,
+      "family": "mle",
+      "integration_test": "autofit_workspace_test:scripts/searches/BFGS.py",
+      "lazy": false,
+      "name": "BFGS",
+      "requires": [
+        "scipy"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": false,
+        "citation_keys": [
+          "scipy"
+        ],
+        "gradient": "none",
+        "honours_gradient_mode": false,
+        "install_extra": "",
+        "invalid_value": "inf",
+        "jax_use": "optional",
+        "objective_target": {
+          "quantity": "neg2_log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "point",
+        "produces_evidence": false,
+        "resumable": false,
+        "status": "stable",
+        "test_mode_budget": {},
+        "upstream_url": "https://github.com/scipy/scipy",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.mle.bfgs.search.LBFGS",
+      "example": "autofit_workspace:scripts/searches/mle.py#Search: LBFGS",
+      "family": "mle",
+      "integration_test": "autofit_workspace_test:scripts/searches/LBFGS.py",
+      "lazy": false,
+      "name": "LBFGS",
+      "requires": [
+        "scipy"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": true,
+        "citation_keys": [
+          "optax"
+        ],
+        "gradient": "uses",
+        "honours_gradient_mode": true,
+        "install_extra": "",
+        "invalid_value": "inf",
+        "jax_use": "required",
+        "objective_target": {
+          "quantity": "neg2_log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "point",
+        "produces_evidence": false,
+        "resumable": true,
+        "status": "stable",
+        "test_mode_budget": {
+          "convergence.min_steps": 1,
+          "convergence.window": 1
+        },
+        "upstream_url": "https://github.com/google-deepmind/optax",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.mle.multi_start_gradient.search.MultiStartAdam",
+      "example": "autofit_workspace:scripts/searches/mle.py#Search: MultiStartAdam",
+      "family": "mle",
+      "integration_test": "autofit_workspace_test:scripts/searches/MultiStartAdam.py",
+      "lazy": false,
+      "name": "MultiStartAdam",
+      "requires": [
+        "jax",
+        "optax"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": true,
+        "citation_keys": [
+          "optax"
+        ],
+        "gradient": "uses",
+        "honours_gradient_mode": true,
+        "install_extra": "",
+        "invalid_value": "inf",
+        "jax_use": "required",
+        "objective_target": {
+          "quantity": "neg2_log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "point",
+        "produces_evidence": false,
+        "resumable": true,
+        "status": "experimental",
+        "test_mode_budget": {
+          "convergence.min_steps": 1,
+          "convergence.window": 1
+        },
+        "upstream_url": "https://github.com/google-deepmind/optax",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.mle.multi_start_gradient.search.MultiStartADABelief",
+      "example": null,
+      "family": "mle",
+      "integration_test": "autofit_workspace_test:scripts/searches/MultiStartADABelief.py",
+      "lazy": false,
+      "name": "MultiStartADABelief",
+      "requires": [
+        "jax",
+        "optax"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": true,
+        "citation_keys": [
+          "optax"
+        ],
+        "gradient": "uses",
+        "honours_gradient_mode": true,
+        "install_extra": "",
+        "invalid_value": "inf",
+        "jax_use": "required",
+        "objective_target": {
+          "quantity": "neg2_log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "point",
+        "produces_evidence": false,
+        "resumable": true,
+        "status": "experimental",
+        "test_mode_budget": {
+          "convergence.min_steps": 1,
+          "convergence.window": 1
+        },
+        "upstream_url": "https://github.com/google-deepmind/optax",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.mle.multi_start_gradient.search.MultiStartLion",
+      "example": null,
+      "family": "mle",
+      "integration_test": "autofit_workspace_test:scripts/searches/MultiStartLion.py",
+      "lazy": false,
+      "name": "MultiStartLion",
+      "requires": [
+        "jax",
+        "optax"
+      ]
+    },
+    {
+      "capabilities": {
+        "batched": true,
+        "citation_keys": [
+          "optax",
+          "prodigy"
+        ],
+        "gradient": "uses",
+        "honours_gradient_mode": true,
+        "install_extra": "",
+        "invalid_value": "inf",
+        "jax_use": "required",
+        "objective_target": {
+          "quantity": "neg2_log_posterior",
+          "space": "physical"
+        },
+        "posterior_kind": "point",
+        "produces_evidence": false,
+        "resumable": true,
+        "status": "stable",
+        "test_mode_budget": {
+          "convergence.min_steps": 1,
+          "convergence.window": 1
+        },
+        "upstream_url": "https://github.com/konstmish/prodigy",
+        "warm_start": "provider"
+      },
+      "class_path": "autofit.non_linear.search.mle.multi_start_gradient.search.MultiStartProdigy",
+      "example": null,
+      "family": "mle",
+      "integration_test": "autofit_workspace_test:scripts/searches/MultiStartProdigy.py",
+      "lazy": false,
+      "name": "MultiStartProdigy",
+      "requires": [
+        "jax",
+        "optax"
+      ]
+    }
+  ]
+}

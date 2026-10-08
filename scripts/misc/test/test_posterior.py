@@ -84,3 +84,20 @@ def test_modes_cluster_every_sample_and_keep_a_minority_mode():
     assert abs(modes[0]["weight"] - 0.9) < 1e-9 and abs(modes[1]["weight"] - 0.1) < 1e-9
     assert abs(modes[1]["centres"][2] - 80.0) < 2.0
     assert abs(sum(m["weight"] for m in modes) - 1.0) < 1e-9
+
+
+def test_chain_diagnostics_flag_a_stuck_chain():
+    import numpy as np
+    from searches._posterior import chain_diagnostics
+
+    keys = [f"g{i}.{p}" for i in range(3) for p in ("centre", "normalization", "sigma")]
+    keys.append("background.level")
+    rng = np.random.default_rng(0)
+    base = np.array([20, 1, 1, 50, 1, 1, 80, 1, 1, 0.0])
+    mixed = base + rng.normal(size=(2000, 8, 10))
+    good = chain_diagnostics(mixed, keys)
+    assert good["rhat_max"] < 1.01 and good["ess_bulk_min"] > 4000
+    stuck = mixed.copy()
+    stuck[:, :4, 9] += 3.0
+    bad = chain_diagnostics(stuck, keys)
+    assert bad["rhat_max"] > 1.2 and bad["ess_bulk_min"] < 100

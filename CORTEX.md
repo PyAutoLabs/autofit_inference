@@ -7,10 +7,10 @@ is allowed to assume — live in
 the RAL root, the sync CLI and its verbs, the ledger, the assistant and the witness every
 run is judged by.
 
-**Status: `planned`.** The row was added 2026-10-07 at phase B1 of the
-`search-extensibility` epic (PyAutoMind#492), before any run exists. It stays `planned`
-until phase B3's first runs (the wave-1 pilot) flip it to `active` with `cortex.py new`,
-which also creates the Cortex-side ledger `projects/autofit_inference.md`.
+**Status: `active`.** The row was added 2026-10-07 at phase B1 of the
+`search-extensibility` epic (PyAutoMind#492) as `planned`; phase B3's wave-1 pilot
+(2026-10-08, autofit_inference#4) flipped it to `active` with `cortex.py new`, which
+opened the Cortex-side ledger `projects/autofit_inference.md`.
 
 From B3, inference campaign intent and evidence aggregate in
 [PyAutoInsight](https://github.com/PyAutoLabs/PyAutoInsight) as instance `fit`

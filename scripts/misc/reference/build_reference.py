@@ -79,7 +79,7 @@ def run_name(run: dict) -> str:
 def agreement(runs: list[dict], pooled: dict, offsets) -> dict:
     normalised = [
         protocol.normalised_log_evidence(
-            r["log_evidence"], protocol.evidence_offset(offsets, r["sampler"], r["backend"])
+            r["log_evidence"], protocol.run_evidence_offset(r, offsets)
         )
         for r in runs
     ]

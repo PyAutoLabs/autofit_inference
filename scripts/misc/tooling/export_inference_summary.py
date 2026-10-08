@@ -32,6 +32,7 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "scripts" / "misc"))
+from searches import _pilot as pilot  # noqa: E402
 from searches import _protocol as protocol  # noqa: E402
 
 PROJECT = "autofit_inference"
@@ -249,6 +250,35 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
     return result
 
 
+def expected_coverage(rows: list[dict]) -> dict:
+    """The wave-1 expected-run manifest (``scripts/misc/searches/_pilot.py``) against the
+    rows present: every expected run with no row is listed as deferred with its reason, so
+    the attempt count §8 divides by never silently shrinks."""
+    seen = {(pilot.row_key(row), row.get("seed")) for row in rows}
+    deferred: dict[tuple, dict] = {}
+    for cell, seed in pilot.expected_runs():
+        if (cell.key, seed) in seen:
+            continue
+        entry = deferred.setdefault(
+            cell.key,
+            {
+                "id": "/".join(cell.key),
+                "task": cell.task,
+                "seeds": [],
+                "reason": pilot.missing_reason(cell),
+            },
+        )
+        entry["seeds"].append(seed)
+    expected = pilot.expected_runs()
+    return {
+        "runs": len(expected),
+        "manifest": f"scripts/misc/searches/_pilot.py ({pilot.PILOT_ID})",
+        "with_row": len(expected) - sum(len(d["seeds"]) for d in deferred.values()),
+        "deferred_runs": sum(len(d["seeds"]) for d in deferred.values()),
+        "deferred": list(deferred.values()),
+    }
+
+
 def build(root: Path, revision: str | None, generated_at: str, rows_root: Path | None = None):
     timestamp = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
     if timestamp.tzinfo is None:
@@ -256,7 +286,7 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
     generated_at = timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
     rows_root = rows_root or root
     refs, offsets = references(root)
-    records, excluded = [], []
+    records, excluded, raw_rows = [], [], []
     for path in sorted((rows_root / "results" / "searches").rglob("*.json")):
         rel = path.relative_to(rows_root).as_posix()
         try:
@@ -269,6 +299,7 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
             if payload.get("schema_version") != 1:
                 raise ValueError("unsupported result schema_version")
             records.append(record(payload, rel, refs, offsets))
+            raw_rows.append(payload)
         except (ValueError, TypeError, OSError) as exc:
             excluded.append({"path": rel, "reason": str(exc), "status": "invalid"})
     counts = Counter(str(r["execution"]["status"]).split(":", 1)[0] for r in records)
@@ -296,10 +327,7 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
         "references": reference_status,
         "records": records,
         "coverage": {
-            "expected": {
-                "runs": None,
-                "reason": "No expected-run manifest yet; wave 1 (B3) defines one",
-            },
+            "expected": expected_coverage(raw_rows),
             "observed": {
                 "runs": len(records),
                 "records": len(records),

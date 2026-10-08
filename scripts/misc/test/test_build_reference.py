@@ -117,3 +117,26 @@ def test_missing_raw_samples_is_never_complete(tmp_path):
     assert "posterior_relabelled" not in out
     row = {"task": "evidence", "dataset": DATASET, "backend": BACKEND}
     assert protocol.acceptance(row, out)["acceptance"] == "not_assessed"
+
+
+def test_disjoint_prior_references_take_no_ln_3_factorial_offset(tmp_path):
+    """The separated control excludes no prior volume (amendment A1): its reference must
+    be normalised with offset 0 for every sampler, exactly as its rows are, else every
+    evidence row would be judged against a reference shifted by ln 3!."""
+    root = make_root(tmp_path, [100.0, 100.01, 100.02], [100.0, 100.05, 100.1])
+    directory = root / "results" / "reference" / DATASET / BACKEND
+    for path in directory.glob("*_seed*.json"):
+        run = json.loads(path.read_text())
+        run["assertion_mechanism"] = "disjoint_priors"
+        path.write_text(json.dumps(run))
+    out = build_reference.build(DATASET, BACKEND, root)
+    assert out["status"] == "complete", out["limitations"]
+    assert abs(out["log_evidence_normalised"] - out["log_evidence"]) < 1e-12
+    row = {
+        "sampler": "dynesty_static",
+        "backend": BACKEND,
+        "assertion_mechanism": "disjoint_priors",
+        "log_evidence": out["log_evidence"],
+    }
+    ok, _ = protocol.criterion_evidence(row, out, None)
+    assert ok is True
