@@ -1,6 +1,7 @@
 """Runner pure helpers, the sampler registry and the leaves' literal declarations."""
 
 import ast
+import json
 from pathlib import Path
 from pathlib import Path as _Path
 
@@ -233,3 +234,34 @@ def test_separated_control_is_disjoint_priors_without_assertions():
     assert gx3.assertion_mechanism("gaussian_x3_separated", use_jax=True) == "disjoint_priors"
     assert gx3.assertion_mechanism("gaussian_x3_blend", use_jax=True) == "xp_where_penalty"
     assert gx3.priors_record("gaussian_x3_separated")["g2.centre"] == "U(65, 100)"
+
+
+def test_a_non_finite_answer_is_a_failed_attempt_never_a_dropped_row():
+    from searches._runner import sanitise_nonfinite
+
+    row = {
+        "status": "complete",
+        "max_log_likelihood": float("inf"),
+        "max_log_posterior": float("inf"),
+        "posterior": {"g0.centre": {"sigma": float("nan")}},
+    }
+    out = sanitise_nonfinite(row)
+    assert out["status"].startswith("failed: non-finite result")
+    assert out["max_log_likelihood"] is None and out["posterior"]["g0.centre"]["sigma"] is None
+    assert set(out["nonfinite_fields"]) == {
+        "max_log_likelihood",
+        "max_log_posterior",
+        "posterior.g0.centre.sigma",
+    }
+    json.dumps(out, allow_nan=False)
+    clean = {"status": "complete", "max_log_likelihood": 1.0}
+    assert sanitise_nonfinite(clean) is clean
+
+
+def test_warm_nuts_names_its_provider():
+    from searches._runner import SAMPLERS
+
+    spec = SAMPLERS["blackjax_nuts_warm"]
+    provider, settings = spec.extra["warm_from"]
+    assert settings in SAMPLERS[provider].settings
+    assert spec.cls == SAMPLERS["blackjax_nuts"].cls and spec.task == "posterior"

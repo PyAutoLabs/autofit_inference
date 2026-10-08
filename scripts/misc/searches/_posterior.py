@@ -187,3 +187,109 @@ def summarise_samples(
         out["max_log_posterior"] = float(log_posterior[best])
         out["max_log_posterior_vector"] = [float(v) for v in matrix[best]]
     return out
+
+
+# ---------------------------------------------------------------------------
+# Chain diagnostics (protocol §5): rank-normalised split R-hat and bulk ESS
+# ---------------------------------------------------------------------------
+
+
+def _rank_normal(x: np.ndarray) -> np.ndarray:
+    """Rank-normalise ``(chains, draws)`` jointly (Vehtari et al. 2021, eq. 14), with
+    average ranks for ties; ``z = Φ⁻¹((r − 3/8) / (S + 1/4))``."""
+    from statistics import NormalDist
+
+    flat = x.ravel()
+    order = np.argsort(flat, kind="mergesort")
+    ranks = np.empty(flat.size, dtype=float)
+    ranks[order] = np.arange(1, flat.size + 1, dtype=float)
+    # average ties
+    _, inverse, counts = np.unique(flat, return_inverse=True, return_counts=True)
+    if np.any(counts > 1):
+        sums = np.bincount(inverse, weights=ranks)
+        ranks = (sums / counts)[inverse]
+    inv = np.vectorize(NormalDist().inv_cdf)
+    return inv((ranks - 0.375) / (flat.size + 0.25)).reshape(x.shape)
+
+
+def _split(x: np.ndarray) -> np.ndarray:
+    half = x.shape[1] // 2
+    return np.concatenate([x[:, :half], x[:, half : 2 * half]], axis=0)
+
+
+def _rhat(x: np.ndarray) -> float:
+    m, n = x.shape
+    if m < 2 or n < 2:
+        return float("nan")
+    within = np.mean(np.var(x, axis=1, ddof=1))
+    between = n * np.var(np.mean(x, axis=1), ddof=1)
+    if within <= 0:
+        return float("nan")
+    return float(np.sqrt(((n - 1) / n * within + between / n) / within))
+
+
+def _ess(x: np.ndarray) -> float:
+    """Multi-chain ESS with Geyer's initial monotone sequence (Stan's estimator)."""
+    m, n = x.shape
+    if n < 4:
+        return float("nan")
+    centred = x - x.mean(axis=1, keepdims=True)
+    size = 2 ** int(np.ceil(np.log2(2 * n)))
+    spectrum = np.fft.rfft(centred, n=size, axis=1)
+    acov = np.fft.irfft(spectrum * np.conj(spectrum), n=size, axis=1)[:, :n] / n
+    chain_var = acov[:, 0] * n / (n - 1)
+    var_plus = chain_var.mean() * (n - 1) / n
+    if m > 1:
+        var_plus += np.var(x.mean(axis=1), ddof=1)
+    if var_plus <= 0:
+        return float("nan")
+    rho = 1.0 - (chain_var.mean() - acov.mean(axis=0)) / var_plus
+    rho[0] = 1.0
+    pairs = []
+    for t in range(0, n - 1, 2):
+        pair = rho[t] + rho[t + 1]
+        if pair < 0:
+            break
+        pairs.append(pair)
+    for i in range(1, len(pairs)):  # initial monotone sequence
+        pairs[i] = min(pairs[i], pairs[i - 1])
+    tau = -1.0 + 2.0 * sum(pairs)
+    return float(m * n / max(tau, 1.0 / np.log10(m * n)))
+
+
+def chain_diagnostics(chain, keys, burn_in: float = 0.5) -> dict:
+    """``rhat_max`` (rank-normalised split R-hat, the max of the bulk and folded
+    versions) and ``ess_bulk_min`` over the relabelled parameters of a sampler-order
+    chain ``(n_steps, n_chains, n_dim)``; the first ``burn_in`` fraction is discarded.
+
+    For ensemble samplers (Emcee, Zeus) the walkers stand in for chains: they are not
+    independent, so the R-hat is an ensemble-mixing diagnostic, not a strict one.
+    """
+    arr = np.asarray(chain, dtype=float)
+    if arr.ndim != 3 or arr.shape[0] < 8:
+        return {"rhat_max": None, "ess_bulk_min": None, "reason": f"chain shape {arr.shape}"}
+    start = int(arr.shape[0] * burn_in)
+    kept = arr[start:]
+    steps, chains, dim = kept.shape
+    relabelled = relabel_matrix(kept.reshape(-1, dim), keys).reshape(steps, chains, dim)
+    rhats, esses = [], []
+    for j in range(dim):
+        x = relabelled[:, :, j].T  # (chains, draws)
+        if not np.all(np.isfinite(x)):
+            return {"rhat_max": None, "ess_bulk_min": None, "reason": "non-finite chain values"}
+        split = _split(x)
+        z = _rank_normal(split)
+        folded = _rank_normal(np.abs(split - np.median(split)))
+        rhats.append(max(_rhat(z), _rhat(folded)))
+        esses.append(_ess(z))
+    finite_r = [r for r in rhats if np.isfinite(r)]
+    finite_e = [e for e in esses if np.isfinite(e)]
+    return {
+        "rhat_max": max(finite_r) if finite_r else None,
+        "ess_bulk_min": min(finite_e) if finite_e else None,
+        "rhat_per_param": dict(zip(keys, [float(r) for r in rhats], strict=True)),
+        "ess_bulk_per_param": dict(zip(keys, [float(e) for e in esses], strict=True)),
+        "burn_in_fraction": burn_in,
+        "draws_per_chain": steps,
+        "chains": chains,
+    }

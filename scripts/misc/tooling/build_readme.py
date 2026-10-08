@@ -20,16 +20,17 @@ Regions
 -------
 
 ``catalogue``
-    Every registered search (``scripts/misc/searches/_runner.py::SAMPLERS``) grouped by
-    task — point/MAP, posterior, evidence — with its status: ``measured`` once a row
-    exists, otherwise ``registered`` or ``deferred``. Tasks are never ranked.
+    Every search in PyAutoFit's registry, from ``catalogue/search_catalogue.json``
+    (``build_catalogue.py``), one table per task — point/MAP, posterior, evidence — with
+    its status (measured, unsupported, deferred, failed) and reason. Tasks are never
+    ranked or compared.
 ``references``
     The reference posteriors under ``results/reference/<dataset>/<backend>/``: status,
     the runs included, the normalised log evidence, the agreement statistics and the
     MAP log posterior.
 ``searches``
-    Single-search rows from ``results/searches/**/*.json``, grouped by task and dataset,
-    with the protocol verdicts the exporter emits.
+    The pilot's per-cell summaries (from the catalogue), one table per task: attempts,
+    verdicts, convergence, the Wilson interval and walls. Never per best seed.
 
 Every region renders a one-line empty state, so ``--check`` is a real gate from the
 first commit.
@@ -48,7 +49,6 @@ sys.path.insert(0, str(REPO_ROOT / "scripts" / "misc"))
 sys.path.insert(0, str(REPO_ROOT))
 
 from searches import _protocol as protocol  # noqa: E402
-from searches._runner import SAMPLERS  # noqa: E402
 
 RESULTS_ROOT = REPO_ROOT / "results"
 SEARCHES_ROOT = RESULTS_ROOT / "searches"
@@ -95,27 +95,67 @@ def _references() -> tuple[dict, dict | None]:
     return refs, protocol.load_json(protocol.offsets_file(REPO_ROOT))
 
 
+def _catalogue() -> dict | None:
+    return protocol.load_json(REPO_ROOT / "catalogue" / "search_catalogue.json")
+
+
+def _counts(leg: dict) -> str:
+    acc = leg.get("acceptance") or {}
+    return f"{acc.get('accepted', 0)}/{leg.get('attempted', 0)}"
+
+
 def render_catalogue() -> str:
-    measured = {row.get("sampler") for _, row in _scan(SEARCHES_ROOT, "*.json")}
-    lines = [
-        "",
-        "| Task | Search | PyAutoFit class | Status | Settings | Note |",
-        "|---|---|---|---|---|---|",
-    ]
-    for task in ("point_map", "posterior", "evidence"):
-        for name, spec in SAMPLERS.items():
-            if spec.task != task:
-                continue
-            status = (
-                "deferred"
-                if spec.status == "deferred"
-                else ("measured" if name in measured else "registered")
-            )
-            settings = ", ".join(f"`{s}`" for s in spec.settings)
+    """One table per task, from ``catalogue/search_catalogue.json`` (built by
+    ``build_catalogue.py`` from PyAutoFit's search manifest). Tasks never share a table,
+    and rows keep the manifest's order: nothing is ranked."""
+    doc = _catalogue()
+    if not doc:
+        return "\n_No catalogue yet — run `scripts/misc/tooling/build_catalogue.py`._\n"
+    lines = [""]
+    for task, group in doc["tasks"].items():
+        lines += [
+            f"**{group['label']}** — judged by {group['judged_by']}.",
+            "",
+            "| Search class | Status | Accepted / attempted (blend: numpy, jax) | "
+            "Accepted / attempted (separated: numpy, jax) | Reason |",
+            "|---|---|---|---|---|",
+        ]
+        for cls, entry in group["searches"].items():
+            cells = []
+            for dataset in ("gaussian_x3_blend", "gaussian_x3_separated"):
+                parts = []
+                for backend in ("numpy", "jax_cpu"):
+                    legs = [
+                        leg
+                        for leg in entry["legs"]
+                        if leg["dataset"] == dataset and leg["backend"] == backend
+                    ]
+                    if not legs:
+                        parts.append(DASH)
+                        continue
+                    parts.append(
+                        " · ".join(
+                            f"{_counts(leg)}"
+                            + (
+                                f" (`{leg['sampler']}` `{leg['settings']}`)"
+                                if len(legs) > 1
+                                else ""
+                            )
+                            for leg in legs
+                        )
+                    )
+                cells.append("; ".join(parts))
             lines.append(
-                f"| {TASK_LABELS[task]} | `{name}` | `{spec.cls}` | {status} | {settings} | "
-                f"{spec.note or DASH} |"
+                f"| `{cls}` | {entry['status']} | {cells[0]} | {cells[1]} | {entry['reason']} |"
             )
+        lines.append("")
+    cov = doc.get("coverage") or {}
+    lines.append(
+        f"Wave-1 coverage: {cov.get('rows_in_menu', 0)} rows of {cov.get('expected_runs', 0)} "
+        f"expected runs; PyAutoFit {', '.join(f'`{c[:12]}`' for c in doc.get('pyautofit_commits') or [])}. "
+        "Accepted counts are judged by protocol `gaussian_x3@1`; an attempt that could not be "
+        "judged (no complete reference) is not counted as accepted."
+    )
     return "\n".join(lines) + "\n"
 
 
@@ -155,39 +195,52 @@ def render_references() -> str:
 
 
 def render_searches() -> str:
+    """Per-cell pilot summaries, one table per task (never per best seed, never ranked):
+    the counts and walls of every (dataset × search × settings × leg) cell that has rows."""
+    doc = _catalogue()
     rows = _scan(SEARCHES_ROOT, "*.json")
-    if not rows:
+    if not rows or not doc:
         return "\n_No search rows yet — wave 1 (the pilot) runs in phase B3._\n"
-    refs, offsets = _references()
-    lines = [
-        "",
-        "| Task | Dataset | Search | Settings | Config | Seed | Acceptance | Convergence | "
-        "Wall (s) | Evals | ln Z | max ln P | Modes | per-call (s) | Share |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
-    ]
-
-    def key(item):
-        row = item[1]
-        return (
-            ("point_map", "posterior", "evidence").index(row.get("task", "evidence")),
-            row.get("dataset", ""),
-            row.get("sampler", ""),
-            row.get("settings_name", ""),
-            row.get("config_name", ""),
-            row.get("seed", 0),
-        )
-
-    for _, row in sorted(rows, key=key):
-        verdict = protocol.verdict(row, refs.get((row.get("dataset"), row.get("backend"))), offsets)
-        lines.append(
-            f"| {TASK_LABELS.get(row.get('task'), DASH)} | `{row.get('dataset')}` | "
-            f"`{row.get('sampler')}` | `{row.get('settings_name')}` | `{row.get('config_name')}` | "
-            f"{row.get('seed')} | {verdict['acceptance']} | {verdict['convergence']} | "
-            f"{_fmt(row.get('wall_s'), '.1f')} | {row.get('likelihood_evals') or DASH} | "
-            f"{_fmt(row.get('log_evidence'), '.3f')} | {_fmt(row.get('max_log_posterior'), '.3f')} | "
-            f"{row.get('modes_found') if row.get('modes_found') is not None else DASH} | "
-            f"{_fmt(row.get('per_call_s'))} | {_fmt(row.get('likelihood_share'), '.2%')} |"
-        )
+    lines = [""]
+    for task, group in doc["tasks"].items():
+        legs = [
+            (cls, leg)
+            for cls, entry in group["searches"].items()
+            for leg in entry["legs"]
+            if leg["attempted"]
+        ]
+        if not legs:
+            continue
+        lines += [
+            f"**{group['label']}**",
+            "",
+            "| Dataset | Search | Settings | Config | Attempted | Accepted | Rejected | "
+            "Not assessed | Converged | Success rate (Wilson 95 %) | Median wall (s) | "
+            "Wall per right answer (s) | Deferred seeds |",
+            "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        for _, leg in legs:
+            acc, conv = leg.get("acceptance") or {}, leg.get("convergence") or {}
+            rate = leg.get("success_rate")
+            if rate is None:
+                rate_text = DASH
+            else:
+                lo, hi = leg["success_rate_wilson_95"]
+                rate_text = f"{rate:.0%} [{lo:.0%}, {hi:.0%}]"
+            wps = leg.get("wall_per_success") or {}
+            if wps.get("unbounded"):
+                wps_text = f"unbounded (≥ {_fmt(wps.get('lower_bound_s'), '.0f')})"
+            else:
+                wps_text = _fmt(wps.get("value_s"), ".0f")
+            lines.append(
+                f"| `{leg['dataset']}` | `{leg['sampler']}` | `{leg['settings']}` | "
+                f"`{leg['config_id']}` | {leg['attempted']} | {acc.get('accepted', 0)} | "
+                f"{acc.get('rejected', 0)} | {acc.get('not_assessed', 0)} | "
+                f"{conv.get('converged', 0)} | {rate_text} | "
+                f"{_fmt(leg.get('median_total_wall_s'), '.1f')} | {wps_text} | "
+                f"{len(leg.get('deferred_seeds') or []) or DASH} |"
+            )
+        lines.append("")
     return "\n".join(lines) + "\n"
 
 

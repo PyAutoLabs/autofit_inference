@@ -58,6 +58,9 @@ jobs:
           PYAUTO_INSIGHT: ${{ github.workspace }}/_deps/PyAutoInsight
         run: python -m pytest -q scripts/misc/test
 
+      - name: build_catalogue --check
+        run: python scripts/misc/tooling/build_catalogue.py --check
+
       - name: build_readme --check
         run: python scripts/misc/tooling/build_readme.py --check
 
