@@ -195,6 +195,7 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
             "reason": f"acceptance: {verdict['acceptance_reason']} | convergence: "
             f"{verdict['convergence_reason']}",
             "criteria": verdict["criteria"],
+            "reference_limitations": verdict["reference_limitations"],
             "placeholders": verdict["placeholders"],
             "asserted_by": "producer",
         },

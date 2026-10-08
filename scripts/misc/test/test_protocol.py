@@ -106,6 +106,18 @@ def test_reference_identity_mismatch_is_not_assessed(field, value):
     assert protocol.acceptance(row(), legacy, OFFSETS)["acceptance"] == "not_assessed"
 
 
+def test_reference_limitations_accompany_every_verdict():
+    """Review finding 5 / protocol §6: a reference built from an agreeing subset carries
+    the disagreement into every verdict that uses it."""
+    note = "the six runs disagree (ln Z spread 2.33); the reference is the nautilus runs only"
+    limited = dict(REFERENCE, limitations=[note])
+    for overrides in ({}, {"ppc_chi2": 75.0}, {"status": "failed: X", "completed": False}):
+        out = protocol.verdict(row(**overrides), limited, OFFSETS)
+        assert out["reference_limitations"] == [note]
+        assert note in out["acceptance_reason"]
+    assert protocol.verdict(row(), REFERENCE, OFFSETS)["reference_limitations"] == []
+
+
 def test_incomplete_run_is_rejected_and_not_converged():
     bad = row(status="failed: RuntimeError: boom", completed=False)
     assert protocol.acceptance(bad, REFERENCE, OFFSETS)["acceptance"] == "rejected"

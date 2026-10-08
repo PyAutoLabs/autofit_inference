@@ -215,28 +215,31 @@ def criterion_evidence(row: dict, reference: dict, offsets: dict | None) -> tupl
 
 
 def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -> dict:
-    """``{"acceptance", "reason", "criteria"}`` — ``accepted`` / ``rejected`` /
-    ``not_assessed`` per protocol §4."""
+    """``{"acceptance", "reason", "criteria", "reference_limitations"}`` —
+    ``accepted`` / ``rejected`` / ``not_assessed`` per protocol §4.
+
+    Every verdict reached against a reference carries that reference's
+    ``limitations`` (§6: a disagreement among the reference runs is a limitation of
+    every verdict that uses the reference), in ``reference_limitations`` and appended
+    to ``reason``.
+    """
     task = row.get("task")
     if task not in TASKS:
-        return {"acceptance": "not_assessed", "reason": f"unknown task {task!r}", "criteria": []}
+        return _judged("not_assessed", f"unknown task {task!r}", [])
     if not reference or reference.get("status") != "complete":
         status = (reference or {}).get("status", "missing")
-        return {
-            "acceptance": "not_assessed",
-            "reason": f"no complete reference for {row.get('dataset')}/{row.get('backend')} "
+        return _judged(
+            "not_assessed",
+            f"no complete reference for {row.get('dataset')}/{row.get('backend')} "
             f"(reference status: {status})",
-            "criteria": [],
-        }
+            [],
+        )
     mismatch = identity_mismatch(row, reference)
     if mismatch:
-        return {"acceptance": "not_assessed", "reason": mismatch, "criteria": []}
+        return _judged("not_assessed", mismatch, [])
+    limitations = [str(line) for line in reference.get("limitations") or []]
     if row.get("status") != "complete" or row.get("completed") is not True:
-        return {
-            "acceptance": "rejected",
-            "reason": f"not completed: {row.get('status')}",
-            "criteria": [],
-        }
+        return _judged("rejected", f"not completed: {row.get('status')}", [], limitations)
     if task == "point_map":
         criteria = [criterion_map(row, reference)]
     else:
@@ -251,10 +254,18 @@ def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -
         verdict, reason = "not_assessed", "not assessable: " + "; ".join(unknown)
     else:
         verdict, reason = "accepted", "all criteria met: " + "; ".join(t for _, t in criteria)
+    return _judged(verdict, reason, criteria, limitations)
+
+
+def _judged(verdict: str, reason: str, criteria, limitations=()) -> dict:
+    limitations = list(limitations)
+    if limitations:
+        reason = f"{reason} [reference limitations: {'; '.join(limitations)}]"
     return {
         "acceptance": verdict,
         "reason": reason,
         "criteria": [{"ok": ok, "detail": text} for ok, text in criteria],
+        "reference_limitations": limitations,
     }
 
 
@@ -300,6 +311,7 @@ def verdict(row: dict, reference: dict | None, offsets: dict | None = None) -> d
         "convergence": conv["convergence"],
         "convergence_reason": conv["reason"],
         "criteria": acc["criteria"],
+        "reference_limitations": acc["reference_limitations"],
         "placeholders": list(PLACEHOLDERS),
     }
 
