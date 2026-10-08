@@ -360,6 +360,58 @@ def time_calls(fn, arg, *, warmup: int = WARMUP_CALLS, n: int = TIMED_CALLS, blo
     return summary
 
 
+TERMINATION_NOT_EXPOSED = "termination condition not exposed by PyAutoFit (phase A3)"
+
+
+def nested_termination(sampler: str, search, internal) -> dict:
+    """The nested search's own termination condition, read back after the fit (§5).
+
+    Nautilus: PyAutoFit's ``call_search`` also stops when the likelihood-call budget
+    ``n_like_max`` is spent, so completion alone does not mean convergence. The
+    sampler object (``result.search_internal``) keeps the state nautilus's own
+    ``run`` tests — ``explored`` (the exploration phase ended at ``f_live``), every
+    shell holding ``n_shell`` points, and ``n_eff`` against the target — so the
+    condition is recomputed from it. Any other nested search, or a Nautilus run whose
+    sampler is not available (e.g. resumed with ``search_internal`` removed), reports
+    ``met: None`` with :data:`TERMINATION_NOT_EXPOSED`.
+    """
+    if sampler == "nautilus" and internal is not None:
+        try:
+            import numpy as np
+
+            n_eff = float(internal.n_eff)
+            n_eff_target = float(search.n_eff)
+            n_shell = int(search.n_shell)
+            explored = bool(internal.explored)
+            shells_full = bool(np.all(np.asarray(internal.shell_n) >= n_shell))
+            n_like = int(internal.n_like)
+            n_like_max = search.n_like_max
+            met = explored and shells_full and n_eff >= n_eff_target
+            return {
+                "observable": True,
+                "met": bool(met),
+                "criterion": "nautilus: explored (f_live <= target), every shell >= n_shell "
+                "points, n_eff >= target",
+                "explored": explored,
+                "shells_full": shells_full,
+                "n_eff": n_eff,
+                "n_eff_target": n_eff_target,
+                "f_live": float(internal.f_live),
+                "f_live_target": float(search.f_live),
+                "n_like": n_like,
+                "n_like_max": None
+                if n_like_max is None or n_like_max == float("inf")
+                else float(n_like_max),
+            }
+        except (AttributeError, TypeError, ValueError) as exc:
+            return {
+                "observable": False,
+                "met": None,
+                "reason": f"{TERMINATION_NOT_EXPOSED}: {type(exc).__name__}",
+            }
+    return {"observable": False, "met": None, "reason": TERMINATION_NOT_EXPOSED}
+
+
 def build_search(af, spec: SamplerSpec, settings: dict, *, path_prefix, name, seed: int):
     kwargs = dict(settings)
     if spec.seed_kwarg is not None:
@@ -539,6 +591,7 @@ def run_search(
     log_l_history: list[float] = []
     ppc_chi2 = None
     log_evidence = None
+    termination = None
     try:
         if is_test_mode():
             timing["note"] = "admission-bar timing skipped under PYAUTO_TEST_MODE"
@@ -566,6 +619,12 @@ def run_search(
             log_evidence = float(samples.log_evidence)
         except Exception:
             log_evidence = None
+        if spec.family == "nested":
+            try:
+                internal = result.search_internal
+            except Exception:
+                internal = None
+            termination = nested_termination(sampler, search, internal)
         draws = post.relabel_matrix(post.equal_weight_draws(matrix, weights, PPC_DRAWS, seed), keys)
         xvalues = np.arange(data.shape[0], dtype=float)
         curves = np.array(
@@ -687,6 +746,7 @@ def run_search(
             "n_samples": summary.get("n_samples"),
             "ess_kish": ess,
             "ess_per_s": ess / wall_s if ess is not None and wall_s else None,
+            "termination": termination,
             "ppc_chi2": ppc_chi2,
             "truths": truths,
             "truth_delta_sigma": truth_delta_sigma_from(

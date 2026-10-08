@@ -65,3 +65,24 @@ def test_every_leaf_declares_its_cell_with_literal_kwargs():
         dataset, _, sampler, model = leaf.relative_to(ROOT / "scripts").with_suffix("").parts
         assert declared == {"sampler": sampler, "dataset_class": dataset, "model_type": model}
         assert sampler in runner.SAMPLERS
+
+
+def test_nested_termination_reads_nautilus_state_and_flags_budget_stops():
+    from types import SimpleNamespace
+
+    search = SimpleNamespace(n_eff=500, n_shell=1, f_live=0.01, n_like_max=float("inf"))
+
+    def sampler(**kw):
+        state = {"n_eff": 900.0, "explored": True, "shell_n": [3, 4], "n_like": 10, "f_live": 0.005}
+        state.update(kw)
+        return SimpleNamespace(**state)
+
+    ok = runner.nested_termination("nautilus", search, sampler())
+    assert ok["observable"] and ok["met"] is True and ok["n_like_max"] is None
+    budget = runner.nested_termination("nautilus", search, sampler(n_eff=100.0))
+    assert budget["met"] is False
+    unexplored = runner.nested_termination("nautilus", search, sampler(explored=False))
+    assert unexplored["met"] is False
+    for name, internal in (("nautilus", None), ("dynesty_static", sampler())):
+        out = runner.nested_termination(name, search, internal)
+        assert out["met"] is None and out["reason"] == runner.TERMINATION_NOT_EXPOSED

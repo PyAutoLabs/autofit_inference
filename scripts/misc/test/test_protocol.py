@@ -39,6 +39,7 @@ def row(**overrides):
         "log_evidence": 100.0 - math.log(6),
         "max_log_posterior": 49.5,
         "ess_kish": 1000.0,
+        "termination": {"observable": True, "met": True, "n_eff": 1000.0, "n_eff_target": 500},
     }
     base.update(overrides)
     return base
@@ -132,6 +133,18 @@ def test_convergence_is_separate_from_acceptance():
     assert protocol.convergence(chain)["convergence"] == "not_assessed"
     good_chain = row(task="posterior", family="chain", rhat_max=1.005, ess_bulk_min=900)
     assert protocol.convergence(good_chain)["convergence"] == "converged"
+
+
+def test_nested_convergence_requires_the_recorded_termination_condition():
+    """Review finding 6: completion plus ESS is not termination evidence."""
+    stopped = row(termination={"observable": True, "met": False, "n_like": 1000})
+    out = protocol.convergence(stopped)
+    assert out["convergence"] == "not_converged" and "not met" in out["reason"]
+    hidden = row(termination={"observable": False, "met": None, "reason": "not exposed (A3)"})
+    out = protocol.convergence(hidden)
+    assert out["convergence"] == "not_assessed" and "A3" in out["reason"]
+    assert protocol.convergence(row(termination=None))["convergence"] == "not_assessed"
+    assert protocol.convergence(row())["convergence"] == "converged"
 
 
 def test_wilson_and_wall_per_success():

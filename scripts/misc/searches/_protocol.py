@@ -285,10 +285,22 @@ def convergence(row: dict) -> dict:
         ess = _num(row.get("ess_kish"))
         if ess is None:
             return {"convergence": "not_assessed", "reason": "no ESS recorded"}
+        ess_text = f"Kish ESS {ess:.0f} vs {THRESHOLDS['nested_min_ess']:.0f}"
+        termination = row.get("termination") or {}
+        met = termination.get("met")
+        if met is None:
+            why = termination.get("reason") or "termination condition not recorded on the row"
+            return {"convergence": "not_assessed", "reason": f"{why}; {ess_text}"}
+        if met is not True:
+            return {
+                "convergence": "not_converged",
+                "reason": f"own termination criterion not met ({_termination_text(termination)}); "
+                f"{ess_text}",
+            }
         ok = ess >= THRESHOLDS["nested_min_ess"]
         return {
             "convergence": "converged" if ok else "not_converged",
-            "reason": f"terminated; Kish ESS {ess:.0f} vs {THRESHOLDS['nested_min_ess']:.0f}",
+            "reason": f"terminated ({_termination_text(termination)}); {ess_text}",
         }
     rhat, ess = _num(row.get("rhat_max")), _num(row.get("ess_bulk_min"))
     if rhat is None or ess is None:
@@ -298,6 +310,12 @@ def convergence(row: dict) -> dict:
         "convergence": "converged" if ok else "not_converged",
         "reason": f"R-hat {rhat:.3f}, bulk ESS {ess:.0f}",
     }
+
+
+def _termination_text(termination: dict) -> str:
+    fields = ("explored", "shells_full", "n_eff", "n_eff_target", "n_like", "n_like_max")
+    parts = [f"{k} {termination[k]}" for k in fields if k in termination]
+    return ", ".join(parts) or "met"
 
 
 def verdict(row: dict, reference: dict | None, offsets: dict | None = None) -> dict:
