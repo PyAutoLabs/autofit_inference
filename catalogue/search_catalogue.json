@@ -1,0 +1,2388 @@
+{
+  "schema": "autofit-inference-search-catalogue",
+  "version": 1,
+  "project": "autofit_inference",
+  "protocol_id": "gaussian_x3@1",
+  "campaign_task": "gaussian_x3_search_wave1",
+  "wave": "wave 1 (pilot): ranks nothing (protocol \u00a79)",
+  "ranking": "none",
+  "grouping": "by requested task; tasks are never compared",
+  "manifest": {
+    "source": "python -m autofit search-manifest --json",
+    "snapshot": "catalogue/search_manifest.json",
+    "schema": "search-manifest@1",
+    "autofit_version": "2026.8.17.1",
+    "searches": 15
+  },
+  "pilot_stopped": "Wave 1 was stopped by the B3 wrap-up ruling (2026-10-08) before its expected-run manifest was complete: every run without a row is deferred to wave 2 on RAL --partition=ral (NSS to phase A3b). The pilot ran on PyAutoFit main before phase A2 (gradients under JAX, PyAutoFit#1679) merged.",
+  "pyautofit_commits": [
+    "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+  ],
+  "coverage": {
+    "expected_runs": 520,
+    "rows": 223,
+    "rows_in_menu": 223,
+    "statuses": {
+      "deferred": 1,
+      "measured": 13,
+      "unsupported": 1
+    }
+  },
+  "tasks": {
+    "point_map": {
+      "label": "point/MAP",
+      "judged_by": "protocol \u00a74(a): max_log_posterior >= ref MAP - 1 nat",
+      "searches": {
+        "Drawer": {
+          "class_path": "autofit.non_linear.search.mle.drawer.search.Drawer",
+          "family": "mle",
+          "capabilities": {
+            "jax_use": "none",
+            "gradient": "none",
+            "batched": false,
+            "posterior_kind": "point",
+            "produces_evidence": false,
+            "status": "stable"
+          },
+          "harness_samplers": [],
+          "status": "unsupported",
+          "reason": "not benchmarked: Drawer is a sanity floor that answers no task (protocol \u00a71)",
+          "legs": []
+        },
+        "BFGS": {
+          "class_path": "autofit.non_linear.search.mle.bfgs.search.BFGS",
+          "family": "mle",
+          "capabilities": {
+            "jax_use": "optional",
+            "gradient": "none",
+            "batched": false,
+            "posterior_kind": "point",
+            "produces_evidence": false,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "bfgs"
+          ],
+          "status": "measured",
+          "reason": "22 usable of 40 attempted wave-1 runs; pilot ran on PyAutoFit main pre-A2; the non-finite results are expected to change once A2 (PyAutoFit#1679, gradients under JAX) merges, so these rows are not a judgement on the search",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "bfgs",
+              "settings": "default",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 0,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {
+                "non-finite result": 10
+              },
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 9.021306599999662,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 32.24100111562047,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "bfgs",
+              "settings": "default",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 2,
+              "acceptance": {
+                "not_assessed": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {
+                "non-finite result": 8
+              },
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 15.102919349999866,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "bfgs",
+              "settings": "default",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 32.232422099999894,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 115.97758731905911,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "bfgs",
+              "settings": "default",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 35.79175750000104,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 130.28580819226931,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        },
+        "LBFGS": {
+          "class_path": "autofit.non_linear.search.mle.bfgs.search.LBFGS",
+          "family": "mle",
+          "capabilities": {
+            "jax_use": "optional",
+            "gradient": "none",
+            "batched": false,
+            "posterior_kind": "point",
+            "produces_evidence": false,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "lbfgs"
+          ],
+          "status": "measured",
+          "reason": "23 usable of 40 attempted wave-1 runs; pilot ran on PyAutoFit main pre-A2; the non-finite results are expected to change once A2 (PyAutoFit#1679, gradients under JAX) merges, so these rows are not a judgement on the search",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "lbfgs",
+              "settings": "default",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 2,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {
+                "non-finite result": 8
+              },
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 7.37818574999983,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 54.7970436557874,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "lbfgs",
+              "settings": "default",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 1,
+              "acceptance": {
+                "not_assessed": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {
+                "non-finite result": 9
+              },
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 13.09298740000122,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "lbfgs",
+              "settings": "default",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 34.926994400000694,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 128.60878810588778,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "lbfgs",
+              "settings": "default",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 38.60408059999827,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 140.33989275949347,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        },
+        "MultiStartAdam": {
+          "class_path": "autofit.non_linear.search.mle.multi_start_gradient.search.MultiStartAdam",
+          "family": "mle",
+          "capabilities": {
+            "jax_use": "required",
+            "gradient": "uses",
+            "batched": true,
+            "posterior_kind": "point",
+            "produces_evidence": false,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "multi_start_adam"
+          ],
+          "status": "measured",
+          "reason": "20 usable of 20 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "multi_start_adam",
+              "settings": "starts_48_steps_300",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "not_assessed": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 102.29083899999932,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "multi_start_adam",
+              "settings": "starts_48_steps_300",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 68.99266859999989,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 245.84006021525175,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        },
+        "MultiStartADABelief": {
+          "class_path": "autofit.non_linear.search.mle.multi_start_gradient.search.MultiStartADABelief",
+          "family": "mle",
+          "capabilities": {
+            "jax_use": "required",
+            "gradient": "uses",
+            "batched": true,
+            "posterior_kind": "point",
+            "produces_evidence": false,
+            "status": "experimental"
+          },
+          "harness_samplers": [
+            "multi_start_adabelief"
+          ],
+          "status": "measured",
+          "reason": "20 usable of 20 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "multi_start_adabelief",
+              "settings": "starts_48_steps_300",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "not_assessed": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 86.79080475000046,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "multi_start_adabelief",
+              "settings": "starts_48_steps_300",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 70.9817132499993,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 256.5018221095643,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        },
+        "MultiStartLion": {
+          "class_path": "autofit.non_linear.search.mle.multi_start_gradient.search.MultiStartLion",
+          "family": "mle",
+          "capabilities": {
+            "jax_use": "required",
+            "gradient": "uses",
+            "batched": true,
+            "posterior_kind": "point",
+            "produces_evidence": false,
+            "status": "experimental"
+          },
+          "harness_samplers": [
+            "multi_start_lion"
+          ],
+          "status": "measured",
+          "reason": "20 usable of 20 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "multi_start_lion",
+              "settings": "starts_48_steps_300",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "not_assessed": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 56.20928135000031,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "multi_start_lion",
+              "settings": "starts_48_steps_300",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "rejected": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 54.30726159999904,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.2775327998628892
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 184.3698133888292,
+                "n": 10,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        },
+        "MultiStartProdigy": {
+          "class_path": "autofit.non_linear.search.mle.multi_start_gradient.search.MultiStartProdigy",
+          "family": "mle",
+          "capabilities": {
+            "jax_use": "required",
+            "gradient": "uses",
+            "batched": true,
+            "posterior_kind": "point",
+            "produces_evidence": false,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "multi_start_prodigy"
+          ],
+          "status": "measured",
+          "reason": "20 usable of 20 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "multi_start_prodigy",
+              "settings": "starts_48_steps_300",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "not_assessed": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 75.50850340000034,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "multi_start_prodigy",
+              "settings": "starts_48_steps_300",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 10,
+              "usable": 10,
+              "acceptance": {
+                "accepted": 10
+              },
+              "convergence": {
+                "not_assessed": 10
+              },
+              "failures": {},
+              "deferred_seeds": [],
+              "deferred_reason": null,
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 63.70203609999953,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.7224672001371107,
+                0.9999999999999999
+              ],
+              "wall_per_success": {
+                "value_s": 66.24870224000078,
+                "unbounded": false,
+                "n": 10,
+                "successes": 10
+              },
+              "wall_per_success_bootstrap_95": [
+                62.697795410000616,
+                69.95428390000124
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "posterior": {
+      "label": "posterior",
+      "judged_by": "protocol \u00a74(b): relabelled medians, sigma-ratio band, ppc chi2, mode coverage",
+      "searches": {
+        "Emcee": {
+          "class_path": "autofit.non_linear.search.mcmc.emcee.search.Emcee",
+          "family": "mcmc",
+          "capabilities": {
+            "jax_use": "none",
+            "gradient": "none",
+            "batched": false,
+            "posterior_kind": "chain",
+            "produces_evidence": false,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "emcee"
+          ],
+          "status": "measured",
+          "reason": "7 usable of 8 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "emcee",
+              "settings": "walkers_50_steps_2000",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "rejected": 2
+              },
+              "convergence": {
+                "not_converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 234.3571006500024,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.6576197724933469
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 356.37173706235143,
+                "n": 2,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "emcee",
+              "settings": "walkers_50_steps_2000",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 1,
+              "acceptance": {
+                "not_assessed": 2
+              },
+              "convergence": {
+                "not_converged": 2
+              },
+              "failures": {
+                "Terminated": 1
+              },
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1499.7521646000005,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "emcee",
+              "settings": "walkers_50_steps_2000",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "rejected": 2
+              },
+              "convergence": {
+                "not_converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 198.72722005000105,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.6576197724933469
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 302.1916742200928,
+                "n": 2,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "emcee",
+              "settings": "walkers_50_steps_2000",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "rejected": 2
+              },
+              "convergence": {
+                "not_converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1757.8389142999968,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.6576197724933469
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 2673.032332399617,
+                "n": 2,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        },
+        "Zeus": {
+          "class_path": "autofit.non_linear.search.mcmc.zeus.search.Zeus",
+          "family": "mcmc",
+          "capabilities": {
+            "jax_use": "none",
+            "gradient": "none",
+            "batched": false,
+            "posterior_kind": "chain",
+            "produces_evidence": false,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "zeus"
+          ],
+          "status": "measured",
+          "reason": "3 usable of 6 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "zeus",
+              "settings": "walkers_50_steps_2000",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 1,
+              "acceptance": {
+                "rejected": 2
+              },
+              "convergence": {
+                "not_converged": 2
+              },
+              "failures": {
+                "Terminated": 1
+              },
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1283.1769244999996,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.6576197724933469
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 1951.2444396780686,
+                "n": 2,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "zeus",
+              "settings": "walkers_50_steps_2000",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 1,
+              "usable": 0,
+              "acceptance": {
+                "not_assessed": 1
+              },
+              "convergence": {
+                "not_converged": 1
+              },
+              "failures": {
+                "Terminated": 1
+              },
+              "deferred_seeds": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run after seed 0: Zeus on the JAX leg was stopped at the pilot's operational wall cap on both datasets (blend at the 1800 s probe cap, separated at 3600 s; the numpy leg finishes in ~1600 s), so each further seed would spend the cap and censor; measured in wave 2 under the frozen timeout",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1792.2593608999996,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "zeus",
+              "settings": "walkers_50_steps_2000",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "not_converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1587.019891850001,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1587.019891850001,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                1577.4509614000017,
+                1596.5888223000002
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "zeus",
+              "settings": "walkers_50_steps_2000",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 1,
+              "usable": 0,
+              "acceptance": {
+                "rejected": 1
+              },
+              "convergence": {
+                "not_converged": 1
+              },
+              "failures": {
+                "Terminated": 1
+              },
+              "deferred_seeds": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run after seed 0: Zeus on the JAX leg was stopped at the pilot's operational wall cap on both datasets (blend at the 1800 s probe cap, separated at 3600 s; the numpy leg finishes in ~1600 s), so each further seed would spend the cap and censor; measured in wave 2 under the frozen timeout",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 3595.491131699997,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.7934506856227626
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 4531.4613710088015,
+                "n": 1,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        },
+        "BlackJAXNUTS": {
+          "class_path": "autofit.non_linear.search.mcmc.blackjax.nuts.search.BlackJAXNUTS",
+          "family": "mcmc",
+          "capabilities": {
+            "jax_use": "required",
+            "gradient": "uses",
+            "batched": true,
+            "posterior_kind": "chain",
+            "produces_evidence": false,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "blackjax_nuts",
+            "blackjax_nuts_warm"
+          ],
+          "status": "measured",
+          "reason": "3 usable of 6 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "blackjax_nuts",
+              "settings": "warmup_200_samples_500",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 0,
+              "acceptance": {
+                "not_assessed": 2
+              },
+              "convergence": {
+                "not_converged": 2
+              },
+              "failures": {
+                "TracerBoolConversionError": 2
+              },
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 25.940788050002084,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "blackjax_nuts_warm",
+              "settings": "warmup_200_samples_500",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 1,
+              "usable": 0,
+              "acceptance": {
+                "not_assessed": 1
+              },
+              "convergence": {
+                "not_converged": 1
+              },
+              "failures": {
+                "TracerBoolConversionError": 1
+              },
+              "deferred_seeds": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run after seed 0: BlackJAXNUTS on the asserted blend fails deterministically at trace time (TracerBoolConversionError in the NUTS log_l: the ordered-centre assertion is evaluated as a Python bool), as the cold leg shows on every seed; each warm attempt would first spend ~20 min on its Nautilus provider",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1233.7245691000026,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "blackjax_nuts",
+              "settings": "warmup_200_samples_500",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "rejected": 2
+              },
+              "convergence": {
+                "not_converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 166.01127349999842,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.6576197724933469
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 252.44264306496038,
+                "n": 2,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "blackjax_nuts_warm",
+              "settings": "warmup_200_samples_500",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 1,
+              "usable": 1,
+              "acceptance": {
+                "accepted": 1
+              },
+              "convergence": {
+                "not_converged": 1
+              },
+              "failures": {},
+              "deferred_seeds": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1150.158048399997,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.20654931437723745,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1150.158048399997,
+                "unbounded": false,
+                "n": 1,
+                "successes": 1
+              },
+              "wall_per_success_bootstrap_95": [
+                1150.158048399997,
+                1150.158048399997
+              ]
+            }
+          ]
+        },
+        "SMC": {
+          "class_path": "autofit.non_linear.search.mcmc.blackjax.smc.search.SMC",
+          "family": "mcmc",
+          "capabilities": {
+            "jax_use": "required",
+            "gradient": "uses",
+            "batched": true,
+            "posterior_kind": "weighted",
+            "produces_evidence": true,
+            "status": "experimental"
+          },
+          "harness_samplers": [
+            "smc"
+          ],
+          "status": "measured",
+          "reason": "3 usable of 3 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "smc",
+              "settings": "default",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "not_assessed": 2
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 379.1261949500022,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "smc",
+              "settings": "default",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 1,
+              "usable": 1,
+              "acceptance": {
+                "rejected": 1
+              },
+              "convergence": {
+                "not_assessed": 1
+              },
+              "failures": {},
+              "deferred_seeds": [
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 322.3606273000041,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.7934506856227626
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 406.2768274590249,
+                "n": 1,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        }
+      }
+    },
+    "evidence": {
+      "label": "evidence",
+      "judged_by": "protocol \u00a74(b) and \u00a74(c): posterior accuracy and ln Z within 1 nat",
+      "searches": {
+        "DynestyStatic": {
+          "class_path": "autofit.non_linear.search.nest.dynesty.search.static.DynestyStatic",
+          "family": "nest",
+          "capabilities": {
+            "jax_use": "optional",
+            "gradient": "none",
+            "batched": false,
+            "posterior_kind": "weighted",
+            "produces_evidence": true,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "dynesty_static"
+          ],
+          "status": "measured",
+          "reason": "8 usable of 8 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "dynesty_static",
+              "settings": "nlive_200",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "rejected": 2
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 172.92721325000093,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.6576197724933469
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 262.95926686381745,
+                "n": 2,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "dynesty_static",
+              "settings": "nlive_200",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "not_assessed": 2
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 166.79425195000113,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "dynesty_static",
+              "settings": "nlive_200",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 1,
+                "rejected": 1
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 228.75237444999766,
+              "success_rate": 0.5,
+              "success_rate_wilson_95": [
+                0.09453120573423074,
+                0.9054687942657693
+              ],
+              "wall_per_success": {
+                "value_s": 457.5047488999953,
+                "unbounded": false,
+                "n": 2,
+                "successes": 1
+              },
+              "wall_per_success_bootstrap_95": [
+                282.2910640000009,
+                457.5047488999953
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "dynesty_static",
+              "settings": "nlive_200",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "rejected": 2
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 205.33680074999938,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                0.0,
+                0.6576197724933469
+              ],
+              "wall_per_success": {
+                "value_s": null,
+                "unbounded": true,
+                "lower_bound_s": 312.24243755851603,
+                "n": 2,
+                "successes": 0
+              },
+              "wall_per_success_bootstrap_95": null
+            }
+          ]
+        },
+        "DynestyDynamic": {
+          "class_path": "autofit.non_linear.search.nest.dynesty.search.dynamic.DynestyDynamic",
+          "family": "nest",
+          "capabilities": {
+            "jax_use": "optional",
+            "gradient": "none",
+            "batched": false,
+            "posterior_kind": "weighted",
+            "produces_evidence": true,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "dynesty_dynamic"
+          ],
+          "status": "measured",
+          "reason": "8 usable of 8 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "dynesty_dynamic",
+              "settings": "default",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 557.4172283500011,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 557.4172283500011,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                343.018189800001,
+                771.8162669000012
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "dynesty_dynamic",
+              "settings": "default",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "not_assessed": 2
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 841.7413687000007,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "dynesty_dynamic",
+              "settings": "default",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 1,
+                "rejected": 1
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 850.1735010499997,
+              "success_rate": 0.5,
+              "success_rate_wilson_95": [
+                0.09453120573423074,
+                0.9054687942657693
+              ],
+              "wall_per_success": {
+                "value_s": 1700.3470020999994,
+                "unbounded": false,
+                "n": 2,
+                "successes": 1
+              },
+              "wall_per_success_bootstrap_95": [
+                960.5190024000003,
+                1700.3470020999994
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "dynesty_dynamic",
+              "settings": "default",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 1,
+                "rejected": 1
+              },
+              "convergence": {
+                "not_assessed": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 822.3972178499989,
+              "success_rate": 0.5,
+              "success_rate_wilson_95": [
+                0.09453120573423074,
+                0.9054687942657693
+              ],
+              "wall_per_success": {
+                "value_s": 1644.7944356999978,
+                "unbounded": false,
+                "n": 2,
+                "successes": 1
+              },
+              "wall_per_success_bootstrap_95": [
+                742.6943207000004,
+                1644.7944356999978
+              ]
+            }
+          ]
+        },
+        "Nautilus": {
+          "class_path": "autofit.non_linear.search.nest.nautilus.search.Nautilus",
+          "family": "nest",
+          "capabilities": {
+            "jax_use": "optional",
+            "gradient": "none",
+            "batched": true,
+            "posterior_kind": "weighted",
+            "produces_evidence": true,
+            "status": "stable"
+          },
+          "harness_samplers": [
+            "nautilus"
+          ],
+          "status": "measured",
+          "reason": "23 usable of 24 attempted wave-1 runs",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "nautilus",
+              "settings": "n_live_100",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1062.7478020999988,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1062.7478020999988,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                871.8810075000001,
+                1253.6145966999975
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "nautilus",
+              "settings": "n_live_100",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "not_assessed": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1041.398597700003,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "nautilus",
+              "settings": "n_live_200",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 1,
+              "acceptance": {
+                "accepted": 1,
+                "rejected": 1
+              },
+              "convergence": {
+                "converged": 1,
+                "not_converged": 1
+              },
+              "failures": {
+                "Terminated": 1
+              },
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1455.364965050001,
+              "success_rate": 0.5,
+              "success_rate_wilson_95": [
+                0.09453120573423074,
+                0.9054687942657693
+              ],
+              "wall_per_success": {
+                "value_s": 2910.729930100002,
+                "unbounded": false,
+                "n": 2,
+                "successes": 1
+              },
+              "wall_per_success_bootstrap_95": [
+                1113.0054554000017,
+                2910.729930100002
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "nautilus",
+              "settings": "n_live_200",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "not_assessed": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1021.3776164000046,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "nautilus",
+              "settings": "n_live_400",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 2493.76463265,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 2493.76463265,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                1572.1778831999982,
+                3415.3513821000015
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "nautilus",
+              "settings": "n_live_400",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "not_assessed": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1593.2795949500032,
+              "success_rate": null,
+              "success_rate_reason": "not every attempt could be judged (a missing or incomplete reference leaves a verdict not_assessed)"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "nautilus",
+              "settings": "n_live_100",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1173.3827630999986,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1173.3827630999986,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                669.7351828999963,
+                1677.0303433000008
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "nautilus",
+              "settings": "n_live_100",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1261.3727755500004,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1261.3727755500004,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                748.2426526999989,
+                1774.5028984000019
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "nautilus",
+              "settings": "n_live_200",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1443.3506303999984,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1443.3506303999984,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                952.1634601999976,
+                1934.5378005999992
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "nautilus",
+              "settings": "n_live_200",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1452.8056601500011,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1452.8056601500011,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                1091.1838473000025,
+                1814.4274729999997
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "nautilus",
+              "settings": "n_live_400",
+              "backend": "numpy",
+              "config_id": "local_numpy_fp64",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1962.4101040999994,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1962.4101040999994,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                1566.2881358000013,
+                2358.5320723999976
+              ]
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "nautilus",
+              "settings": "n_live_400",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 2,
+              "usable": 2,
+              "acceptance": {
+                "accepted": 2
+              },
+              "convergence": {
+                "converged": 2
+              },
+              "failures": {},
+              "deferred_seeds": [
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of 2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral",
+              "pyautofit_commits": [
+                "0dbf258c4f5e4238fc1cfd1b2eae56c6c6e6f655"
+              ],
+              "median_total_wall_s": 1857.120405200003,
+              "success_rate": 1.0,
+              "success_rate_wilson_95": [
+                0.34238022750665303,
+                1.0
+              ],
+              "wall_per_success": {
+                "value_s": 1857.120405200003,
+                "unbounded": false,
+                "n": 2,
+                "successes": 2
+              },
+              "wall_per_success_bootstrap_95": [
+                1459.2848690000028,
+                2254.955941400003
+              ]
+            }
+          ]
+        },
+        "NSS": {
+          "class_path": "autofit.non_linear.search.nest.nss.search.NSS",
+          "family": "nest",
+          "capabilities": {
+            "jax_use": "required",
+            "gradient": "none",
+            "batched": true,
+            "posterior_kind": "weighted",
+            "produces_evidence": true,
+            "status": "experimental"
+          },
+          "harness_samplers": [
+            "nss"
+          ],
+          "status": "deferred",
+          "reason": "NSS is deferred until phase A3b (NSS onto Fitness): the B3 rule defers it on the blend, and the harness registers it deferred as a whole, so the separated control is deferred with it",
+          "legs": [
+            {
+              "dataset": "gaussian_x3_blend",
+              "sampler": "nss",
+              "settings": "n_live_200",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 0,
+              "usable": 0,
+              "acceptance": {},
+              "convergence": {},
+              "failures": {},
+              "deferred_seeds": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "NSS is deferred until phase A3b (NSS onto Fitness): the B3 rule defers it on the blend, and the harness registers it deferred as a whole, so the separated control is deferred with it",
+              "pyautofit_commits": [],
+              "median_total_wall_s": null,
+              "success_rate": null,
+              "success_rate_reason": "no attempt"
+            },
+            {
+              "dataset": "gaussian_x3_separated",
+              "sampler": "nss",
+              "settings": "n_live_200",
+              "backend": "jax_cpu",
+              "config_id": "local_jax_cpu_fp64_cache_warm",
+              "expected": 10,
+              "attempted": 0,
+              "usable": 0,
+              "acceptance": {},
+              "convergence": {},
+              "failures": {},
+              "deferred_seeds": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9
+              ],
+              "deferred_reason": "NSS is deferred until phase A3b (NSS onto Fitness): the B3 rule defers it on the blend, and the harness registers it deferred as a whole, so the separated control is deferred with it",
+              "pyautofit_commits": [],
+              "median_total_wall_s": null,
+              "success_rate": null,
+              "success_rate_reason": "no attempt"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

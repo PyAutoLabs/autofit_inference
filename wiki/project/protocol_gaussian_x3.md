@@ -198,9 +198,9 @@ Per (search × settings × config), never per best seed:
 | Dataset | Backend | Nautilus ×3 | DynestyStatic ×3 | MAP | Agreement |
 |---|---|---|---|---|---|
 | gaussian_x3_blend | numpy | complete | complete | complete | Nautilus: ln Z spread 0.019 nat, medians 0.015 σ. All six: medians 0.062 σ, ln Z spread 2.33 nat (DynestyStatic) → reference = the Nautilus runs |
-| gaussian_x3_blend | jax_cpu | pending (stopped: beyond the B2 budget) | complete | complete | pending |
-| gaussian_x3_separated | numpy | pending (B3, before its wave-1 rows) | pending | pending | pending |
-| gaussian_x3_separated | jax_cpu | pending (B3, before its wave-1 rows) | pending | pending | pending |
+| gaussian_x3_blend | jax_cpu | pending (2 of 3: seeds 0 and 2 in B3; seed 1 deferred to wave 2 at the B3 wrap-up ruling) | complete | complete | pending |
+| gaussian_x3_separated | numpy | complete (B3) | complete (B3) | complete (ln P 175.706) | Nautilus: ln Z spread 0.006 nat, medians 0.010 σ. All six: medians 0.071 σ, ln Z spread 0.49 nat (DynestyStatic) → reference = the Nautilus runs (ln Z 122.931, offset 0: disjoint priors) |
+| gaussian_x3_separated | jax_cpu | complete (B3) | complete (B3) | complete (ln P 175.706) | Nautilus: identical to numpy (same seeds, same samples to 1e-12). All six: medians 0.062 σ, ln Z spread 1.32 nat (DynestyStatic) → reference = the Nautilus runs |
 
 Constant-likelihood `ln 3!` validation (`results/reference/constant_likelihood.json`):
 Nautilus counts the excluded volume (offset `−ln 3!`; measured −1.825 on numpy and JAX at
