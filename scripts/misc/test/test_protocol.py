@@ -127,6 +127,16 @@ def test_disjoint_priors_need_no_measured_offset():
     assert out["acceptance"] == "accepted", out
 
 
+def test_map_diagnostic_on_every_row_but_criterion_only_for_point_map():
+    """Review finding 12: §4(a) is recorded for posterior/evidence rows too."""
+    far = row(max_log_posterior=10.0)  # 40 nat below the reference MAP
+    out = protocol.verdict(far, REFERENCE, OFFSETS)
+    assert out["acceptance"] == "accepted"
+    assert out["map_diagnostic"]["ok"] is False and not out["map_diagnostic"]["criterion"]
+    point = protocol.verdict(row(task="point_map", max_log_posterior=10.0), REFERENCE)
+    assert point["acceptance"] == "rejected" and point["map_diagnostic"]["criterion"]
+
+
 def test_incomplete_run_is_rejected_and_not_converged():
     bad = row(status="failed: RuntimeError: boom", completed=False)
     assert protocol.acceptance(bad, REFERENCE, OFFSETS)["acceptance"] == "rejected"

@@ -223,13 +223,14 @@ def criterion_evidence(row: dict, reference: dict, offsets: dict | None) -> tupl
 
 
 def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -> dict:
-    """``{"acceptance", "reason", "criteria", "reference_limitations"}`` —
+    """``{"acceptance", "reason", "criteria", "reference_limitations", "map_diagnostic"}`` —
     ``accepted`` / ``rejected`` / ``not_assessed`` per protocol §4.
 
     Every verdict reached against a reference carries that reference's
     ``limitations`` (§6: a disagreement among the reference runs is a limitation of
     every verdict that uses the reference), in ``reference_limitations`` and appended
-    to ``reason``.
+    to ``reason``. ``map_diagnostic`` records §4(a) on every completed row: the
+    criterion for point/MAP, a diagnostic only (never a condition) for the others.
     """
     task = row.get("task")
     if task not in TASKS:
@@ -248,6 +249,9 @@ def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -
     limitations = [str(line) for line in reference.get("limitations") or []]
     if row.get("status") != "complete" or row.get("completed") is not True:
         return _judged("rejected", f"not completed: {row.get('status')}", [], limitations)
+    # §4(a) on every row: the criterion for point/MAP, a diagnostic for the others.
+    map_ok, map_text = criterion_map(row, reference)
+    map_diagnostic = {"ok": map_ok, "detail": map_text, "criterion": task == "point_map"}
     if task == "point_map":
         criteria = [criterion_map(row, reference)]
     else:
@@ -262,10 +266,10 @@ def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -
         verdict, reason = "not_assessed", "not assessable: " + "; ".join(unknown)
     else:
         verdict, reason = "accepted", "all criteria met: " + "; ".join(t for _, t in criteria)
-    return _judged(verdict, reason, criteria, limitations)
+    return _judged(verdict, reason, criteria, limitations, map_diagnostic)
 
 
-def _judged(verdict: str, reason: str, criteria, limitations=()) -> dict:
+def _judged(verdict: str, reason: str, criteria, limitations=(), map_diagnostic=None) -> dict:
     limitations = list(limitations)
     if limitations:
         reason = f"{reason} [reference limitations: {'; '.join(limitations)}]"
@@ -274,6 +278,7 @@ def _judged(verdict: str, reason: str, criteria, limitations=()) -> dict:
         "reason": reason,
         "criteria": [{"ok": ok, "detail": text} for ok, text in criteria],
         "reference_limitations": limitations,
+        "map_diagnostic": map_diagnostic,
     }
 
 
@@ -338,6 +343,7 @@ def verdict(row: dict, reference: dict | None, offsets: dict | None = None) -> d
         "convergence_reason": conv["reason"],
         "criteria": acc["criteria"],
         "reference_limitations": acc["reference_limitations"],
+        "map_diagnostic": acc["map_diagnostic"],
         "placeholders": list(PLACEHOLDERS),
     }
 

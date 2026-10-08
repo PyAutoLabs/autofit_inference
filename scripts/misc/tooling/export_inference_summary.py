@@ -200,6 +200,7 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
             f"{verdict['convergence_reason']}",
             "criteria": verdict["criteria"],
             "reference_limitations": verdict["reference_limitations"],
+            "map_diagnostic": verdict["map_diagnostic"],
             "placeholders": verdict["placeholders"],
             "asserted_by": "producer",
         },
