@@ -1,9 +1,10 @@
 # lint.yml — PR / push-to-main gate.
 #
-# Cheap, fast, CPU-only. Runs on every PR and on push to main. It lints only what exists
-# in the skeleton: ruff (check + format) and a lychee link check over README.md and
-# AGENTS.md. No PyAuto library is installed and no script runs; the pytest and smoke legs
-# arrive with the harness in a later phase of the search-extensibility epic.
+# Cheap, fast, CPU-only. Runs on every PR and on push to main: ruff (check + format), the
+# harness unit tests (numpy + pytest; the exporter fixture is validated against a fresh
+# PyAutoInsight checkout), the README auto-table gate, the inference-summary gate, the
+# WALL-BASIS gate and a lychee link check. No PyAuto library is installed here; the
+# 1-seed Nautilus witness that does install PyAutoFit is witness.yml.
 
 name: lint
 
@@ -22,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # export --check stamps the latest producer commit
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -30,7 +33,7 @@ jobs:
 
       - name: Install lint tools
         run: |
-          pip install ruff
+          pip install ruff numpy pytest pyyaml
           # lychee is a Rust binary; fetch the prebuilt release. The tarball
           # nests everything under lychee-x86_64-unknown-linux-gnu/, so strip
           # that leading directory and extract just the binary.
@@ -42,6 +45,27 @@ jobs:
 
       - name: ruff format --check
         run: ruff format --check .
+
+      # Checked out after ruff so its sources are never linted as this repo's.
+      - name: Checkout PyAutoInsight (fixture validation)
+        uses: actions/checkout@v4
+        with:
+          repository: PyAutoLabs/PyAutoInsight
+          path: _deps/PyAutoInsight
+
+      - name: unit tests
+        env:
+          PYAUTO_INSIGHT: ${{ github.workspace }}/_deps/PyAutoInsight
+        run: python -m pytest -q scripts/misc/test
+
+      - name: build_readme --check
+        run: python scripts/misc/tooling/build_readme.py --check
+
+      - name: export_inference_summary --check
+        run: python scripts/misc/tooling/export_inference_summary.py --check
+
+      - name: WALL-BASIS gate
+        run: python scripts/misc/wall/check_submits.py --check
 
       - name: lychee — markdown link-rot
         run: |
