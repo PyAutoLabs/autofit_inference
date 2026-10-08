@@ -27,6 +27,21 @@ def test_run_id_and_results_path_share_the_identity():
     assert "local_numpy_fp64" in prefix.parts and "seed_3" in prefix.parts
 
 
+def test_cold_and_warm_runs_never_share_an_identity():
+    """Review finding 8: the cold and warm JAX runs are separate rows and outputs."""
+    cold = runner.config_segment("local_jax_cpu_fp64", "cold")
+    warm = runner.config_segment("local_jax_cpu_fp64", "warm")
+    assert cold != warm and runner.config_segment("local_numpy_fp64") == "local_numpy_fp64"
+    args = ("gaussian_x3_blend", 1, "nautilus", "n_live_100")
+    assert runner.output_path_prefix(*args, cold, 0) != runner.output_path_prefix(*args, warm, 0)
+    assert runner.results_path(Path("/r"), *args, cold, 0) != runner.results_path(
+        Path("/r"), *args, warm, 0
+    )
+    assert runner.run_id("gaussian_x3", *args, cold, 0) != runner.run_id(
+        "gaussian_x3", *args, warm, 0
+    )
+
+
 def test_truth_delta_sigma_and_likelihood_share():
     post = {"a": {"median": 2.0, "sigma": 0.5}, "b": {"median": 1.0, "sigma": 0.0}}
     assert runner.truth_delta_sigma_from(post, {"a": 1.0, "b": 1.0, "c": 3.0}) == {"a": 2.0}

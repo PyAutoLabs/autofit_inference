@@ -21,9 +21,15 @@ The autolens_inference row (identity, provenance, clocks, ``posterior``,
 - ``evals_to_target`` / ``time_to_target_s`` against the shared target
   ``ref_max_log_likelihood − 1`` with ``time_to_target_basis`` ``observed`` (numpy:
   MLTracker times every call) or ``estimated`` (JAX: interpolated from the eval index);
-- ``compile_s`` with ``compile_cache`` ``cold`` / ``warm`` (separate runs), and
+- ``evals_to_target_basis`` (``estimated`` under JAX: a sample index in the search's
+  posterior sample order, not an evaluation history);
+- ``compile_s`` with ``compile_cache`` ``cold`` / ``warm`` (separate runs, whose
+  ``_cache_<cold|warm>`` suffix on the config is part of the run ID, the PyAutoFit
+  ``path_prefix`` and the result file path, so they never resume or overwrite each
+  other), and
   ``per_call_s`` / ``likelihood_share`` flagged ``estimated``;
-- ``run_id`` — ``gaussian_x3/<dataset>/data_seed<d>/<sampler>/<settings>/<config>/seed<s>``,
+- ``run_id`` — ``gaussian_x3/<dataset>/data_seed<d>/<sampler>/<settings>/<config_id>/seed<s>``
+  (``config_id`` = ``config_segment(config_name, compile_cache)``),
   the stable identity autofit_profiling shares — and ``pyautofit_commit``.
 
 Hazards carried over from autolens_inference
@@ -72,6 +78,12 @@ TIMED_CALLS = 200
 PPC_DRAWS = 500
 
 MODEL_TYPES = ("gaussian_x3",)
+
+EVALS_TO_TARGET_JAX_NOTE = (
+    "estimated: the index of the first sample reaching the target in the search's "
+    "posterior sample order (Nautilus: posterior()), not an evaluation history, so it "
+    "is not an observed evaluation count"
+)
 
 LOG_EVIDENCE_ERR_NOTE = "no sampler-agnostic log Z error is recorded; compare seeds instead"
 
@@ -251,6 +263,15 @@ SAMPLERS: dict[str, SamplerSpec] = {
 # ---------------------------------------------------------------------------
 # Pure helpers (unit-tested in scripts/misc/test/test_runner.py)
 # ---------------------------------------------------------------------------
+
+
+def config_segment(config_name: str, compile_cache: str | None = None) -> str:
+    """The config part of a row's identity: ``config_name``, plus ``_cache_<cold|warm>``
+    on a JAX leg. The cold and warm runs of §8 are separate runs, so they must never
+    share a PyAutoFit output (the second would resume the first's completed fit and
+    record a load time) or a result file (the second would overwrite the first). On
+    numpy there is no compilation cache and ``compile_cache`` is ``None``."""
+    return config_name if compile_cache is None else f"{config_name}_cache_{compile_cache}"
 
 
 def run_id(
@@ -543,11 +564,11 @@ def run_search(
         data=data, noise_map=noise_map, use_jax=use_jax, tracker=None if use_jax else tracker
     )
 
-    rid = run_id(
-        model_type, dataset_class, data_seed, sampler, settings_name, cli.config_name, seed
-    )
+    compile_cache = cli.compile_cache if use_jax else None
+    config_id = config_segment(cli.config_name, compile_cache)
+    rid = run_id(model_type, dataset_class, data_seed, sampler, settings_name, config_id, seed)
     path_prefix = output_path_prefix(
-        dataset_class, data_seed, sampler, settings_name, cli.config_name, seed
+        dataset_class, data_seed, sampler, settings_name, config_id, seed
     )
     search_name = sampler
     search = build_search(
@@ -669,8 +690,10 @@ def run_search(
         likelihood_evals = info.get("total_samples")
         # --- time to the shared target (protocol §8) ------------------------
         evals_to_target = time_to_target = None
+        evals_note = None
         if use_jax:
             basis = TIME_BASIS_ESTIMATED
+            evals_note = EVALS_TO_TARGET_JAX_NOTE
             # Interpolated from the eval index over the sampler's clock: an estimate.
             # from_log_l_history targets its own max, so pass the history clipped to the
             # shared target instead (first index reaching ref_max_logL - 1).
@@ -747,7 +770,8 @@ def run_search(
             "wall_s": wall_s,
             "total_wall_s": total_wall_s,
             "compile_s": timing.get("compile_s"),
-            "compile_cache": cli.compile_cache if use_jax else None,
+            "compile_cache": compile_cache,
+            "config_id": config_id,
             "likelihood_evals": likelihood_evals,
             # --- results --------------------------------------------------------
             "log_evidence": log_evidence,
@@ -777,6 +801,8 @@ def run_search(
             "evals_to_target": evals_to_target,
             "time_to_target_s": time_to_target,
             "time_to_target_basis": basis,
+            "evals_to_target_basis": basis,
+            "evals_to_target_note": evals_note,
             # --- the admission bar (estimates) ---------------------------------
             "per_call_s": per_call_s,
             "per_call_basis": per_call_basis if per_call_s is not None else None,
@@ -794,7 +820,7 @@ def run_search(
             data_seed,
             sampler,
             settings_name,
-            cli.config_name,
+            config_id,
             seed,
         )
         json_path.parent.mkdir(parents=True, exist_ok=True)
