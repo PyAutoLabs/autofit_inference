@@ -132,3 +132,74 @@ def test_admission_vector_reaches_the_likelihood_and_medians_do_not():
     assert fitness.call(np.asarray(vector)) > runner.RESAMPLE_SENTINEL / 10
     medians = np.asarray(model.physical_values_from_prior_medians, dtype=float)
     assert fitness.call(medians) == runner.RESAMPLE_SENTINEL
+
+
+def test_a_failed_attempt_keeps_its_elapsed_wall(tmp_path, monkeypatch):
+    """Review finding 9: a crash inside search.fit still writes a row with its cost."""
+    import json
+    import time
+
+    import pytest
+
+    pytest.importorskip("autofit")
+
+    class Boom(RuntimeError):
+        pass
+
+    class FailingSearch:
+        paths = None
+
+        def fit(self, model, analysis):
+            time.sleep(0.2)
+            raise Boom("simulated crash")
+
+    monkeypatch.setattr(runner, "build_search", lambda *a, **k: FailingSearch())
+    monkeypatch.setenv("PYAUTO_TEST_MODE", "0")
+    argv = [
+        "--config-name",
+        "local_numpy_fp64",
+        "--seed",
+        "0",
+        "--output-dir",
+        str(tmp_path / "output"),
+        "--results-root",
+        str(tmp_path / "rows"),
+    ]
+    with pytest.raises(Boom):
+        runner.run_search("nautilus", "gaussian_x3_blend", "gaussian_x3", argv=argv)
+    (path,) = (tmp_path / "rows" / "results" / "searches").rglob("*.json")
+    row = json.loads(path.read_text())
+    assert row["status"].startswith("failed: Boom")
+    assert row["total_wall_s"] is not None and row["total_wall_s"] >= 0.2
+    assert row["scientific"]["acceptance"] != "accepted"
+
+
+def test_sigterm_writes_a_failure_row_with_its_wall(tmp_path, monkeypatch):
+    """The SLURM time limit sends SIGTERM first: the row and its cost survive."""
+    import json
+    import os
+    import signal
+    import time
+
+    import pytest
+
+    pytest.importorskip("autofit")
+
+    class TimedOut:
+        paths = None
+
+        def fit(self, model, analysis):
+            time.sleep(0.1)
+            os.kill(os.getpid(), signal.SIGTERM)
+            time.sleep(5)
+
+    monkeypatch.setattr(runner, "build_search", lambda *a, **k: TimedOut())
+    monkeypatch.setenv("PYAUTO_TEST_MODE", "1")
+    argv = ["--seed", "0", "--output-dir", str(tmp_path / "o"), "--results-root", str(tmp_path)]
+    before = signal.getsignal(signal.SIGTERM)
+    with pytest.raises(runner.Terminated):
+        runner.run_search("nautilus", "gaussian_x3_blend", "gaussian_x3", argv=argv)
+    assert signal.getsignal(signal.SIGTERM) is before
+    (path,) = (tmp_path / "results" / "searches").rglob("*.json")
+    row = json.loads(path.read_text())
+    assert row["status"].startswith("failed: Terminated") and 0.1 <= row["total_wall_s"] < 5

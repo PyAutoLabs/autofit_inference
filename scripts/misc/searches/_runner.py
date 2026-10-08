@@ -40,13 +40,21 @@ Hazards carried over from autolens_inference
 - ``config_name`` and ``seed`` live in the PyAutoFit ``path_prefix``, so two legs that
   differ only in config never resume each other's fit.
 - A completed row is written in a ``finally`` block, so a crashed search still leaves a
-  ``status: failed: …`` row (a failure is data, §8).
+  ``status: failed: …`` row (a failure is data, §8), and that row keeps the attempt's
+  cost: ``total_wall_s`` is the elapsed ``search.fit`` time up to the exception.
+- ``SIGTERM`` (what SLURM sends at the ``--time`` limit, before ``SIGKILL``) is turned
+  into :class:`Terminated`, so a timed-out job also writes its failure row and wall.
+  The harness has no timeout wrapper of its own. A hard kill (``SIGKILL``, the OOM
+  killer, a node failure) leaves **no row**: a campaign must count an expected run
+  with no row as a failed attempt censored at the §7 timeout (the B3 expected-run
+  manifest), never drop it.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import signal
 import statistics
 import sys
 import time
@@ -475,6 +483,14 @@ def _read_json(path: Path):
 # ---------------------------------------------------------------------------
 
 
+class Terminated(BaseException):
+    """Raised from the ``SIGTERM`` handler, so the row-writing ``finally`` runs."""
+
+
+def _raise_terminated(signum, frame):
+    raise Terminated(f"signal {signal.Signals(signum).name} (e.g. the SLURM time limit)")
+
+
 def run_search(
     sampler: str = "nautilus",
     dataset_class: str = "gaussian_x3_blend",
@@ -632,15 +648,17 @@ def run_search(
     ppc_chi2 = None
     log_evidence = None
     termination = None
+    fit_start = None
+    previous_sigterm = signal.signal(signal.SIGTERM, _raise_terminated)
     try:
         if is_test_mode():
             timing["note"] = "admission-bar timing skipped under PYAUTO_TEST_MODE"
         else:
             admission_bar()
         tracker.t0 = time.time()
-        start = time.perf_counter()
+        fit_start = time.perf_counter()
         result = search.fit(model=model, analysis=analysis)
-        total_wall_s = time.perf_counter() - start
+        total_wall_s = time.perf_counter() - fit_start
 
         samples = result.samples
         matrix = np.asarray(samples.parameter_lists, dtype=float)
@@ -679,8 +697,12 @@ def run_search(
         ppc_chi2 = float(np.sum(((data - np.median(curves, axis=0)) / noise_map) ** 2))
     except BaseException as exc:
         status = f"failed: {type(exc).__name__}: {exc}"
+        if total_wall_s is None and fit_start is not None:
+            # The attempt's cost counts toward wall per right answer (§8).
+            total_wall_s = time.perf_counter() - fit_start
         raise
     finally:
+        signal.signal(signal.SIGTERM, previous_sigterm)
         try:
             output_path = Path(search.paths.output_path)
         except Exception:
