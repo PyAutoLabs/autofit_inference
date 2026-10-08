@@ -2,8 +2,8 @@
 
 Implements §4 (acceptance) and §5 (convergence) of
 ``wiki/project/protocol_gaussian_x3.md`` as pure functions of a result row, the
-committed reference for the same dataset and backend, and the measured ``ln 3!``
-offsets. Imported by the runner (to print a verdict) and by the stdlib-only exporter
+committed reference with the same identity (:data:`REFERENCE_IDENTITY`: dataset,
+backend, data seed, assertion mechanism), and the measured ``ln 3!`` offsets. Imported by the runner (to print a verdict) and by the stdlib-only exporter
 (to emit ``scientific.convergence`` / ``scientific.acceptance``), so it must never import
 numpy or autofit.
 
@@ -53,6 +53,27 @@ PLACEHOLDERS = (
 )
 
 TASKS = ("point_map", "posterior", "evidence")
+
+#: What makes a reference applicable to a row (§4: same dataset and backend; §4(c): same
+#: assertion mechanism; and the same noise realisation, ``data_seed``). A row whose
+#: identity differs in any field is ``not_assessed``, never judged against it.
+REFERENCE_IDENTITY = ("dataset", "backend", "data_seed", "assertion_mechanism")
+
+
+def reference_key(record: dict) -> tuple:
+    """The :data:`REFERENCE_IDENTITY` tuple of a row or a reference."""
+    return tuple(record.get(field) for field in REFERENCE_IDENTITY)
+
+
+def identity_mismatch(row: dict, reference: dict) -> str | None:
+    """``None`` when ``reference`` applies to ``row``, else why it does not."""
+    for field in REFERENCE_IDENTITY:
+        got, ref = row.get(field), reference.get(field)
+        if got is None or ref is None:
+            return f"reference identity incomplete: {field} row {got!r} vs reference {ref!r}"
+        if got != ref:
+            return f"reference identity mismatch: {field} row {got!r} vs reference {ref!r}"
+    return None
 
 
 def _num(value):
@@ -207,14 +228,9 @@ def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -
             f"(reference status: {status})",
             "criteria": [],
         }
-    if row.get("dataset") != reference.get("dataset") or row.get("backend") != reference.get(
-        "backend"
-    ):
-        return {
-            "acceptance": "not_assessed",
-            "reason": "reference is for a different dataset or backend",
-            "criteria": [],
-        }
+    mismatch = identity_mismatch(row, reference)
+    if mismatch:
+        return {"acceptance": "not_assessed", "reason": mismatch, "criteria": []}
     if row.get("status") != "complete" or row.get("completed") is not True:
         return {
             "acceptance": "rejected",

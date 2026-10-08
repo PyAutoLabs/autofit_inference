@@ -11,6 +11,8 @@ REFERENCE = {
     "status": "complete",
     "dataset": "gaussian_x3_blend",
     "backend": "numpy",
+    "data_seed": 1,
+    "assertion_mechanism": "raise_resample",
     "posterior_relabelled": POST,
     "ppc_chi2": 60.0,
     "modes": [{"centres": [25.0, 45.0, 60.0], "weight": 1.0}],
@@ -27,6 +29,8 @@ def row(**overrides):
         "sampler": "nautilus",
         "dataset": "gaussian_x3_blend",
         "backend": "numpy",
+        "data_seed": 1,
+        "assertion_mechanism": "raise_resample",
         "status": "complete",
         "completed": True,
         "posterior_relabelled": copy.deepcopy(POST),
@@ -85,6 +89,21 @@ def test_not_assessed_without_reference_or_offset():
     unvalidated = {"offsets": {"nautilus": {"numpy": {"offset": None, "validated": False}}}}
     out = protocol.acceptance(row(), REFERENCE, unvalidated)
     assert out["acceptance"] == "not_assessed" and "ln 3!" in out["reason"]
+
+
+@pytest.mark.parametrize(
+    "field, value", [("data_seed", 777), ("assertion_mechanism", "no_assertions")]
+)
+def test_reference_identity_mismatch_is_not_assessed(field, value):
+    """Review finding 3: a different noise realisation or assertion mechanism is never
+    judged against the reference, even when every statistic would pass."""
+    out = protocol.acceptance(row(**{field: value}), REFERENCE, OFFSETS)
+    assert out["acceptance"] == "not_assessed"
+    assert "identity mismatch" in out["reason"] and field in out["reason"]
+    missing = protocol.acceptance(row(**{field: None}), REFERENCE, OFFSETS)
+    assert missing["acceptance"] == "not_assessed" and "incomplete" in missing["reason"]
+    legacy = {k: v for k, v in REFERENCE.items() if k != field}
+    assert protocol.acceptance(row(), legacy, OFFSETS)["acceptance"] == "not_assessed"
 
 
 def test_incomplete_run_is_rejected_and_not_converged():

@@ -34,6 +34,26 @@ def test_fixture_verdicts_are_producer_asserted():
         assert sci["protocol_id"] == "gaussian_x3@1" and sci["asserted_by"] == "producer"
 
 
+@pytest.mark.parametrize(
+    "field, value", [("data_seed", 777), ("assertion_mechanism", "no_assertions")]
+)
+def test_exporter_never_judges_a_row_against_another_identity(tmp_path, field, value):
+    source = (
+        FIXTURES
+        / "root/results/searches/gaussian_x3_blend/data_seed1/nautilus/n_live_100"
+        / "local_numpy_fp64/search_seed0.json"
+    )
+    row = json.loads(source.read_text())
+    row[field] = value
+    target = tmp_path / "results" / "searches" / "row.json"
+    target.parent.mkdir(parents=True)
+    target.write_text(json.dumps(row))
+    doc = exporter.build(FIXTURES / "root", FIXTURE_REVISION, FIXTURE_TIME, rows_root=tmp_path)
+    (record,) = doc["records"]
+    assert record["scientific"]["acceptance"] == "not_assessed"
+    assert "identity mismatch" in record["scientific"]["reason"]
+
+
 def test_fixture_validates_against_pyautoinsight():
     candidates = [ROOT.parent / "PyAutoInsight", ROOT.parents[1] / "organs" / "PyAutoInsight"]
     if os.environ.get("PYAUTO_INSIGHT"):

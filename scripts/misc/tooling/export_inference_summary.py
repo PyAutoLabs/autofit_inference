@@ -5,8 +5,8 @@ parametrised (``PROJECT``). Standard library only. The one change in substance: 
 ``scientific`` block is **producer-asserted** from protocol ``gaussian_x3@1``
 (``scripts/misc/searches/_protocol.py``, also stdlib only) — ``convergence`` and
 ``acceptance`` with ``protocol_id`` and ``reason`` — instead of a hard-coded
-``not_assessed``. A row with no complete reference for its dataset and backend stays
-``not_assessed`` with that reason.
+``not_assessed``. A row with no complete reference of its identity (dataset, backend,
+data seed, assertion mechanism) stays ``not_assessed`` with that reason.
 
 Scans ``results/searches/**/*.json`` (never ``results/reference/``, which holds the
 reference posteriors the rows are judged against). Git dates describe publication
@@ -118,12 +118,27 @@ def finite(value):
 
 
 def references(root: Path) -> tuple[dict, dict | None]:
+    """``{reference_key: reference}``, keyed by the full identity (dataset, backend,
+    data_seed, assertion_mechanism), and the measured offsets."""
     refs = {}
     for path in sorted((root / "results" / "reference").glob("*/*/reference.json")):
         ref = protocol.load_json(path)
         if isinstance(ref, dict):
-            refs[(ref.get("dataset"), ref.get("backend"))] = ref
+            refs[protocol.reference_key(ref)] = ref
     return refs, protocol.load_json(protocol.offsets_file(root))
+
+
+def select_reference(refs: dict, row: dict) -> dict | None:
+    """The reference with the row's full identity; failing that, one for the same
+    dataset and backend, so the verdict names the identity mismatch rather than
+    claiming there is no reference. Never a reference for another dataset/backend."""
+    exact = refs.get(protocol.reference_key(row))
+    if exact is not None:
+        return exact
+    for ref in refs.values():
+        if (ref.get("dataset"), ref.get("backend")) == (row.get("dataset"), row.get("backend")):
+            return ref
+    return None
 
 
 def record(row: dict, rel: str, refs: dict, offsets) -> dict:
@@ -131,7 +146,7 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
     raw_path = row.get("output_path")
     output_path = f"output/{raw_path}" if safe_path(raw_path) else None
     values = {k: row[k] for k in DIAGNOSTICS if k in row and row[k] is not None}
-    reference = refs.get((row.get("dataset"), row.get("backend")))
+    reference = select_reference(refs, row)
     verdict = protocol.verdict(row, reference, offsets)
     result = {
         "id": row.get("run_id") or rel,
@@ -254,8 +269,12 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
     verdicts = Counter(r["scientific"]["acceptance"] for r in records)
     measured = sorted(r["measured_at"] for r in records if r["measured_at"])
     reference_status = {
-        f"{dataset}/{backend}": ref.get("status")
-        for (dataset, backend), ref in sorted(refs.items())
+        f"{ref.get('dataset')}/{ref.get('backend')}": {
+            "status": ref.get("status"),
+            "data_seed": ref.get("data_seed"),
+            "assertion_mechanism": ref.get("assertion_mechanism"),
+        }
+        for _, ref in sorted(refs.items(), key=lambda item: json.dumps(item[0]))
     }
     doc = {
         "schema": "inference-summary",

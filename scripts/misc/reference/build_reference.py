@@ -10,6 +10,9 @@ Protocol ``gaussian_x3@1`` §6. Reads the per-run rows ``run_reference.py`` wrot
 - the pooled marginals: every included run's weighted samples (``samples.csv`` from its
   kept output directory), each run's weights normalised to sum to one, so each run counts
   equally;
+- the reference identity ``(dataset, backend, data_seed, assertion_mechanism)``, which
+  every run must share (else ``status: inconsistent_runs``) and which a row must match to
+  be judged against it;
 - ``status``:
 
   - ``complete`` — at least three Nautilus runs, every run's raw ``samples.csv``
@@ -137,7 +140,14 @@ def build(dataset: str, backend: str, root: Path = _ROOT) -> dict:
         out["limitations"].append("fewer than three Nautilus reference runs")
         return out
     keys = list(runs[0]["posterior_relabelled"])
-    out["assertion_mechanism"] = runs[0]["assertion_mechanism"]
+    # Identity (protocol._protocol.REFERENCE_IDENTITY): every run must share it.
+    for field in ("data_seed", "assertion_mechanism"):
+        values = sorted({json.dumps(r.get(field)) for r in runs})
+        if len(values) != 1 or runs[0].get(field) is None:
+            out["status"] = "inconsistent_runs"
+            out["limitations"].append(f"reference runs do not share one {field}: {values}")
+            return out
+        out[field] = runs[0][field]
 
     loaded = {run_name(r): run_samples(r, keys, root) for r in runs}
     missing = sorted(name for name, value in loaded.items() if value is None)
