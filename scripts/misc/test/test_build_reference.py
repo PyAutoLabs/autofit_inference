@@ -4,7 +4,6 @@ the agreement rule or the raw samples do not support."""
 import json
 import math
 import sys
-
 from pathlib import Path as _Path
 
 import numpy as np
@@ -111,9 +110,7 @@ def test_one_agreeing_family_is_complete_with_the_limitation(tmp_path):
 
 def test_missing_raw_samples_is_never_complete(tmp_path):
     n = 100.0 - math.log(6)
-    root = make_root(
-        tmp_path, [n, n, n], [100.0, 100.0, 100.0], missing={("dynesty_static", 1)}
-    )
+    root = make_root(tmp_path, [n, n, n], [100.0, 100.0, 100.0], missing={("dynesty_static", 1)})
     out = build_reference.build(DATASET, BACKEND, root)
     assert out["status"] == "samples_missing"
     assert out["missing_samples"] == ["dynesty_static_seed1"]
