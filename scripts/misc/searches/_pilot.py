@@ -48,9 +48,25 @@ DEFERRED = {
 
 #: Why a planned run with no row is deferred (compute budget, never fabricated).
 BUDGET_REASON = (
-    "not run within the B3 pilot compute budget (one shared laptop, ~6 h wall beside the "
-    "pending reference runs); wave 2 runs on RAL --partition=ral"
+    "not run: the B3 pilot (one shared laptop) was stopped by the wrap-up ruling of "
+    "2026-10-08 before reaching this cell; deferred to wave 2 on RAL --partition=ral"
 )
+
+#: Why the pilot is partial: recorded on the catalogue and in the README.
+PILOT_STOPPED = (
+    "Wave 1 was stopped by the B3 wrap-up ruling (2026-10-08) before its expected-run "
+    "manifest was complete: every run without a row is deferred to wave 2 on RAL "
+    "--partition=ral (NSS to phase A3b). The pilot ran on PyAutoFit main before phase A2 "
+    "(gradients under JAX, PyAutoFit#1679) merged."
+)
+
+#: Search-level caveats appended to the catalogue reason, keyed by PyAutoFit class.
+_PRE_A2_NOTE = (
+    "pilot ran on PyAutoFit main pre-A2; the non-finite results are expected to change "
+    "once A2 (PyAutoFit#1679, gradients under JAX) merges, so these rows are not a "
+    "judgement on the search"
+)
+SEARCH_NOTES: dict[str, str] = {"BFGS": _PRE_A2_NOTE, "LBFGS": _PRE_A2_NOTE}
 
 
 #: Planned cells whose remaining seeds were deliberately not run after the first

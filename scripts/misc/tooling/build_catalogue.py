@@ -244,6 +244,8 @@ def build(root: Path = ROOT, manifest: dict | None = None) -> dict:
             if cell.sampler in harness
         ]
         status, reason = search_status(cls, legs, harness)
+        if cls in pilot.SEARCH_NOTES:
+            reason = f"{reason}; {pilot.SEARCH_NOTES[cls]}"
         caps = entry.get("capabilities") or {}
         tasks[task]["searches"][cls] = {
             "class_path": entry.get("class_path"),
@@ -283,6 +285,7 @@ def build(root: Path = ROOT, manifest: dict | None = None) -> dict:
             "autofit_version": manifest.get("autofit_version"),
             "searches": len(manifest["searches"]),
         },
+        "pilot_stopped": pilot.PILOT_STOPPED,
         "pyautofit_commits": commits,
         "coverage": {
             "expected_runs": len(expected),

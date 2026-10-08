@@ -156,6 +156,9 @@ def render_catalogue() -> str:
         "Accepted counts are judged by protocol `gaussian_x3@1`; an attempt that could not be "
         "judged (no complete reference) is not counted as accepted."
     )
+    if doc.get("pilot_stopped"):
+        lines.append("")
+        lines.append(f"**Pilot stopped.** {doc['pilot_stopped']}")
     return "\n".join(lines) + "\n"
 
 
