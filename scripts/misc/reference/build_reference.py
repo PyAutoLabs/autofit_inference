@@ -10,9 +10,20 @@ Protocol ``gaussian_x3@1`` §6. Reads the per-run rows ``run_reference.py`` wrot
 - the pooled marginals: every included run's weighted samples (``samples.csv`` from its
   kept output directory), each run's weights normalised to sum to one, so each run counts
   equally;
-- ``status: complete`` when at least the three Nautilus runs exist; ``included_runs``:
-  all runs when they agree (§6: 0.2 nat, 0.1 σ), otherwise the agreeing family, with the
-  disagreement written into ``limitations``.
+- ``status``:
+
+  - ``complete`` — at least three Nautilus runs, every run's raw ``samples.csv``
+    available, and either all runs agree (§6: 0.2 nat, 0.1 σ) or one sampler family
+    does; ``included_runs`` is then all runs or that agreeing family, with the
+    disagreement written into ``limitations``;
+  - ``pending`` — fewer than three Nautilus runs;
+  - ``samples_missing`` — a run's raw ``samples.csv`` is not on disk. There is no
+    fallback: averaging per-run quantiles is not pooling distributions, so a reference
+    rebuilt without the raw samples would differ from one rebuilt with them;
+  - ``disagreeing`` — neither all runs nor any family agree; the agreement statistics are
+    recorded and no reference values are written.
+
+  Only ``complete`` references judge rows (``_protocol.acceptance``).
 
 Run locally after the reference runs (it needs their ``output/`` directories)::
 
@@ -51,11 +62,15 @@ def read_samples_csv(path: Path, keys) -> tuple[np.ndarray, np.ndarray]:
     return table[:, columns], table[:, header.index("weight")]
 
 
-def run_samples(run: dict, keys) -> tuple[np.ndarray, np.ndarray] | None:
-    output = _ROOT / "output" / run["output_path"] / "files" / "samples.csv"
+def run_samples(run: dict, keys, root: Path = _ROOT) -> tuple[np.ndarray, np.ndarray] | None:
+    output = Path(root) / "output" / run["output_path"] / "files" / "samples.csv"
     if not output.exists():
         return None
     return read_samples_csv(output, keys)
+
+
+def run_name(run: dict) -> str:
+    return f"{run['sampler']}_seed{run['seed']}"
 
 
 def agreement(runs: list[dict], pooled: dict, offsets) -> dict:
@@ -86,40 +101,26 @@ def agreement(runs: list[dict], pooled: dict, offsets) -> dict:
     }
 
 
-def pool(runs: list[dict], keys) -> tuple[dict, list[dict], str]:
-    blocks, weights = [], []
-    for r in runs:
-        loaded = run_samples(r, keys)
-        if loaded is None:
-            break
-        matrix, w = loaded
-        blocks.append(matrix)
-        weights.append(post.normalised_weights(w))
-    if len(blocks) == len(runs):
-        matrix = np.vstack(blocks)
-        w = np.concatenate(weights) / len(runs)
-        return (
-            post.posterior_stats(post.relabel_matrix(matrix, keys), w, keys),
-            post.mode_clusters(matrix, w, keys),
-            "pooled samples.csv (equal weight per run)",
-        )
-    stats = {
-        key: {
-            field: float(np.mean([r["posterior_relabelled"][key][field] for r in runs]))
-            for field in runs[0]["posterior_relabelled"][key]
-        }
-        for key in keys
-    }
-    return stats, runs[0]["modes"], "mean of per-run marginals (output/ not available)"
+def pool(loaded: dict, runs: list[dict], keys) -> tuple[dict, list[dict], str]:
+    """Pooled relabelled marginals and modes of ``runs`` from their raw samples
+    (``loaded``: run name -> (matrix, weights)), each run weighted equally."""
+    matrix = np.vstack([loaded[run_name(r)][0] for r in runs])
+    w = np.concatenate([post.normalised_weights(loaded[run_name(r)][1]) for r in runs]) / len(runs)
+    return (
+        post.posterior_stats(post.relabel_matrix(matrix, keys), w, keys),
+        post.mode_clusters(matrix, w, keys),
+        "pooled samples.csv (equal weight per run)",
+    )
 
 
-def build(dataset: str, backend: str) -> dict:
-    directory = _ROOT / "results" / "reference" / dataset / backend
+def build(dataset: str, backend: str, root: Path = _ROOT) -> dict:
+    root = Path(root)
+    directory = root / "results" / "reference" / dataset / backend
     runs = []
     for sampler in SAMPLERS:
         for path in sorted(directory.glob(f"{sampler}_seed*.json")):
             runs.append(json.loads(path.read_text()))
-    offsets = protocol.load_json(protocol.offsets_file(_ROOT))
+    offsets = protocol.load_json(protocol.offsets_file(root))
     map_ref = protocol.load_json(directory / "map_reference.json")
     by_sampler = {s: [r for r in runs if r["sampler"] == s] for s in SAMPLERS}
     out = {
@@ -128,7 +129,7 @@ def build(dataset: str, backend: str) -> dict:
         "protocol_id": protocol.PROTOCOL_ID,
         "dataset": dataset,
         "backend": backend,
-        "runs": [f"{r['sampler']}_seed{r['seed']}" for r in runs],
+        "runs": [run_name(r) for r in runs],
         "limitations": [],
     }
     if len(by_sampler["nautilus"]) < 3:
@@ -138,31 +139,52 @@ def build(dataset: str, backend: str) -> dict:
     keys = list(runs[0]["posterior_relabelled"])
     out["assertion_mechanism"] = runs[0]["assertion_mechanism"]
 
-    all_stats, _, _ = pool(runs, keys)
+    loaded = {run_name(r): run_samples(r, keys, root) for r in runs}
+    missing = sorted(name for name, value in loaded.items() if value is None)
+    if missing:
+        out["status"] = "samples_missing"
+        out["missing_samples"] = missing
+        out["limitations"].append(
+            f"raw samples.csv missing for {missing}: the reference cannot be rebuilt "
+            "(quantile averaging is not pooling, so there is no fallback)"
+        )
+        return out
+
+    all_stats, _, _ = pool(loaded, runs, keys)
     all_agree = agreement(runs, all_stats, offsets)
     included = runs
     if not (all_agree["logz_ok"] and all_agree["median_ok"]):
         families = {}
         for sampler, members in by_sampler.items():
             if len(members) >= 3:
-                stats, _, _ = pool(members, keys)
+                stats, _, _ = pool(loaded, members, keys)
                 families[sampler] = agreement(members, stats, offsets)
         agreeing = [s for s, a in families.items() if a["median_ok"] and a["logz_ok"]]
-        chosen = "nautilus" if "nautilus" in agreeing or not agreeing else agreeing[0]
-        included = by_sampler[chosen]
         out["family_agreement"] = families
-        out["limitations"].append(
+        disagreement = (
             f"the six runs disagree (ln Z spread {all_agree['log_evidence_spread']}, "
             f"worst median {all_agree['median_agreement_sigma']:.2f} sigma at "
-            f"{all_agree['median_agreement_worst']}); the reference is the {chosen} runs only"
+            f"{all_agree['median_agreement_worst']})"
         )
-    stats, modes, pooling = pool(included, keys)
+        if not agreeing:
+            out["status"] = "disagreeing"
+            out["agreement_all"] = all_agree
+            out["limitations"].append(
+                f"{disagreement}; no sampler family agrees within itself "
+                f"(§6: ln Z spread <= {LOGZ_AGREEMENT_NAT} nat, medians <= "
+                f"{MEDIAN_AGREEMENT_SIGMA} sigma): no reference values, rows are not assessed"
+            )
+            return out
+        chosen = "nautilus" if "nautilus" in agreeing else agreeing[0]
+        included = by_sampler[chosen]
+        out["limitations"].append(f"{disagreement}; the reference is the {chosen} runs only")
+    stats, modes, pooling = pool(loaded, included, keys)
     included_agree = agreement(included, stats, offsets)
     normalised = [v for v in included_agree["log_evidence_normalised"] if v is not None]
     out.update(
         {
             "status": "complete",
-            "included_runs": [f"{r['sampler']}_seed{r['seed']}" for r in included],
+            "included_runs": [run_name(r) for r in included],
             "pooling": pooling,
             "agreement_all": all_agree,
             "agreement_included": included_agree,

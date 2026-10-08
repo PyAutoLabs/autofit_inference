@@ -200,9 +200,11 @@ def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -
     if task not in TASKS:
         return {"acceptance": "not_assessed", "reason": f"unknown task {task!r}", "criteria": []}
     if not reference or reference.get("status") != "complete":
+        status = (reference or {}).get("status", "missing")
         return {
             "acceptance": "not_assessed",
-            "reason": f"no complete reference for {row.get('dataset')}/{row.get('backend')}",
+            "reason": f"no complete reference for {row.get('dataset')}/{row.get('backend')} "
+            f"(reference status: {status})",
             "criteria": [],
         }
     if row.get("dataset") != reference.get("dataset") or row.get("backend") != reference.get(
