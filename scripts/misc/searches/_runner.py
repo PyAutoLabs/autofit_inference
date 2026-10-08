@@ -441,7 +441,9 @@ def nested_termination(sampler: str, search, internal) -> dict:
                 "shells_full": shells_full,
                 "n_eff": n_eff,
                 "n_eff_target": n_eff_target,
-                "f_live": float(internal.f_live),
+                # nautilus reports f_live as None once exploration has ended
+                # (``explored`` then records that f_live reached the target).
+                "f_live": None if internal.f_live is None else float(internal.f_live),
                 "f_live_target": float(search.f_live),
                 "n_like": n_like,
                 "n_like_max": None

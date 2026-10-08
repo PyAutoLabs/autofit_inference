@@ -94,6 +94,9 @@ def test_nested_termination_reads_nautilus_state_and_flags_budget_stops():
 
     ok = runner.nested_termination("nautilus", search, sampler())
     assert ok["observable"] and ok["met"] is True and ok["n_like_max"] is None
+    # A real Sampler reports f_live None after exploration (found on the local witness).
+    after = runner.nested_termination("nautilus", search, sampler(f_live=None))
+    assert after["observable"] and after["met"] is True and after["f_live"] is None
     budget = runner.nested_termination("nautilus", search, sampler(n_eff=100.0))
     assert budget["met"] is False
     unexplored = runner.nested_termination("nautilus", search, sampler(explored=False))
