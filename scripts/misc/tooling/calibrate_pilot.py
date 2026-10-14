@@ -155,10 +155,9 @@ def calibrate(root: Path = ROOT) -> dict:
     walls: dict[tuple, list[float]] = defaultdict(list)
     for row in rows:
         cell = (row.get("sampler"), row.get("settings_name"), row.get("backend"))
-        if catalogue.usable(row) and row.get("total_wall_s") is not None:
-            walls[cell].append(
-                float(row["total_wall_s"]) + float(row.get("provider_wall_s") or 0.0)
-            )
+        cost = protocol.attempt_wall_s(row)
+        if catalogue.usable(row) and cost is not None:
+            walls[cell].append(cost)
         if not catalogue.usable(row):
             continue
         if row.get("family") == "nested" and row.get("ess_kish") is not None:

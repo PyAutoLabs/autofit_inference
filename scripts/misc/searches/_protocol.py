@@ -322,6 +322,13 @@ def convergence(row: dict) -> dict:
             "convergence": "converged" if ok else "not_converged",
             "reason": f"terminated ({_termination_text(termination)}); {ess_text}",
         }
+    invalid = (row.get("chain_diagnostics") or {}).get("invalid_parameters")
+    if invalid:
+        return {
+            "convergence": "not_converged",
+            "reason": "no valid R-hat/bulk ESS for every free parameter (§5); non-finite for: "
+            + ", ".join(invalid),
+        }
     rhat, ess = _num(row.get("rhat_max")), _num(row.get("ess_bulk_min"))
     if rhat is None or ess is None:
         return {"convergence": "not_assessed", "reason": "no chain diagnostics recorded"}
@@ -368,6 +375,24 @@ def wilson_interval(successes: int, n: int, z: float = 1.959963984540054) -> tup
     centre = (p + z * z / (2 * n)) / denom
     half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
     return max(0.0, centre - half), min(1.0, centre + half)
+
+
+def attempt_wall_s(row: dict) -> float | None:
+    """One attempt's elapsed cost (§8): the consumer's ``total_wall_s`` plus, for a
+    warm start, the provider's ``provider_wall_s``. ``None`` when any part is unknown —
+    an unknown cost is missing, never 0. A warm start whose provider failed never
+    started its consumer, so the consumer's share is a known 0."""
+    warm = bool(row.get("warm_start"))
+    provider = row.get("provider_wall_s") if warm else 0.0
+    if provider is None:
+        return None
+    consumer = row.get("total_wall_s")
+    if consumer is None:
+        if warm and row.get("provider_completed") is False:
+            consumer = 0.0
+        else:
+            return None
+    return float(consumer) + float(provider)
 
 
 def wall_per_success(walls: list[float], successes: list[bool]) -> dict:

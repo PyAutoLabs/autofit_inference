@@ -92,3 +92,30 @@ def test_batch_template_passes_the_wall_gate_and_stays_on_ral():
     assert check_submits.check_text(template, "template") == []
     assert "#SBATCH --partition=ral\n" in template
     assert not (ROOT / "hpc" / "batch_gpu").exists()
+
+
+def test_warm_start_export_carries_provider_and_combined_total():
+    """Review 06 finding 4: a warm-start row exports its provider provenance and cost,
+    and total_s is the combined attempt cost, its definition saying so."""
+    rel = (
+        "results/searches/gaussian_x3_separated/data_seed2/blackjax_nuts_warm/"
+        "warmup_200_samples_500/local_jax_cpu_fp64_cache_warm/search_seed0.json"
+    )
+    row = json.loads((ROOT / rel).read_text())
+    refs, offsets = exporter.references(ROOT)
+    rec = exporter.record(row, rel, refs, offsets)
+    assert rec["warm_start"]["provider"] == "nautilus"
+    assert rec["provider_wall_s"] == pytest.approx(1076.4696580, abs=1e-6)
+    assert rec["timings"]["total_s"] == pytest.approx(1150.1580484, abs=1e-6)
+    assert rec["consumer_total_s"] == pytest.approx(73.6883904, abs=1e-6)
+    assert "provider" in rec["timings"]["definitions"]["total_s"]
+    cold = json.loads(
+        (
+            FIXTURES
+            / "root/results/searches/gaussian_x3_blend/data_seed1/nautilus/n_live_100"
+            / "local_numpy_fp64/search_seed0.json"
+        ).read_text()
+    )
+    cold_rec = exporter.record(cold, "results/x.json", refs, offsets)
+    assert cold_rec["warm_start"] is None and cold_rec["provider_wall_s"] is None
+    assert cold_rec["timings"]["total_s"] == cold["total_wall_s"]

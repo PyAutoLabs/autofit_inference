@@ -24,8 +24,18 @@ results are expected to change once A2 merges and are not a judgement on those s
 References: numpy blend and both separated references are complete; the JAX blend
 reference is pending at 2 of 3 Nautilus runs (seed 1 deferred), so JAX blend rows are
 `not_assessed`. The calibration record (`results/calibration/gaussian_x3_wave1.json`)
-keeps the σ-ratio band and ppc tolerance at `@1` (17 calibration rows < 20); the `@2`
-freeze is deferred and still precedes any wave-2 row (protocol §7).
+keeps the σ-ratio band and ppc tolerance at `@1` (17 calibration rows < 20).
+
+**Freeze gate (protocol §7, 2026-10-14).** `gaussian_x3@2` is frozen from that existing
+calibration **before any scored run**; the pilot is not restarted, and its 297 deferred
+runs become scored wave-2 runs, never calibration input. The freeze proceeds on **17
+calibration rows against the 20-row target**. That is acceptable because the
+pre-declared < 20 rule already keeps the σ-ratio band and ppc tolerance at `@1`, so
+`@2` loosens nothing on thin evidence; and the 3 missing rows cannot come from the pilot
+output on disk (every completed nested row with a complete reference is already counted,
+JAX blend nested rows wait on the pending JAX blend reference, and the only row-less run
+directories are two interrupted non-nested runs). Scored wave 2 still waits for a
+PyAutoFit revision after phases A2 **and** A4.
 
 Born 2026-10-07 as phase B1 of the `search-extensibility` epic (PyAutoMind#492; ledger
 `PyAutoMind/draft/research/autofit/search_extensibility_epic.md`). The repo has a lint-green
@@ -59,5 +69,7 @@ not assessed), blend posterior 0/12 (8 not assessed). BFGS/LBFGS non-finite resu
 precede A2 and are expected to change. Calibration: 17 nested calibration rows (< 20),
 so the σ-ratio band and ppc tolerance stay at `@1`.
 
-**Next.** Run the deferred cells (and the JAX blend reference seed 1) on RAL
-`--partition=ral` on a PyAutoFit revision after A2, then freeze `gaussian_x3@2`.
+**Next.** Freeze `gaussian_x3@2` from the existing 17-row calibration (protocol §7)
+before any scored run; do not restart the pilot. Then, on a PyAutoFit revision frozen
+after phases A2 and A4, run scored wave 2 (which absorbs the deferred cells) and the JAX
+blend reference seed 1 on RAL `--partition=ral` (phase B5).

@@ -101,3 +101,32 @@ def test_chain_diagnostics_flag_a_stuck_chain():
     stuck[:, :4, 9] += 3.0
     bad = chain_diagnostics(stuck, keys)
     assert bad["rhat_max"] > 1.2 and bad["ess_bulk_min"] < 100
+
+
+def test_a_constant_parameter_fails_convergence_never_drops_out():
+    """Review 06 finding 5: a parameter frozen at one value in every draw and chain has
+    NaN R-hat/ESS; it must fail convergence, not vanish from the aggregate."""
+    import numpy as np
+    from searches._posterior import chain_diagnostics
+    from searches._protocol import convergence
+
+    keys = [f"g{i}.{p}" for i in range(3) for p in ("centre", "normalization", "sigma")]
+    keys.append("background.level")
+    rng = np.random.default_rng(4)
+    base = np.array([20, 1, 1, 50, 1, 1, 80, 1, 1, 0.0])
+    chain = base + rng.normal(size=(4000, 4, 10))
+    chain[:, :, 9] = 0.0  # background.level stuck at zero everywhere
+    diag = chain_diagnostics(chain, keys)
+    assert diag["rhat_max"] is None and diag["ess_bulk_min"] is None
+    assert diag["invalid_parameters"] == ["background.level"]
+    row = {
+        "task": "posterior",
+        "family": "chain",
+        "completed": True,
+        "rhat_max": diag["rhat_max"],
+        "ess_bulk_min": diag["ess_bulk_min"],
+        "chain_diagnostics": diag,
+    }
+    verdict = convergence(row)
+    assert verdict["convergence"] == "not_converged"
+    assert "background.level" in verdict["reason"]
