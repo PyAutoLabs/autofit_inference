@@ -51,6 +51,13 @@ DEFINITIONS = {
     "total_s": "total_wall_s: elapsed search.fit call; excludes the admission-bar probe and dataset/model setup",
     "compile_s": "First jitted likelihood call of a separate warm-up probe, in a cold- or warm-cache run (compile_cache); not added to total_s; null on numpy",
 }
+#: A warm-start row's ``total_s`` is its whole attempt cost (protocol §8): the provider
+#: search's fit plus the consumer's, combined by the producer (the reader never sums).
+WARM_TOTAL_DEFINITION = (
+    "Attempt cost: warm-start provider search.fit (provider_wall_s) + consumer search.fit "
+    "(consumer_total_s); excludes the admission-bar probe and dataset/model setup; null "
+    "when either part is unknown"
+)
 DIAGNOSTICS = (
     "log_evidence",
     "log_evidence_err",
@@ -153,6 +160,7 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
     values = {k: row[k] for k in DIAGNOSTICS if k in row and row[k] is not None}
     reference = select_reference(refs, row)
     verdict = protocol.verdict(row, reference, offsets)
+    warm = bool(row.get("warm_start"))
     result = {
         "id": row.get("run_id") or rel,
         "parent_run_id": None,
@@ -208,10 +216,16 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
         "timings": {
             "setup_s": None,
             "sampling_s": row.get("wall_s"),
-            "total_s": row.get("total_wall_s"),
+            "total_s": protocol.attempt_wall_s(row) if warm else row.get("total_wall_s"),
             "compile_s": row.get("compile_s"),
-            "definitions": dict(DEFINITIONS),
+            "definitions": (
+                {**DEFINITIONS, "total_s": WARM_TOTAL_DEFINITION} if warm else dict(DEFINITIONS)
+            ),
         },
+        # Additive @1 fields (review 06 finding 4): warm-start provenance and the split.
+        "warm_start": row.get("warm_start") if warm else None,
+        "provider_wall_s": row.get("provider_wall_s") if warm else None,
+        "consumer_total_s": row.get("total_wall_s"),
         "diagnostics": {
             "status": "available" if values else "missing",
             "values": values,
@@ -241,6 +255,10 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
         result["unknown_reasons"]["dependency_revisions"] = "Dependency revisions not recorded"
     if result["execution"]["completed"] is None:
         result["unknown_reasons"]["execution.completed"] = "Completion marker not recorded"
+    if warm and result["timings"]["total_s"] is None:
+        result["unknown_reasons"]["timings.total_s"] = (
+            "Warm-start attempt cost unknown: provider or consumer wall not recorded"
+        )
     for key in ("setup_s", "sampling_s", "total_s", "compile_s"):
         value = result["timings"][key]
         if value is not None and (
@@ -347,6 +365,7 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
             "Rows are judged only against a reference with the same dataset, backend, data seed and assertion mechanism; log evidences are compared only within one backend and one assertion mechanism",
             "Nested-search convergence needs the search's own termination condition: Nautilus is read from its sampler; other nested searches are not_assessed until PyAutoFit exposes it (phase A3)",
             "Completion is execution, not convergence; convergence is reported separately from acceptance",
+            "A warm-start record's total_s is its whole attempt cost (provider_wall_s + consumer_total_s, combined by the producer, protocol §8); cold records' total_s is the search.fit call alone",
             "Sample archives remain in project storage; current availability unknown",
         ],
     }
