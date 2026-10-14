@@ -80,6 +80,28 @@ on RAL. B2 brought the harness and datasets; B3's pilot flips the Cortex row to
 
 ## Runs
 
+**Scored wave 2, submitted 2026-10-14 17:19 BST** on RAL `--partition=ral` (excluding the
+four 252-CPU nodes), 2 CPUs and 6 GB per task, from branch `feature/search-ext-b5a-wave2`
+at `f0b3eef`, against the private pin PyAutoFit `df6d218f10cd` / PyAutoNerves
+`7f3055b7f3d1` (+ `zeus` 2.5.4 in `.pyauto_pin/site`). `squeue` at submission: other
+campaigns held `ral` with three 252-CPU `euclid` Pilot__Xlarge jobs (408225, 408226,
+408230) and one 236-CPU `mlam` job (408241); 1196 of 2188 `ral` CPUs idle; no pending GPU
+jobs. Nothing is pulled or scored in B5a.
+
+| job | array (throttle) | what | depends on |
+|---|---|---|---|
+| 408244 | 0-49 (%50) | blend references: realisations 2–5 × both backends × Nautilus/DynestyStatic seeds 0–2, + JAX Nautilus seed 1 on realisation 1, + NSS `ln 3!` | — |
+| 408245 | 0-47 (%48) | separated references: realisations 1, 3, 4, 5 × both backends × 6 runs | — |
+| 408246 | 0-19 (%20) | probe: Zeus JAX and NSS 50-step, both datasets, realisation 1, seeds 0–4 | — |
+| 408346 | 0-7 (%8) | blend reference builds (MAP + `build_reference.py`) | afterany 408244 |
+| 408347 | 0-7 (%8) | separated reference builds | afterany 408245 |
+| 408348 | 0-379 (%60) | scored blend numpy, 2250 runs | afterany 408346, 408347 |
+| 408365 | 0-344 (%60) | scored blend jax_cpu, 3500 runs | afterany 408346, 408347 |
+| 408366 | 0-379 (%60) | scored separated numpy, 2250 runs | afterany 408346, 408347 |
+| 408367 | 0-389 (%60) | scored separated jax_cpu, 3750 runs | afterany 408346, 408347 |
+
+Dry run (not part of the wave): 408236. Peak footprint 240 scored tasks = 480 CPUs.
+
 Wave-1 pilot rows (223, `pilot: true`) are under `results/searches/`; reference runs are
 under `results/reference/`. Per-cell counts: README "Search rows" and the catalogue.
 
