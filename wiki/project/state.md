@@ -11,7 +11,25 @@ answer fastest, and how reliably, from a cold start and across seeds, on toy lik
 where the truth is known. The first benchmark is `gaussian_x3_blend` +
 `gaussian_x3_separated`.
 
-## Now: wave-1 pilot stopped at 223 of 520 runs (B3); the rest is wave 2 on RAL
+## Now: `gaussian_x3@2` frozen; scored wave 2 on RAL (B5a)
+
+**Freeze (B5a, 2026-10-14).** `gaussian_x3@2` (protocol §11 A2, `_protocol.FROZEN_V2`) was
+committed in **`72d6faaf1717`** (`72d6faaf17171af1573de0f1d2431dbf4444a947`) on branch `feature/search-ext-b5a-wave2`
+(autofit_inference#8) **before any scored run existed**. It freezes the calibration
+record's six values (σ-ratio band [0.5, 2.0] and ppc tolerance 10 kept at `@1` on 17 rows;
+mode-coverage radius 5.5 px; ESS/R-hat bars kept) and the timeout/censoring rules; the 223
+pilot rows stay `@1` with unchanged verdicts. The phase gates are met: A2 (PyAutoFit#1679)
+and A4 (PyAutoFit#1685–#1687, merged as `df6d218f1`).
+
+**Scored wave 2.** 50 seeds × realisations 1–5 × every non-deferred leg × both datasets
+(13 000 expected runs: 11 750 scored now, 20 probe runs for the 4 probe-first cells whose
+other 980 runs follow the probe, 250 deferred — blend warm NUTS), on RAL `--partition=ral`
+against a private PyAutoFit pinned at `df6d218f10cd` (PyAutoNerves `7f3055b7f3d1`) under
+`/mnt/ral/jnightin/autofit_inference/.pyauto_pin/`, never the shared mirror. References
+for the four new realisations per dataset run first. Submission and job ids: `## Runs`.
+Pull, catalogue and `@2` verdicts are the next task (B5b).
+
+## Before: wave-1 pilot stopped at 223 of 520 runs (B3); the rest is wave 2 on RAL
 
 B3 (2026-10-08) ran the wave-1 pilot of `gaussian_x3@1` on one shared laptop and was
 stopped by the wrap-up ruling with **223 of 520** expected runs on disk

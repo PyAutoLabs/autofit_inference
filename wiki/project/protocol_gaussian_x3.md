@@ -184,7 +184,7 @@ convention (the blend's assertions; the control's disjoint priors, A1):
   **5.5 px** (raised from 5 to clear 10 × the largest reference centre σ, 5.32 px; ≤ half
   the smallest truth separation, 7.5 px), nested Kish ESS 500, chain R-hat 1.01 and bulk
   ESS 400 (kept: standard), and the timeout and censoring rules below. Freeze commit:
-  FREEZE_SHA_PENDING (autofit_inference), committed before any scored wave-2 run.
+  `72d6faaf1717` (72d6faaf17171af1573de0f1d2431dbf4444a947) (autofit_inference), committed before any scored wave-2 run.
 - **Why 17 rows suffice for the freeze.** The < 20 rule is pre-declared and
   conservative: below it the σ-ratio band and ppc tolerance keep their `@1` values, so
   `@2` widens nothing from thin evidence. The 3 missing rows cannot be recovered from
@@ -290,7 +290,7 @@ changes; the change rule (top) still governs anything after a wave-1 row.
 
 - **A2 — 2026-10-14, `gaussian_x3@2`: the freeze for scored wave 2** (B5a, PyAutoMind
   `search_ext_b5a_freeze_and_scored_wave2.md`). Committed before any scored wave-2 run
-  (freeze commit FREEZE_SHA_PENDING); judges only rows of wave 2; wave-1 verdicts stay
+  (freeze commit `72d6faaf1717` (72d6faaf17171af1573de0f1d2431dbf4444a947)); judges only rows of wave 2; wave-1 verdicts stay
   `@1`. Changes:
   - *§4(b)2, §4(b)3, §5 — the PLACEHOLDERs are frozen* from
     `results/calibration/gaussian_x3_wave1.json`: σ-ratio band [0.5, 2.0], ppc tolerance
