@@ -74,6 +74,12 @@ PYAUTONERVES_PIN = "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
 #: gitignored), PYTHONPATH-prefixed by every wave-2 submit.
 PIN_DIR = ".pyauto_pin"
 
+#: Third-party packages PyAutoFit's optional extras need that the shared RAL venv lacks
+#: (found by the B5a dry run, RAL job 408236: ``import zeus`` failed), unpacked from their
+#: PyPI wheels into ``.pyauto_pin/site`` (PYTHONPATH after the pins), so the shared venv
+#: is never modified.
+PIN_SITE_PACKAGES = ("zeus-mcmc==2.5.4",)
+
 #: Settings run in wave 2 where they differ from the registry's full list. NSS runs a
 #: wave-2 entry with 50 slice-MCMC steps (≈ 5 × ndim for the 10 free parameters): at
 #: the default 5 steps the A3b witness lost the mode on seed 1 and ln Z by ~27 nat on

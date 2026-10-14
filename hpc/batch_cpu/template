@@ -41,7 +41,7 @@ source $AP_ROOT/activate.sh
 # The private library pin (scripts/misc/searches/_wave2.py PYAUTOFIT_PIN): prefixed, so it
 # wins over the shared checkouts activate.sh puts on PYTHONPATH.
 export AF_PIN=$AP_ROOT/.pyauto_pin
-export PYTHONPATH="$AF_PIN/PyAutoNerves:$AF_PIN/PyAutoFit${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="$AF_PIN/PyAutoNerves:$AF_PIN/PyAutoFit:$AF_PIN/site${PYTHONPATH:+:$PYTHONPATH}"
 
 export JAX_PLATFORMS=cpu
 # Every submit exports this explicitly: without it an fp64 config silently runs fp32.

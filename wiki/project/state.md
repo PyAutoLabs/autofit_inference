@@ -35,8 +35,14 @@ is not on RAL): pull Nautilus seed 1, rebuild, and decide explicitly whether the
 `@1` JAX blend rows (today `not_assessed`, reference pending) are re-judged against it —
 that is a reassessment (review 06 item 8), not a silent change. Until then the scored
 JAX blend realisation-1 rows are written `not_assessed`. (2) The `@2` timeouts are 10× the
-laptop pilot medians; the B5a dry run on RAL measured the RAL/laptop speed ratio (below),
-recorded as a limitation of every censoring decision. (3) The pilot tooling (catalogue,
+laptop pilot medians. The B5a dry run on RAL (job 408236, `euclid-ral-compute-10-1`,
+2 CPUs, from a throwaway copy so none of its rows is a wave row) imported the pins and
+measured RAL **4–7× faster** than the laptop pilot: DynestyStatic reference leg 122 s
+(laptop 518–543 s), DynestyStatic `nlive_200` numpy 28 s (pilot median 173 s),
+MultiStartAdam 14 s (102 s), NSS 50-step 26 s. The timeouts are therefore lenient on
+RAL, never tighter than the protocol intends — recorded as a limitation of every
+censoring decision. It also found `zeus` missing from the shared venv: the pin carries
+it in `.pyauto_pin/site` (the shared venv is not modified). (3) The pilot tooling (catalogue,
 calibration, `inference-summary@1`) reads wave-1 rows only, so pulling wave-2 rows never
 moves the pilot outputs.
 

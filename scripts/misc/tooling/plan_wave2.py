@@ -191,8 +191,11 @@ source $AP_ROOT/activate.sh
 # The private pin: PyAutoFit {wave2.PYAUTOFIT_PIN}, PyAutoNerves
 # {wave2.PYAUTONERVES_PIN}. Prefixed, so it wins over the shared checkouts that
 # activate.sh puts on PYTHONPATH; a wave-2 run refuses any other PyAutoFit commit.
+# $AF_PIN/site holds the third-party packages the pin needs that the shared venv lacks
+# ({", ".join(wave2.PIN_SITE_PACKAGES)}), unpacked from their wheels: the shared venv is
+# never modified.
 export AF_PIN=$AP_ROOT/{wave2.PIN_DIR}
-export PYTHONPATH="$AF_PIN/PyAutoNerves:$AF_PIN/PyAutoFit${{PYTHONPATH:+:$PYTHONPATH}}"
+export PYTHONPATH="$AF_PIN/PyAutoNerves:$AF_PIN/PyAutoFit:$AF_PIN/site${{PYTHONPATH:+:$PYTHONPATH}}"
 
 export JAX_PLATFORMS=cpu
 # Every submit exports this explicitly: without it an fp64 config silently runs fp32.

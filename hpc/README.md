@@ -73,7 +73,9 @@ The wave-2 submits and their task tables are **generated**
 
 Order: on the login node `git fetch && git checkout <branch>` and build the private pin
 (`.pyauto_pin/PyAutoFit` at `_wave2.PYAUTOFIT_PIN`, `.pyauto_pin/PyAutoNerves` at
-`PYAUTONERVES_PIN`; never `HPCPullPyAuto`); submit the two reference arrays and the probe;
+`PYAUTONERVES_PIN`, plus `.pyauto_pin/site` with the wheels of `_wave2.PIN_SITE_PACKAGES`
+unpacked into it — the shared venv lacks `zeus`; never `HPCPullPyAuto`, never modify the
+shared venv); submit the two reference arrays and the probe;
 then each build with `--dependency=afterany:<its reference array>`; then the four scored
 arrays with `--dependency=afterany:<both builds>` (`hpc/sync submit --cpu <name>
 --dependency=…` passes options to `sbatch`). Every submit runs on `--partition=ral` with
