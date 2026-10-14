@@ -282,14 +282,26 @@ def chain_diagnostics(chain, keys, burn_in: float = 0.5) -> dict:
         folded = _rank_normal(np.abs(split - np.median(split)))
         rhats.append(max(_rhat(z), _rhat(folded)))
         esses.append(_ess(z))
-    finite_r = [r for r in rhats if np.isfinite(r)]
-    finite_e = [e for e in esses if np.isfinite(e)]
-    return {
-        "rhat_max": max(finite_r) if finite_r else None,
-        "ess_bulk_min": min(finite_e) if finite_e else None,
+    # Protocol §5 requires the diagnostics on **every** parameter: one with a NaN R-hat
+    # or ESS (e.g. stuck at a constant in every draw and chain) invalidates the
+    # aggregate, it is never silently dropped from it (review 06 finding 5).
+    invalid = [
+        key
+        for key, r, e in zip(keys, rhats, esses, strict=True)
+        if not (np.isfinite(r) and np.isfinite(e))
+    ]
+    out = {
+        "rhat_max": None if invalid else max(rhats),
+        "ess_bulk_min": None if invalid else min(esses),
         "rhat_per_param": dict(zip(keys, [float(r) for r in rhats], strict=True)),
         "ess_bulk_per_param": dict(zip(keys, [float(e) for e in esses], strict=True)),
         "burn_in_fraction": burn_in,
         "draws_per_chain": steps,
         "chains": chains,
     }
+    if invalid:
+        out["invalid_parameters"] = invalid
+        out["reason"] = "non-finite R-hat or bulk ESS (constant or stuck) for: " + ", ".join(
+            invalid
+        )
+    return out

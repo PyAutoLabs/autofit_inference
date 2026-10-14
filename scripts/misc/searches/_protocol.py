@@ -322,6 +322,13 @@ def convergence(row: dict) -> dict:
             "convergence": "converged" if ok else "not_converged",
             "reason": f"terminated ({_termination_text(termination)}); {ess_text}",
         }
+    invalid = (row.get("chain_diagnostics") or {}).get("invalid_parameters")
+    if invalid:
+        return {
+            "convergence": "not_converged",
+            "reason": "no valid R-hat/bulk ESS for every free parameter (§5); non-finite for: "
+            + ", ".join(invalid),
+        }
     rhat, ess = _num(row.get("rhat_max")), _num(row.get("ess_bulk_min"))
     if rhat is None or ess is None:
         return {"convergence": "not_assessed", "reason": "no chain diagnostics recorded"}
