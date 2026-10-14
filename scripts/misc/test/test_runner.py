@@ -56,7 +56,9 @@ def test_registry_covers_every_task_and_default_settings_exist():
     assert tasks == {"point_map", "posterior", "evidence"}
     for name, spec in runner.SAMPLERS.items():
         assert spec.default in spec.settings, name
-    assert runner.SAMPLERS["nss"].status == "deferred"
+    # NSS was deferred in the pilot (its manifest keeps it so); wave 2 runs its 50-step entry.
+    assert runner.SAMPLERS["nss"].status == "measured"
+    assert runner.SAMPLERS["nss"].settings["n_live_200_mcmc_steps_50"]["num_mcmc_steps"] >= 50
     assert runner.SAMPLERS["nautilus"].settings["n_live_100"] == {"n_live": 100}
 
 

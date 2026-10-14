@@ -28,7 +28,10 @@
 #   is a dry run and never writes it.
 #
 # Jobs:
-#   hpc/sync submit <script>     sbatch a submit script from hpc/batch_cpu/ (or --gpu)
+#   hpc/sync submit <script> [sbatch opts]
+#                                sbatch a submit script from hpc/batch_cpu/ (or --gpu);
+#                                options after the name (e.g. --dependency=afterany:<id>)
+#                                go to sbatch
 #                                GPU jobs run on --partition=gpu; CPU jobs on
 #                                --partition=ral (RAL has NO `cpu` partition).
 #   hpc/sync jobs                Show queued/running jobs (squeue)
@@ -378,16 +381,24 @@ EOF
 submit() {
     local script_name="${1:-}"
     local batch_type="cpu"
+    shift || true
 
     if [[ "$script_name" == "--cpu" ]]; then
-        batch_type="cpu"; script_name="${2:-}"
+        batch_type="cpu"; script_name="${1:-}"; shift || true
     elif [[ "$script_name" == "--gpu" ]]; then
-        batch_type="gpu"; script_name="${2:-}"
+        batch_type="gpu"; script_name="${1:-}"; shift || true
     fi
+    # Anything after the script name is passed to sbatch before it, e.g.
+    #   hpc/sync submit --cpu submit_x --dependency=afterany:123:124
+    local sbatch_args=""
+    local arg
+    for arg in "$@"; do
+        sbatch_args+=" $(printf '%q' "$arg")"
+    done
 
     if [[ -z "$script_name" ]]; then
-        echo "Usage: $(basename "$0") submit [--gpu|--cpu] <submit_script_name>"
-        echo "  e.g. hpc/sync submit --cpu submit_<name>"
+        echo "Usage: $(basename "$0") submit [--gpu|--cpu] <submit_script_name> [sbatch options]"
+        echo "  e.g. hpc/sync submit --cpu submit_<name> --dependency=afterany:<jobid>"
         exit 1
     fi
 
@@ -397,9 +408,9 @@ submit() {
     # / `-e` paths are relative (output/…, error/…), so submitting from the project root
     # makes SLURM fail to open the error file and kill the batch step at t=1s with
     # ExitCode 0:53 and no .err to read. Jobs 342008-342010 died exactly this way.
-    echo "==> [submit] sbatch ${script_name}  (from hpc/batch_${batch_type}/)  @  ${HPC_HOST}"
+    echo "==> [submit] sbatch${sbatch_args} ${script_name}  (from hpc/batch_${batch_type}/)  @  ${HPC_HOST}"
     echo ""
-    ssh "${HPC_HOST}" "cd '${remote_dir}' && sbatch '${script_name}'"
+    ssh "${HPC_HOST}" "cd '${remote_dir}' && sbatch${sbatch_args} '${script_name}'"
 }
 
 jobs_cmd() {
@@ -517,7 +528,7 @@ print_help() {
     echo "  status                       Dry run — show what a pull would transfer"
     echo ""
     echo "Jobs:"
-    echo "  submit [--gpu|--cpu] <name>  sbatch a submit script (from hpc/batch_<type>/)"
+    echo "  submit [--gpu|--cpu] <name> [sbatch opts]  sbatch a submit script (from hpc/batch_<type>/)"
     echo "  jobs                         Show queued/running jobs"
     echo "  sacct                        Show job history and exit codes"
     echo "  cancel <job_id>              Cancel a job"
@@ -547,7 +558,7 @@ case "$cmd" in
     logs)     pull_logs ;;
     status)   status ;;
     push)     push ;;
-    submit)   submit "${2:-}" "${3:-}" ;;
+    submit)   shift; submit "$@" ;;
     jobs)     jobs_cmd ;;
     sacct)    sacct_cmd ;;
     cancel)   cancel "${2:-}" ;;

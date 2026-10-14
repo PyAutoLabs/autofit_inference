@@ -1,4 +1,4 @@
-"""Combine the long reference runs into ``results/reference/<dataset>/<backend>/reference.json``.
+"""Combine the long reference runs into ``results/reference/<dataset>/<backend>/[data_seed<d>/]reference.json``.
 
 Protocol ``gaussian_x3@1`` §6. Reads the per-run rows ``run_reference.py`` wrote, the
 ``ln 3!`` offsets ``run_constant_likelihood.py`` measured and the MAP reference
@@ -116,9 +116,9 @@ def pool(loaded: dict, runs: list[dict], keys) -> tuple[dict, list[dict], str]:
     )
 
 
-def build(dataset: str, backend: str, root: Path = _ROOT) -> dict:
+def build(dataset: str, backend: str, root: Path = _ROOT, data_seed: int | None = None) -> dict:
     root = Path(root)
-    directory = root / "results" / "reference" / dataset / backend
+    directory = protocol.reference_dir(root, dataset, backend, data_seed)
     runs = []
     for sampler in SAMPLERS:
         for path in sorted(directory.glob(f"{sampler}_seed*.json")):
@@ -129,7 +129,9 @@ def build(dataset: str, backend: str, root: Path = _ROOT) -> dict:
     out = {
         "schema_version": 1,
         "kind": "reference",
-        "protocol_id": protocol.PROTOCOL_ID,
+        "protocol_id": protocol.PROTOCOL_ID
+        if directory == protocol.reference_dir(root, dataset, backend)
+        else protocol.CURRENT_PROTOCOL_ID,
         "dataset": dataset,
         "backend": backend,
         "runs": [run_name(r) for r in runs],
@@ -226,9 +228,12 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--dataset", default="gaussian_x3_blend")
     parser.add_argument("--backend", choices=("numpy", "jax_cpu"), default="numpy")
+    parser.add_argument(
+        "--data-seed", type=int, default=None, help="data realisation (default: committed)"
+    )
     args = parser.parse_args(argv)
-    out = build(args.dataset, args.backend)
-    path = _ROOT / "results" / "reference" / args.dataset / args.backend / "reference.json"
+    out = build(args.dataset, args.backend, data_seed=args.data_seed)
+    path = protocol.reference_file(_ROOT, args.dataset, args.backend, args.data_seed)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=2) + "\n")
     print(f"wrote {path} (status {out['status']})")

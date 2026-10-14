@@ -89,6 +89,7 @@ class InferenceCLI:
     compile_cache: str
     settings: str | None
     results_root: Path | None = None
+    wave: int = 1
 
 
 def parse_config_name(config_name: str) -> tuple[str, str, str]:
@@ -151,6 +152,14 @@ def build_parser(default_config_name: str = "local_numpy_fp64") -> argparse.Argu
         default=None,
         help="a named settings variant of the sampler (e.g. n_live_200); default = the leaf's",
     )
+    parser.add_argument(
+        "--wave",
+        type=int,
+        choices=(1, 2),
+        default=1,
+        help="1 = the wave-1 pilot (gaussian_x3@1); 2 = scored wave 2 (gaussian_x3@2, "
+        "refused unless autofit is the pinned revision)",
+    )
     return parser
 
 
@@ -179,6 +188,7 @@ def parse_inference_cli(
         compile_cache=args.compile_cache,
         settings=args.settings,
         results_root=args.results_root,
+        wave=int(args.wave),
     )
 
 

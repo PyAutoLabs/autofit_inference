@@ -10,7 +10,7 @@ higher one kept:
    value use the requested backend's Analysis;
 2. an ``LBFGS`` polish from the reference posterior's best (max log posterior) sample.
 
-Writes ``results/reference/<dataset>/<backend>/map_reference.json``. Both
+Writes ``results/reference/<dataset>/<backend>/[data_seed<d>/]map_reference.json``. Both
 ``log_likelihood`` and ``log_posterior`` of the MAP point are recorded, never
 interchanged.
 
@@ -47,6 +47,9 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--config-name", default="local_numpy_fp64")
     parser.add_argument("--dataset", choices=DATASETS, default="gaussian_x3_blend")
+    parser.add_argument(
+        "--data-seed", type=int, default=None, help="data realisation (default: committed)"
+    )
     args = parser.parse_args(argv)
     where, backend, precision = validate_cli(args.config_name, None, None)
     # The MultiStart route needs JAX even on the numpy leg, so PYAUTO_DISABLE_JAX is not
@@ -57,16 +60,21 @@ def main(argv=None) -> int:
     import numpy as np
     from autofit.non_linear.fitness import Fitness
     from models import gaussian_x3 as gx3
+    from run_reference import output_prefix
+    from searches import _protocol as protocol
 
-    data, noise_map, truth_record = gx3.load_dataset(auto_simulate_if_missing(args.dataset))
+    data, noise_map, truth_record = gx3.load_dataset(
+        auto_simulate_if_missing(args.dataset, args.data_seed)
+    )
+    data_seed = truth_record.get("data_seed")
     model = gx3.build_model(dataset=args.dataset)
     keys = gx3.parameter_keys(model)
     analysis = gx3.AnalysisGaussianX3(data=data, noise_map=noise_map, use_jax=backend == "jax_cpu")
     output_root = (_ROOT / "output").resolve()
     af.conf.instance.push(new_path=_ROOT / "config", output_path=output_root)
-    prefix = Path("reference") / args.dataset / args.config_name / "map"
+    prefix = output_prefix(args.dataset, args.config_name, data_seed) / "map"
 
-    reference_dir = _ROOT / "results" / "reference" / args.dataset / backend
+    reference_dir = protocol.reference_dir(_ROOT, args.dataset, backend, data_seed)
     runs = [json.loads(p.read_text()) for p in sorted(reference_dir.glob("*_seed*.json"))]
     if not runs:
         print(f"ERROR: no reference runs under {reference_dir}", file=sys.stderr)
@@ -123,6 +131,7 @@ def main(argv=None) -> int:
         "schema_version": 1,
         "kind": "map_reference",
         "dataset": args.dataset,
+        "data_seed": data_seed,
         "backend": backend,
         "config_name": args.config_name,
         "where": where,
