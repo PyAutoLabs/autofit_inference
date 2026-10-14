@@ -102,3 +102,14 @@ def test_pilot_manifest_covers_the_menu():
         assert c.backend in legs
     assert len(pilot.expected_runs()) == len(cells) * len(pilot.SEEDS)
     assert len(pilot.SEEDS) == 10
+
+
+def test_bootstrap_keeps_zero_success_resamples_as_unbounded():
+    # One success in two attempts: a resample draws zero successes with probability
+    # 1/4, which is above the 2.5 % tail, so the upper endpoint is unbounded (null).
+    interval = catalogue.bootstrap_wall_per_success([10.0, 10.0], [True, False])
+    assert interval == [10.0, None]
+    json.dumps(interval, allow_nan=False)  # no JSON infinity
+    # Every resample has a success: both endpoints stay finite.
+    assert catalogue.bootstrap_wall_per_success([10.0, 10.0], [True, True]) == [10.0, 10.0]
+    assert catalogue.bootstrap_wall_per_success([10.0], [False]) is None

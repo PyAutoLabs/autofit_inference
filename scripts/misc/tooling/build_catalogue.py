@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 import statistics
 import subprocess
@@ -118,7 +119,12 @@ def failure_kind(row: dict) -> str:
 
 def bootstrap_wall_per_success(walls: list[float], successes: list[bool]) -> list | None:
     """95 % bootstrap interval of Σ wall / successes over seeds (protocol §8: 10 000
-    resamples, seed 0); ``None`` when there is no success to divide by."""
+    resamples, seed 0); ``None`` when there is no success to divide by.
+
+    A resample that draws zero successes has an unbounded wall per success: it is kept
+    (as infinity) in the percentile, never discarded — discarding it would report the
+    interval conditional on drawing a success. An unbounded endpoint is serialized as
+    ``null`` (JSON has no infinity)."""
     if not walls or not any(successes):
         return None
     rng = random.Random(0)
@@ -127,12 +133,10 @@ def bootstrap_wall_per_success(walls: list[float], successes: list[bool]) -> lis
     for _ in range(BOOTSTRAP_RESAMPLES):
         idx = [rng.randrange(n) for _ in range(n)]
         k = sum(successes[i] for i in idx)
-        if k:
-            values.append(sum(walls[i] for i in idx) / k)
-    if not values:
-        return None
+        values.append(sum(walls[i] for i in idx) / k if k else math.inf)
     values.sort()
-    return [values[int(0.025 * (len(values) - 1))], values[int(0.975 * (len(values) - 1))]]
+    ends = [values[int(0.025 * (len(values) - 1))], values[int(0.975 * (len(values) - 1))]]
+    return [None if math.isinf(v) else v for v in ends]
 
 
 def leg_summary(cell: pilot.Cell, rows: list[dict], refs: dict, offsets) -> dict:
