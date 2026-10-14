@@ -151,11 +151,11 @@ def leg_summary(cell: pilot.Cell, rows: list[dict], refs: dict, offsets) -> dict
     attempted = len(rows)
     failures = Counter(failure_kind(row) for row in rows if not usable(row))
     missing = [seed for seed in pilot.SEEDS if seed not in by_seed]
-    # §8 wall per right answer: every attempt's wall plus any warm-start provider's.
-    walls = [
-        float(row.get("total_wall_s") or 0.0) + float(row.get("provider_wall_s") or 0.0)
-        for row, _ in verdicts
-    ]
+    # §8 wall per right answer: every attempt's wall plus any warm-start provider's. An
+    # attempt with an unknown cost is missing, never 0: it suppresses the wall estimates.
+    costs = [protocol.attempt_wall_s(row) for row, _ in verdicts]
+    unknown = sum(c is None for c in costs)
+    walls = [c for c in costs if c is not None]
     successes = [v["acceptance"] == "accepted" for _, v in verdicts]
     judged = acceptance.get("accepted", 0) + acceptance.get("rejected", 0)
     leg = {
@@ -173,15 +173,24 @@ def leg_summary(cell: pilot.Cell, rows: list[dict], refs: dict, offsets) -> dict
         "deferred_seeds": missing,
         "deferred_reason": pilot.missing_reason(cell) if missing else None,
         "pyautofit_commits": sorted({r.get("pyautofit_commit") or "unknown" for r in rows}),
-        "median_total_wall_s": statistics.median(walls) if walls else None,
+        "median_total_wall_s": statistics.median(walls) if walls and not unknown else None,
     }
+    if unknown:
+        leg["wall_cost_unknown"] = unknown
+        leg["wall_reason"] = (
+            f"{unknown} attempt(s) have an unknown elapsed cost: wall estimates suppressed"
+        )
     if judged == attempted and attempted:
         k = acceptance.get("accepted", 0)
         lo, hi = protocol.wilson_interval(k, attempted)
         leg["success_rate"] = k / attempted
         leg["success_rate_wilson_95"] = [lo, hi]
-        leg["wall_per_success"] = protocol.wall_per_success(walls, successes)
-        leg["wall_per_success_bootstrap_95"] = bootstrap_wall_per_success(walls, successes)
+        if unknown:
+            leg["wall_per_success"] = None
+            leg["wall_per_success_bootstrap_95"] = None
+        else:
+            leg["wall_per_success"] = protocol.wall_per_success(walls, successes)
+            leg["wall_per_success_bootstrap_95"] = bootstrap_wall_per_success(walls, successes)
     else:
         leg["success_rate"] = None
         leg["success_rate_reason"] = (

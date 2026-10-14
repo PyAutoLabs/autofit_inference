@@ -370,6 +370,24 @@ def wilson_interval(successes: int, n: int, z: float = 1.959963984540054) -> tup
     return max(0.0, centre - half), min(1.0, centre + half)
 
 
+def attempt_wall_s(row: dict) -> float | None:
+    """One attempt's elapsed cost (§8): the consumer's ``total_wall_s`` plus, for a
+    warm start, the provider's ``provider_wall_s``. ``None`` when any part is unknown —
+    an unknown cost is missing, never 0. A warm start whose provider failed never
+    started its consumer, so the consumer's share is a known 0."""
+    warm = bool(row.get("warm_start"))
+    provider = row.get("provider_wall_s") if warm else 0.0
+    if provider is None:
+        return None
+    consumer = row.get("total_wall_s")
+    if consumer is None:
+        if warm and row.get("provider_completed") is False:
+            consumer = 0.0
+        else:
+            return None
+    return float(consumer) + float(provider)
+
+
 def wall_per_success(walls: list[float], successes: list[bool]) -> dict:
     """Expected wall per right answer (§8): Σ wall over all attempts / successes; with
     zero successes, unbounded plus the Wilson-upper lower bound."""

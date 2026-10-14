@@ -484,7 +484,9 @@ def build_search(
     return getattr(af, spec.cls)(path_prefix=path_prefix, name=name, **kwargs)
 
 
-def run_warm_provider(af, spec, settings, warm_from, model, analysis, path_prefix, name, seed):
+def run_warm_provider(
+    af, spec, settings, warm_from, model, analysis, path_prefix, name, seed, record=None
+):
     """Run the warm-start provider (a short search on the same model and Analysis), then
     build the consumer search started from it.
 
@@ -495,10 +497,24 @@ def run_warm_provider(af, spec, settings, warm_from, model, analysis, path_prefi
     answer (§8). The consumer starts from the provider's maximum-likelihood point
     (``Result.start_point_from``, jitter 0.05, the consumer's seed) and, for BlackJAX
     NUTS, seeds its inverse mass matrix from the provider's covariance.
+
+    ``record`` (the caller's dict, filled in place) carries the provenance from the
+    start and the provider's elapsed wall from a ``finally``, so a provider that raises
+    or is terminated still leaves its cost for the failure row (review 06 finding 3).
     """
+    record = {} if record is None else record
     provider_name, provider_settings = warm_from
     provider_spec = SAMPLERS[provider_name]
     provider_kwargs = provider_spec.settings[provider_settings]
+    record["warm_start"] = {
+        "provider": provider_name,
+        "provider_settings": provider_settings,
+        "provider_settings_kwargs": provider_kwargs,
+        "start": "provider max-log-likelihood point, jitter 0.05",
+        "mass_matrix": "provider covariance" if spec.cls == "BlackJAXNUTS" else None,
+    }
+    record["total_wall_s"] = None
+    record["completed"] = False
     provider = build_search(
         af,
         provider_spec,
@@ -508,25 +524,18 @@ def run_warm_provider(af, spec, settings, warm_from, model, analysis, path_prefi
         seed=seed,
     )
     start = time.perf_counter()
-    provider_result = provider.fit(model=model, analysis=analysis)
-    provider_wall = time.perf_counter() - start
+    try:
+        provider_result = provider.fit(model=model, analysis=analysis)
+    finally:
+        record["total_wall_s"] = time.perf_counter() - start
+    record["completed"] = True
+    record["log_evidence"] = _as_float(getattr(provider_result.samples, "log_evidence", None))
     extra = {"initializer": provider_result.start_point_from(n_points=1, jitter=0.05, seed=seed)}
     if spec.cls == "BlackJAXNUTS":
         extra["inverse_mass_matrix"] = provider_result
     consumer = build_search(
         af, spec, settings, path_prefix=str(path_prefix), name=name, seed=seed, extra_kwargs=extra
     )
-    record = {
-        "warm_start": {
-            "provider": provider_name,
-            "provider_settings": provider_settings,
-            "provider_settings_kwargs": provider_kwargs,
-            "start": "provider max-log-likelihood point, jitter 0.05",
-            "mass_matrix": "provider covariance" if spec.cls == "BlackJAXNUTS" else None,
-        },
-        "total_wall_s": provider_wall,
-        "log_evidence": _as_float(getattr(provider_result.samples, "log_evidence", None)),
-    }
     return consumer, record
 
 
@@ -822,10 +831,19 @@ def run_search(
             admission_bar()
         warm_from = spec.extra.get("warm_from")
         if warm_from is not None:
-            search, provider = run_warm_provider(
-                af, spec, settings, warm_from, model, analysis, path_prefix, search_name, seed
+            timing["provider"] = {}
+            search, _ = run_warm_provider(
+                af,
+                spec,
+                settings,
+                warm_from,
+                model,
+                analysis,
+                path_prefix,
+                search_name,
+                seed,
+                record=timing["provider"],
             )
-            timing["provider"] = provider
         tracker.t0 = time.time()
         fit_start = time.perf_counter()
         result = search.fit(model=model, analysis=analysis)
@@ -1013,6 +1031,7 @@ def run_search(
             # --- warm start (protocol §8: the provider's cost counts) ------------
             "warm_start": (timing.get("provider") or {}).get("warm_start"),
             "provider_wall_s": (timing.get("provider") or {}).get("total_wall_s"),
+            "provider_completed": (timing.get("provider") or {}).get("completed"),
         }
         row = sanitise_nonfinite(row)
         row["status"] = scrub_paths(row["status"])

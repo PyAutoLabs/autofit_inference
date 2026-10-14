@@ -113,3 +113,24 @@ def test_bootstrap_keeps_zero_success_resamples_as_unbounded():
     # Every resample has a success: both endpoints stay finite.
     assert catalogue.bootstrap_wall_per_success([10.0, 10.0], [True, True]) == [10.0, 10.0]
     assert catalogue.bootstrap_wall_per_success([10.0], [False]) is None
+
+
+def test_leg_summary_reports_unknown_cost_as_missing_never_zero():
+    """Review 06 finding 3: a row with no recorded cost suppresses the wall estimates."""
+    cell = next(c for c in pilot.cells() if c.sampler == "lbfgs" and c.backend == "numpy")
+    base = {
+        "dataset": cell.dataset,
+        "sampler": cell.sampler,
+        "settings_name": cell.settings,
+        "config_id": cell.config_id,
+        "task": "point_map",
+        "family": "optimizer",
+    }
+    rows = [
+        {**base, "seed": 0, "status": "complete", "completed": True, "total_wall_s": 10.0},
+        {**base, "seed": 1, "status": "failed: Boom: x", "completed": False, "total_wall_s": None},
+    ]
+    leg = catalogue.leg_summary(cell, rows, {}, None)
+    assert leg["median_total_wall_s"] is None
+    assert leg["wall_cost_unknown"] == 1
+    assert "unknown" in leg["wall_reason"]

@@ -179,3 +179,21 @@ def test_wilson_and_wall_per_success():
 def test_placeholders_are_named_thresholds():
     assert set(protocol.PLACEHOLDERS) <= set(protocol.THRESHOLDS)
     assert protocol.THRESHOLDS["sigma_ratio_band"] == (0.5, 2.0)
+
+
+def test_attempt_wall_is_unknown_never_zero():
+    """Review 06 finding 3: an unknown elapsed cost is missing, never 0."""
+    from searches._protocol import attempt_wall_s
+
+    assert attempt_wall_s({"total_wall_s": 5.0}) == 5.0
+    warm = {"warm_start": {"provider": "nautilus"}, "provider_completed": True}
+    assert attempt_wall_s({**warm, "total_wall_s": 5.0, "provider_wall_s": 10.0}) == 15.0
+    assert attempt_wall_s({**warm, "total_wall_s": 5.0, "provider_wall_s": None}) is None
+    assert attempt_wall_s({"status": "failed: X", "total_wall_s": None}) is None
+    failed_provider = {
+        "warm_start": {"provider": "nautilus"},
+        "provider_completed": False,
+        "provider_wall_s": 7.0,
+        "total_wall_s": None,
+    }
+    assert attempt_wall_s(failed_provider) == 7.0

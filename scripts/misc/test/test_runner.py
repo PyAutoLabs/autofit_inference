@@ -265,3 +265,50 @@ def test_warm_nuts_names_its_provider():
     provider, settings = spec.extra["warm_from"]
     assert settings in SAMPLERS[provider].settings
     assert spec.cls == SAMPLERS["blackjax_nuts"].cls and spec.task == "posterior"
+
+
+def test_a_failed_warm_start_provider_keeps_its_elapsed_wall(tmp_path, monkeypatch):
+    """Review 06 finding 3: a provider that raises still records its elapsed cost."""
+    import json
+    import time
+
+    import pytest
+
+    pytest.importorskip("autofit")
+    pytest.importorskip("jax")
+
+    class ProviderBoom(RuntimeError):
+        pass
+
+    class FailingProvider:
+        paths = None
+
+        def fit(self, model, analysis):
+            time.sleep(0.2)
+            raise ProviderBoom("provider failed")
+
+    monkeypatch.setattr(runner, "build_search", lambda *a, **k: FailingProvider())
+    monkeypatch.setenv("PYAUTO_TEST_MODE", "1")
+    argv = [
+        "--config-name",
+        "local_jax_cpu_fp64",
+        "--seed",
+        "0",
+        "--output-dir",
+        str(tmp_path / "output"),
+        "--results-root",
+        str(tmp_path / "rows"),
+    ]
+    with pytest.raises(ProviderBoom):
+        runner.run_search("blackjax_nuts_warm", "gaussian_x3_blend", "gaussian_x3", argv=argv)
+    (path,) = (tmp_path / "rows" / "results" / "searches").rglob("*.json")
+    row = json.loads(path.read_text())
+    assert row["status"].startswith("failed: ProviderBoom")
+    assert row["provider_wall_s"] is not None and row["provider_wall_s"] >= 0.2
+    assert row["warm_start"]["provider"] == "nautilus"
+    assert row["provider_completed"] is False
+    # The consumer never started: its own cost is zero, so the attempt cost is known.
+    assert row["total_wall_s"] is None
+    from searches import _protocol as protocol
+
+    assert protocol.attempt_wall_s(row) == pytest.approx(row["provider_wall_s"])
