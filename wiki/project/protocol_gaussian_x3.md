@@ -161,10 +161,25 @@ convention (the blend's assertions; the control's disjoint priors, A1):
   ruling at 223 of its 520 expected runs (the rest deferred to wave 2 on RAL
   `--partition=ral`; NSS to phase A3b). `results/calibration/gaussian_x3_wave1.json`
   records the evidence the pre-declared rules give on those rows: 17 calibration rows
-  (< 20), so the σ-ratio band and the ppc tolerance stay at their `@1` values. **The
-  `@2` freeze is not made in B3**: it is deferred until the pilot's deferred runs are
-  in, and still lands before the first wave-2 row. The pilot ran on PyAutoFit main
-  `0dbf258c4f5e`, before phase A2 (PyAutoFit#1679, gradients under JAX).
+  (< 20), so the σ-ratio band and the ppc tolerance stay at their `@1` values. The
+  pilot ran on PyAutoFit main `0dbf258c4f5e`, before phase A2 (PyAutoFit#1679,
+  gradients under JAX).
+- **Freeze gate (B3c, 2026-10-14) — the one rule.** `gaussian_x3@2` is frozen from the
+  calibration that already exists (`results/calibration/gaussian_x3_wave1.json`, 17
+  calibration rows) and committed **before any scored run**. The pilot is **not**
+  restarted and its 297 deferred runs are **not** calibration input: they move to the
+  scored wave 2 and are judged under `@2`. Scored wave 2 still waits for a PyAutoFit
+  revision frozen after phases **A2 and A4** (§9). Any calibration extension a human
+  authorizes later is a separately identified run set, committed under its own record
+  and excluded from scored results; it never changes `@2` after the first scored row.
+- **Why 17 rows suffice for the freeze.** The < 20 rule is pre-declared and
+  conservative: below it the σ-ratio band and ppc tolerance keep their `@1` values, so
+  `@2` widens nothing from thin evidence. The 3 missing rows cannot be recovered from
+  the pilot output on disk: every completed nested row with a complete reference is
+  already among the 17; the JAX blend nested rows need the pending JAX blend reference
+  (seed 1 not run); the only run directories without a row are two interrupted
+  non-nested runs (separated SMC and warm NUTS, JAX, seed 1). Reaching 20 would need
+  new compute, which the B3 wrap-up ruling ended.
 
 ## 8. Headline numbers
 
