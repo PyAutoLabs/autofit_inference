@@ -203,8 +203,10 @@ export NPROC=1
 echo "=========================================="
 date
 cd $AP_ROOT
-python3 -c "import autofit, autonerves; print('autofit', autofit.__version__, autofit.__file__); print('autonerves', autonerves.__file__)"
-git -C $AF_PIN/PyAutoFit rev-parse HEAD
+# Refuse to run anything unless both pins are at their commits and are what imports.
+test "$(git -C $AF_PIN/PyAutoFit rev-parse HEAD)" = "{wave2.PYAUTOFIT_PIN}"
+test "$(git -C $AF_PIN/PyAutoNerves rev-parse HEAD)" = "{wave2.PYAUTONERVES_PIN}"
+python3 -c "import autofit, autonerves, os; pin = os.environ['AF_PIN']; assert autofit.__file__.startswith(pin) and autonerves.__file__.startswith(pin), (autofit.__file__, autonerves.__file__); print('autofit', autofit.__version__, autofit.__file__); print('autonerves', autonerves.__file__)"
 """
 
 
@@ -243,7 +245,7 @@ def sbatch(job: str, n_tasks: int, throttle: int, time_s: float, cpus: int = CPU
 
 def search_call(dataset: str, sampler: str) -> str:
     return (
-        f'timeout -s TERM -k 300 "$LIMIT" python3 scripts/{dataset}/searches/{sampler}/gaussian_x3.py '
+        f'timeout -s TERM -k {int(wave2.KILL_GRACE_S)} "$LIMIT" python3 scripts/{dataset}/searches/{sampler}/gaussian_x3.py '
         '--wave 2 --config-name "$CONFIG" --settings "$SETTINGS" --data-seed "$DATA_SEED" '
         '--seed "$SEED" --cores 1 || echo "run '
         f"{dataset}/{sampler}/$SETTINGS/data_seed$DATA_SEED/seed$SEED exited $? (its row, if "

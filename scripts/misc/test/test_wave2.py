@@ -230,7 +230,7 @@ def test_the_pilot_manifest_is_unchanged_by_wave2():
 def test_accounting_separates_row_failed_missing_and_deferred():
     rows = [
         scored_row(data_seed=1, seed=0),
-        scored_row(data_seed=1, seed=1, status="failed: Terminated: signal SIGTERM"),
+        scored_row(data_seed=1, seed=1, status="failed: FloatingPointError: x"),
         scored_row(data_seed=1, seed=2, pyautofit_commit="f" * 40),
     ]
     out = wave2.accounting(rows)
@@ -256,6 +256,40 @@ def test_accounting_separates_row_failed_missing_and_deferred():
         == totals["expected"]
     )
     assert totals["expected"] == len(wave2.expected_runs())
+
+
+def test_an_operational_kill_is_missing_and_a_resumed_row_is_refused():
+    cell = next(
+        c
+        for c in wave2.cells()
+        if c.key[:3] == ("gaussian_x3_blend", "nautilus", "n_live_100") and c.backend == "numpy"
+    )
+    early = scored_row(
+        data_seed=1, seed=0, status="failed: Terminated: signal SIGTERM", total_wall_s=10.0
+    )
+    late = scored_row(
+        data_seed=1,
+        seed=1,
+        status="failed: Terminated: signal SIGTERM",
+        total_wall_s=cell.timeout_s + 1,
+    )
+    assert wave2.operational_kill(early, cell) and not wave2.operational_kill(late, cell)
+    leg = next(
+        g
+        for g in wave2.accounting([early, late])["legs"]
+        if g["id"] == "gaussian_x3_blend/nautilus/n_live_100/ral_numpy_fp64/data_seed1"
+    )
+    assert 0 in leg["missing"] and leg["failed"] == [1]
+    assert "resumed" in wave2.admit(scored_row(resumed=True))
+
+
+def test_wave2_rows_never_enter_the_pilot_tooling(tmp_path):
+    import build_catalogue as catalogue
+
+    path = tmp_path / "results/searches/x/search_seed0.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"schema_version": 1, **scored_row()}))
+    assert catalogue.scan_rows(tmp_path) == []
 
 
 # --- the generated RAL plan -------------------------------------------------------------

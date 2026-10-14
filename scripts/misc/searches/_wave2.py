@@ -28,8 +28,10 @@ Every expected run (:func:`expected_runs`) is exactly one of:
 - ``failed`` — an admitted row that did not complete (crash, timeout ``Terminated``,
   non-finite answer): an attempt that failed, with its wall;
 - ``missing`` — planned, no admitted row (not run yet, or a hard kill / OOM that left
-  none). Once the wave is closed a missing run is a failed attempt censored at its
-  timeout (protocol §7), never dropped;
+  none), or an operational kill: a ``Terminated`` row whose ``total_wall_s`` is below the
+  cell's timeout was stopped by something other than the protocol (rerun it). Once the
+  wave is closed a missing run is a failed attempt censored at its timeout (protocol
+  §7), never dropped;
 - ``deferred`` — deliberately not run, with the reason (:data:`DEFERRED`).
 """
 
@@ -234,6 +236,8 @@ def admit(row: dict, timeouts: dict | None = None) -> str | None:
         return f"data_seed {row.get('data_seed')!r} is not one of {DATA_SEEDS}"
     if row.get("seed") not in SEEDS:
         return f"search seed {row.get('seed')!r} is outside 0–{len(SEEDS) - 1}"
+    if row.get("resumed") is True:
+        return "resumed from an earlier fit: the attempt's own wall was not observed"
     if manifest_key(row) not in cell_keys(timeouts):
         return f"{manifest_key(row)[:4]} is not a cell of the wave-2 menu"
     return None
@@ -246,6 +250,15 @@ def admit(row: dict, timeouts: dict | None = None) -> str | None:
 
 def _completed(row: dict) -> bool:
     return row.get("status") == "complete" and row.get("completed") is True
+
+
+def operational_kill(row: dict, cell: Cell) -> bool:
+    """A ``Terminated`` row stopped before its cell's protocol timeout: not an attempt the
+    protocol censors, so it is ``missing`` (to rerun), never ``failed``."""
+    if "Terminated" not in str(row.get("status")) or cell.timeout_s is None:
+        return False
+    wall = row.get("total_wall_s")
+    return wall is None or float(wall) < cell.timeout_s
 
 
 def accounting(rows: list[dict], timeouts: dict | None = None) -> dict:
@@ -286,7 +299,7 @@ def accounting(rows: list[dict], timeouts: dict | None = None) -> dict:
                 row = admitted.get((*cell.key, data_seed, seed))
                 if cell.status == "deferred":
                     leg["deferred"].append(seed)
-                elif row is None:
+                elif row is None or operational_kill(row, cell):
                     leg["missing"].append(seed)
                 elif _completed(row):
                     leg["row"] += 1
@@ -317,6 +330,11 @@ BLOCK_TARGET_S = 7200.0
 #: admission-bar timing. Censoring at judging time compares ``total_wall_s`` with the
 #: timeout itself.
 RUN_OVERHEAD_S = 120.0
+
+#: Seconds ``timeout -k`` waits after SIGTERM before SIGKILL (the runner writes its failure
+#: row in that window); every task's ``--time`` covers it for every run, so SLURM never
+#: kills a run the protocol timeout would still have allowed.
+KILL_GRACE_S = 300.0
 
 
 def block_size(cell: Cell, timeouts: dict | None = None) -> int:
@@ -358,7 +376,8 @@ class Task:
 
     @property
     def budget_s(self) -> float:
-        return self.limit_s * len(self.seeds)
+        """The worst case of the task: every run hits its limit and its kill grace."""
+        return (self.limit_s + KILL_GRACE_S) * len(self.seeds)
 
 
 def scored_tasks(dataset: str, backend: str, timeouts: dict | None = None) -> list[Task]:

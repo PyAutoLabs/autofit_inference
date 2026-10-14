@@ -771,11 +771,13 @@ def run_search(
                 file=sys.stderr,
             )
             return 2
+    env = set_backend_env(cli.backend, cli.precision, cli.cores, cli.compile_cache)
+    if wave >= 2:
+        # After the backend env: library_revisions imports autofit.
         refusal = wave_refusal(wave, library_revisions(), wave2.PYAUTOFIT_PIN)
         if refusal:
             print(f"ERROR: {refusal}", file=sys.stderr)
             return 2
-    env = set_backend_env(cli.backend, cli.precision, cli.cores, cli.compile_cache)
 
     # --- imports: everything below here sees the backend environment above ---
     import autofit as af

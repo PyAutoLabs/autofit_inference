@@ -133,7 +133,11 @@ def references(root: Path) -> tuple[dict, dict | None]:
     """``{reference_key: reference}``, keyed by the full identity (dataset, backend,
     data_seed, assertion_mechanism), and the measured offsets."""
     refs = {}
-    for path in sorted((root / "results" / "reference").glob("*/*/reference.json")):
+    paths = [
+        *(root / "results" / "reference").glob("*/*/reference.json"),
+        *(root / "results" / "reference").glob("*/*/data_seed*/reference.json"),
+    ]
+    for path in sorted(paths):
         ref = protocol.load_json(path)
         if isinstance(ref, dict):
             refs[protocol.reference_key(ref)] = ref
@@ -316,6 +320,10 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
             finite(payload)
             if payload.get("schema_version") != 1:
                 raise ValueError("unsupported result schema_version")
+            if protocol.wave_of(payload) != 1:
+                # This summary publishes the wave-1 pilot under gaussian_x3@1; scored
+                # wave-2 rows (gaussian_x3@2) are exported by their own stage (B5b).
+                continue
             records.append(record(payload, rel, refs, offsets))
             raw_rows.append(payload)
         except (ValueError, TypeError, OSError) as exc:

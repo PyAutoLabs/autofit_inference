@@ -29,6 +29,17 @@ against a private PyAutoFit pinned at `df6d218f10cd` (PyAutoNerves `7f3055b7f3d1
 for the four new realisations per dataset run first. Submission and job ids: `## Runs`.
 Pull, catalogue and `@2` verdicts are the next task (B5b).
 
+**Carried to B5b (review of the B5a branch).** (1) The JAX blend reference on realisation 1
+can only be built on the laptop (its seeds 0 and 2 are pilot-era runs whose `samples.csv`
+is not on RAL): pull Nautilus seed 1, rebuild, and decide explicitly whether the pilot's
+`@1` JAX blend rows (today `not_assessed`, reference pending) are re-judged against it —
+that is a reassessment (review 06 item 8), not a silent change. Until then the scored
+JAX blend realisation-1 rows are written `not_assessed`. (2) The `@2` timeouts are 10× the
+laptop pilot medians; the B5a dry run on RAL measured the RAL/laptop speed ratio (below),
+recorded as a limitation of every censoring decision. (3) The pilot tooling (catalogue,
+calibration, `inference-summary@1`) reads wave-1 rows only, so pulling wave-2 rows never
+moves the pilot outputs.
+
 ## Before: wave-1 pilot stopped at 223 of 520 runs (B3); the rest is wave 2 on RAL
 
 B3 (2026-10-08) ran the wave-1 pilot of `gaussian_x3@1` on one shared laptop and was

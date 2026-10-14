@@ -39,7 +39,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=6gb
-#SBATCH --time=21:15:00
+#SBATCH --time=1-00:15:00
 #SBATCH --array=0-379%60
 #SBATCH -o output/output.%A_%a.out
 #SBATCH -e error/error.%A_%a.err
@@ -64,8 +64,10 @@ export NPROC=1
 echo "=========================================="
 date
 cd $AP_ROOT
-python3 -c "import autofit, autonerves; print('autofit', autofit.__version__, autofit.__file__); print('autonerves', autonerves.__file__)"
-git -C $AF_PIN/PyAutoFit rev-parse HEAD
+# Refuse to run anything unless both pins are at their commits and are what imports.
+test "$(git -C $AF_PIN/PyAutoFit rev-parse HEAD)" = "df6d218f10cd75a7f0d79bb03dca5c131fd29d33"
+test "$(git -C $AF_PIN/PyAutoNerves rev-parse HEAD)" = "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
+python3 -c "import autofit, autonerves, os; pin = os.environ['AF_PIN']; assert autofit.__file__.startswith(pin) and autonerves.__file__.startswith(pin), (autofit.__file__, autonerves.__file__); print('autofit', autofit.__version__, autofit.__file__); print('autonerves', autonerves.__file__)"
 
 TASKS=hpc/batch_cpu/wave2/scored_gaussian_x3_separated_numpy.tsv
 LINE=$(sed -n "$((SLURM_ARRAY_TASK_ID + 2))p" "$TASKS")
