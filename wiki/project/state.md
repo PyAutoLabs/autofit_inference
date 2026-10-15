@@ -19,7 +19,7 @@ probe-first remainder (RAL job 409930, pulled in B5b-2). Every row is at the pin
 `df6d218f10cd` under `gaussian_x3@2`, none is refused, and every expected run is accounted
 for (`results/accounting/gaussian_x3_wave2.json`, `judge_wave2.py`): 13,000 expected =
 11,580 rows + 1,170 failed attempts + 0 missing + 250 deferred (blend warm NUTS), with 0
-operational kills. **Every leg of the wave is closed.**
+operational kills. **Every leg of the wave is closed** except the deferred blend warm-NUTS leg.
 
 Every one of the 20 references, for 2 datasets × 2 backends × 5 realisations, is
 `complete`. Each consists of the Nautilus runs only: on every one the six runs' ln Z
