@@ -46,7 +46,7 @@ def test_protocol_resolves_per_wave():
 def test_a_pilot_row_is_judged_under_v1_exactly_as_before():
     path = next(
         (ROOT / "results/searches/gaussian_x3_separated/data_seed2/nautilus").rglob(
-            "search_seed0.json"
+            "local_*/search_seed0.json"
         )
     )
     pilot_row = json.loads(path.read_text())
@@ -203,7 +203,8 @@ def test_cli_wave_flag():
 
 
 def test_menu_shape_and_statuses():
-    cells = wave2.cells()
+    # The menu as B5a submitted it: the wave-1 timeouts alone.
+    cells = wave2.cells(wave2.calibration_timeouts())
     by_status = {
         s: [c for c in cells if c.status == s] for s in ("planned", "probe_first", "deferred")
     }
@@ -324,6 +325,9 @@ def test_every_submit_stays_on_ral_and_within_slurm_limits():
 
 
 def test_scored_tasks_cover_every_planned_run_once():
+    """The B5a scored arrays (pilot-derived timeouts only) cover every pilot-planned run
+    once; with the probe record written, the probe plus the remainder cover every run
+    of the probe-sourced cells once, and nothing overlaps."""
     seen = set()
     for dataset in wave2.DATASETS:
         for backend in wave2.CONFIG_BY_BACKEND:
@@ -333,11 +337,93 @@ def test_scored_tasks_cover_every_planned_run_once():
                     key = (*task.cell.key, task.data_seed, seed)
                     assert key not in seen
                     seen.add(key)
-    planned = {(*c.key, d, s) for c, d, s in wave2.expected_runs() if c.status == "planned"}
+    planned = {
+        (*c.key, d, s)
+        for c, d, s in wave2.expected_runs()
+        if c.status == "planned" and c.timeout_source == "pilot"
+    }
     assert seen == planned
+    assert len(seen) == 11750
     probes = {(*t.cell.key, t.data_seed, t.seeds[0]) for t in wave2.probe_tasks()}
     assert len(probes) == 4 * len(wave2.PROBE_SEEDS)
     assert math.isclose(wave2.PROBE_CAP_S, 43200.0)
+    rest = set()
+    for task in wave2.remainder_tasks():
+        assert task.limit_s == task.cell.timeout_s + wave2.RUN_OVERHEAD_S
+        assert task.cell.timeout_source == "probe"
+        for seed in task.seeds:
+            key = (*task.cell.key, task.data_seed, seed)
+            assert key not in rest and key not in probes and key not in seen
+            rest.add(key)
+    sourced = {(*c.key, d, s) for c, d, s in wave2.expected_runs() if c.timeout_source == "probe"}
+    if sourced:
+        assert rest | probes == sourced and len(rest) == 980
+
+
+def test_probe_timeouts_fill_only_cells_the_pilot_left_open(tmp_path):
+    pilot_t = wave2.calibration_timeouts()
+    probe = tmp_path / "probe.json"
+    probe.write_text(
+        json.dumps(
+            {
+                "timeouts": {
+                    "zeus/walkers_50_steps_2000/jax_cpu": {
+                        "median_probe_wall_s": 100.0,
+                        "n": 10,
+                        "timeout_s": 1000.0,
+                    },
+                    # A probe entry never overrides a pilot-derived timeout.
+                    "emcee/walkers_50_steps_2000/numpy": {
+                        "median_probe_wall_s": 1.0,
+                        "n": 10,
+                        "timeout_s": 600.0,
+                    },
+                }
+            }
+        )
+    )
+    merged = wave2.wave_timeouts(probe=probe)
+    assert (
+        merged["emcee/walkers_50_steps_2000/numpy"] == pilot_t["emcee/walkers_50_steps_2000/numpy"]
+    )
+    cells = wave2.cells(merged)
+    zeus = [c for c in cells if c.sampler == "zeus" and c.backend == "jax_cpu"]
+    assert zeus and all(c.status == "planned" and c.timeout_source == "probe" for c in zeus)
+    assert all(c.timeout_s == 1000.0 for c in zeus)
+    nss = [c for c in cells if c.sampler == "nss"]
+    assert all(c.status == "probe_first" for c in nss)
+    # The B5a arrays never move: the probe-sourced cell stays out of the scored tasks.
+    for dataset in wave2.DATASETS:
+        assert not any(
+            t.cell.sampler == "zeus" for t in wave2.scored_tasks(dataset, "jax_cpu", merged)
+        )
+    assert {t.cell.sampler for t in wave2.probe_tasks(merged)} == {"zeus", "nss"}
+    assert {t.cell.sampler for t in wave2.remainder_tasks(merged)} == {"zeus"}
+
+
+def test_pilot_rows_are_not_rejudged_against_a_later_reference():
+    reference = dict(
+        REFERENCE,
+        dataset="gaussian_x3_blend",
+        backend="jax_cpu",
+        data_seed=1,
+        assertion_mechanism="xp_where_penalty",
+    )
+    pilot_row = row(
+        dataset="gaussian_x3_blend",
+        backend="jax_cpu",
+        data_seed=1,
+        assertion_mechanism="xp_where_penalty",
+        pilot=True,
+        protocol_id="gaussian_x3@1",
+    )
+    out = protocol.verdict(pilot_row, reference, OFFSETS)
+    assert out["acceptance"] == "not_assessed"
+    assert out["acceptance_reason"] == "reference completed after the pilot (B5b)"
+    scored = dict(pilot_row, pilot=False, wave=2, protocol_id="gaussian_x3@2")
+    out = protocol.verdict(scored, reference, OFFSETS)
+    assert "after the pilot" not in out["acceptance_reason"]
+    assert out["acceptance_reason"].startswith("gaussian_x3@2: ")
 
 
 def test_template_documents_the_pin():

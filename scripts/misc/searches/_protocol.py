@@ -439,6 +439,18 @@ def _termination_text(termination: dict) -> str:
     return ", ".join(parts) or "met"
 
 
+#: References completed after the wave-1 pilot that do **not** judge its ``@1`` rows
+#: (B5b ruling 1): the pilot ranks nothing, so re-judging its rows against a reference
+#: finished later would be a reassessment (review 06 item 8), a separate human-chosen
+#: task. Keyed by :func:`reference_key`; those pilot rows stay ``not_assessed`` with this
+#: reason. Scored (``@2``) rows are judged against the same reference as usual.
+PILOT_NOT_REJUDGED = {
+    ("gaussian_x3_blend", "jax_cpu", 1, "xp_where_penalty"): (
+        "reference completed after the pilot (B5b)"
+    ),
+}
+
+
 def verdict(row: dict, reference: dict | None, offsets: dict | None = None) -> dict:
     """The producer-asserted ``scientific`` block for one row, under the protocol of the
     row's wave (:func:`protocol_for`). ``@1`` verdicts are byte-identical to the pilot's;
@@ -459,7 +471,12 @@ def verdict(row: dict, reference: dict | None, offsets: dict | None = None) -> d
             "placeholders": [],
         }
     t = THRESHOLDS_BY_PROTOCOL[pid]
-    acc = acceptance(row, reference, offsets, t)
+    held = (
+        PILOT_NOT_REJUDGED.get(reference_key(reference))
+        if pid == PROTOCOL_IDS[1] and reference and reference_key(reference) == reference_key(row)
+        else None
+    )
+    acc = _judged("not_assessed", held, []) if held else acceptance(row, reference, offsets, t)
     conv = convergence(row, t)
     prefix = "" if pid == PROTOCOL_IDS[1] else f"{pid}: "
     return {

@@ -70,6 +70,7 @@ The wave-2 submits and their task tables are **generated**
 | `submit_wave2_reference_build_<dataset>` | one per (backend, new realisation) | MAP reference, then `build_reference.py` |
 | `submit_wave2_scored_<dataset>_<backend>` | one per (cell, realisation, seed block) | the scored runs, each under its frozen `@2` timeout |
 | `submit_wave2_probe` | one per probe run | the probe-first cells (Zeus JAX, NSS), realisation 1, seeds 0–4 |
+| `submit_wave2_remainder` | one per (cell, realisation, seed block) | B5b: the probe-first cells' other 980 runs, each under its probe-derived `@2` timeout (`results/calibration/gaussian_x3_wave2_probe.json`, from `write_probe_timeouts.py`) |
 
 Order: on the login node `git fetch && git checkout <branch>` and build the private pin
 (`.pyauto_pin/PyAutoFit` at `_wave2.PYAUTOFIT_PIN`, `.pyauto_pin/PyAutoNerves` at
@@ -81,6 +82,12 @@ arrays with `--dependency=afterany:<both builds>` (`hpc/sync submit --cpu <name>
 --dependency=…` passes options to `sbatch`). Every submit runs on `--partition=ral` with
 2 CPUs per task, excludes the four 252-CPU nodes (whole-node jobs of other campaigns fit
 only there) and throttles each scored array to `%60` (240 tasks, 480 CPUs in all).
+
+After the probe: pull its rows, run `write_probe_timeouts.py` and `plan_wave2.py
+--write`, and submit `submit_wave2_remainder` (B5b: job 409930). The scored arrays and the
+probe keep the menu as B5a submitted it, so their committed files never move.
+Pulling ~12 000 small rows by rsync over the RAL NFS ran at ~0.16 files/s, and B5b
+pulled `results/` as a parallel per-directory `tar` on the login node instead.
 
 ### There is no `push`
 

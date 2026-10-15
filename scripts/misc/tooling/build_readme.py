@@ -91,7 +91,7 @@ def _scan(root: Path, pattern: str) -> list[tuple[Path, dict]]:
 def _references() -> tuple[dict, dict | None]:
     refs = {}
     for _, ref in _scan(REFERENCE_ROOT, "reference.json"):
-        refs[(ref.get("dataset"), ref.get("backend"))] = ref
+        refs[(ref.get("dataset"), ref.get("backend"), ref.get("data_seed") or 0)] = ref
     return refs, protocol.load_json(protocol.offsets_file(REPO_ROOT))
 
 
@@ -168,15 +168,16 @@ def render_references() -> str:
         return "\n_No reference posterior yet._\n"
     lines = [
         "",
-        "| Dataset | Backend | Status | Included runs | ln Z (normalised) | ln Z spread | "
-        "Worst median offset (σ) | MAP ln P |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Dataset | Backend | Realisation | Status | Included runs | ln Z (normalised) | "
+        "ln Z spread | Worst median offset (σ) | MAP ln P |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
-    for (dataset, backend), ref in sorted(refs.items()):
+    for (dataset, backend, data_seed), ref in sorted(refs.items()):
         agreement = ref.get("agreement_included") or {}
         included = ref.get("included_runs") or []
         lines.append(
-            f"| `{dataset}` | `{backend}` | {ref.get('status')} | {len(included)} | "
+            f"| `{dataset}` | `{backend}` | {data_seed or DASH} | {ref.get('status')} | "
+            f"{len(included)} | "
             f"{_fmt(ref.get('log_evidence_normalised'), '.3f')} | "
             f"{_fmt(agreement.get('log_evidence_spread'), '.3f')} | "
             f"{_fmt(agreement.get('median_agreement_sigma'), '.3f')} | "
@@ -247,7 +248,76 @@ def render_searches() -> str:
     return "\n".join(lines) + "\n"
 
 
+def render_wave2() -> str:
+    """The scored wave's headline per task (``gaussian_x3@2`` section of the catalogue):
+    one table per task and dataset, the closed fully-judged legs in the catalogue's order
+    (expected wall per right answer, then success rate), then the legs not ordered."""
+    doc = _catalogue()
+    section = (doc or {}).get("gaussian_x3@2")
+    if not section or not section["coverage"]["admitted_rows"]:
+        return "\n_No scored wave-2 row yet._\n"
+    cov = section["coverage"]
+    lines = [
+        "",
+        f"`{section['protocol_id']}` at PyAutoFit `{section['pyautofit_pin'][:12]}`: "
+        f"{cov['admitted_rows']} admitted rows of {cov['pulled_rows']} pulled "
+        f"({cov['refused_rows']} refused), {cov['expected_runs']} expected runs. "
+        f"{section['censoring'][0].upper()}{section['censoring'][1:]}.",
+        "",
+    ]
+    for task, group in section["tasks"].items():
+        by_id = {leg["id"]: leg for leg in group["legs"]}
+        for dataset, ordered in group["ranking"].items():
+            legs = [by_id[e["id"]] for e in ordered]
+            rest = [
+                leg
+                for leg in group["legs"]
+                if leg["dataset"] == dataset and leg["id"] not in {e["id"] for e in ordered}
+            ]
+            lines += [
+                f"**{group['label']}** — `{dataset}`",
+                "",
+                "| # | Search | Settings | Config | Attempted | Accepted | Success rate "
+                "(Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt "
+                "wall (s) | Timeout (s) | State |",
+                "|---|---|---|---|---|---|---|---|---|---|---|",
+            ]
+            for position, leg in [(i + 1, leg) for i, leg in enumerate(legs)] + [
+                (None, leg) for leg in rest
+            ]:
+                acc = leg.get("acceptance") or {}
+                rate = leg.get("success_rate")
+                if rate is None:
+                    rate_text = DASH
+                else:
+                    lo, hi = leg["success_rate_wilson_95"]
+                    rate_text = f"{rate:.0%} [{lo:.0%}, {hi:.0%}]"
+                wps = leg.get("wall_per_success") or {}
+                if wps.get("unbounded"):
+                    wps_text = f"unbounded (≥ {_fmt(wps.get('lower_bound_s'), '.0f')})"
+                elif wps.get("value_s") is not None:
+                    ci = leg.get("wall_per_success_bootstrap_95") or [None, None]
+                    wps_text = (
+                        f"{_fmt(wps['value_s'], '.0f')} "
+                        f"[{_fmt(ci[0], '.0f')}, {_fmt(ci[1], '.0f') if ci[1] is not None else '∞'}]"
+                    )
+                else:
+                    wps_text = DASH
+                state = leg["state"]
+                lines.append(
+                    f"| {position or DASH} | `{leg['sampler']}` | `{leg['settings']}` | "
+                    f"`{leg['config_id']}` | {leg.get('attempted', 0)} | "
+                    f"{acc.get('accepted', 0)} | {rate_text} | {wps_text} | "
+                    f"{_fmt(leg.get('median_attempt_wall_s'), '.1f')} | "
+                    f"{_fmt(leg.get('timeout_s'), '.0f')} | {state} |"
+                )
+            lines.append("")
+    lines += [f"- {line}" for line in section["limitations"]]
+    return "\n".join(lines) + "\n"
+
+
 RENDERERS = {
+    "wave2": render_wave2,
     "catalogue": render_catalogue,
     "references": render_references,
     "searches": render_searches,
