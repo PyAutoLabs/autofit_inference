@@ -13,8 +13,8 @@ are not inline: ``dashboard/summary.json`` is the index — the ``@1`` envelope 
 ``record_shards``, one entry per (protocol × dataset × search × settings × config) leg with
 the shard's path (relative to the index's directory), sha256 and record count — and each
 leg's records are one file under ``dashboard/records/<protocol_id>/``, written one record
-per line. No committed file approaches GitHub's 50 MB warning (the 12 750-record scored
-wave was ~84 MB as one file), and an Insight refresh re-copies only the shards whose sha256
+per line. No committed file approaches GitHub's 50 MB warning (B5b's 11 770-record
+wave-2 export was ~84 MB as one file), and an Insight refresh re-copies only the shards whose sha256
 changed. The record contract is ``@1``'s, unchanged: the 223 pilot records
 (``gaussian_x3@1``) and the scored records (``gaussian_x3@2``) keep their verdicts, and
 a reader that assembles the shards gets exactly the ``@1`` record list.
@@ -577,7 +577,22 @@ def _stray_shards(base: Path, wanted: set[str]) -> list[Path]:
     folder = base / RECORDS_DIR
     if not folder.is_dir():
         return []
-    return sorted(p for p in folder.rglob("*.json") if p.relative_to(base).as_posix() not in wanted)
+    out = []
+    for p in sorted(folder.rglob("*.json")):
+        if p.relative_to(base).as_posix() in wanted:
+            continue
+        try:
+            head = json.loads(p.read_text())
+        except (OSError, ValueError):
+            continue
+        # Only this project's shards count: --output beside unrelated JSON never removes it.
+        if (
+            isinstance(head, dict)
+            and head.get("schema") == SHARD_SCHEMA
+            and head.get("project") == PROJECT
+        ):
+            out.append(p)
+    return out
 
 
 def main(argv=None) -> int:
@@ -630,6 +645,10 @@ def main(argv=None) -> int:
                 path.write_text(out[rel])
         for path in _stray_shards(base, set(out) - {""}):
             path.unlink()
+            for folder in path.parents:
+                if folder == base or any(folder.iterdir()):
+                    break
+                folder.rmdir()
         print(f"wrote {shown} ({len(doc['records'])} records in {len(out) - 1} shards)")
     if args.verbose or args.require_accepted:
         for r in doc["records"]:
