@@ -250,13 +250,16 @@ def render_searches() -> str:
 
 def render_wave2() -> str:
     """The scored wave's headline per task (``gaussian_x3@2`` section of the catalogue):
-    one table per task and dataset, the closed fully-judged legs in the catalogue's order
-    (expected wall per right answer, then success rate), then the legs not ordered."""
+    one table per task and dataset: the ranked legs in the catalogue's order (expected wall
+    per right answer, then success rate, among legs that clear the reliability floor), then
+    the closed legs below the floor marked unreliable, then the legs not judged. Every row
+    shows its attempts and its success rate."""
     doc = _catalogue()
     section = (doc or {}).get("gaussian_x3@2")
     if not section or not section["coverage"]["admitted_rows"]:
         return "\n_No scored wave-2 row yet._\n"
     cov = section["coverage"]
+    floor = section["rank_floor"]
     lines = [
         "",
         f"`{section['protocol_id']}` at PyAutoFit `{section['pyautofit_pin'][:12]}`: "
@@ -265,21 +268,25 @@ def render_wave2() -> str:
         f"{section['censoring'][0].upper()}{section['censoring'][1:]}.",
         "",
         "**Order (#):** by expected wall per right answer, then success rate, among closed "
-        "legs with at least one right answer. This is the catalogue's sort key, not a "
-        "protocol rule (§8 defines the numbers, not an order). A cheap search with a low "
-        "success rate can lead, so read the success rate beside it; `=n` marks a leg whose "
-        "bootstrap interval overlaps the one above it. Zero-success and open legs are "
-        "listed without a position.",
+        f"legs that clear the reliability floor (success rate ≥ "
+        f"{floor['success_rate']:.0%} over ≥ {floor['attempts']} attempts); `=n` marks a leg "
+        "whose bootstrap interval overlaps the one above it. Closed legs below the floor "
+        "(zero-success legs included) follow, marked **unreliable** with their numbers and "
+        "no position; open or unjudged legs come last. The floor is a post-hoc presentation "
+        "convention adopted 2026-10-15 after seeing the wave-2 data (protocol §8 note), not "
+        "a pre-registered criterion: it changes no verdict.",
         "",
     ]
     for task, group in section["tasks"].items():
         by_id = {leg["id"]: leg for leg in group["legs"]}
         for dataset, ordered in group["ranking"].items():
             legs = [by_id[e["id"]] for e in ordered]
+            weak = [by_id[e["id"]] for e in group["unreliable"][dataset]]
+            placed = {leg["id"] for leg in legs + weak}
             rest = [
                 leg
                 for leg in group["legs"]
-                if leg["dataset"] == dataset and leg["id"] not in {e["id"] for e in ordered}
+                if leg["dataset"] == dataset and leg["id"] not in placed
             ]
             lines += [
                 f"**{group['label']}** — `{dataset}`",
@@ -290,10 +297,12 @@ def render_wave2() -> str:
                 "|---|---|---|---|---|---|---|---|---|---|---|",
             ]
             ties = {e["id"]: e.get("tied_with_previous") for e in ordered}
-            for position, leg in [(i + 1, leg) for i, leg in enumerate(legs)] + [
-                (None, leg) for leg in rest
-            ]:
-                if position is not None and ties.get(leg["id"]):
+            for position, leg in (
+                [(i + 1, leg) for i, leg in enumerate(legs)]
+                + [("unreliable", leg) for leg in weak]
+                + [(None, leg) for leg in rest]
+            ):
+                if isinstance(position, int) and ties.get(leg["id"]):
                     position = f"={position}"
                 acc = leg.get("acceptance") or {}
                 rate = leg.get("success_rate")

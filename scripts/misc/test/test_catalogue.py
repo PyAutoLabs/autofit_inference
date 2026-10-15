@@ -224,3 +224,39 @@ def test_probe_sourced_leg_closes_only_when_every_run_has_a_row():
     assert catalogue.wave2_leg(cell, some, {}, None)["state"] == "open"
     every = {(d, s): row for d in wave2.DATA_SEEDS for s in wave2.SEEDS}
     assert catalogue.wave2_leg(cell, every, {}, None)["state"] == "closed"
+
+
+def test_wave2_ranking_floor_ranks_only_reliable_legs_and_lists_the_rest():
+    """B5b-2 ruling 2: rank only closed legs with success rate >= 50 % over >= 20
+    attempts; every other closed, judged leg is listed as unreliable with its numbers."""
+    section = built()["gaussian_x3@2"]
+    floor = section["rank_floor"]
+    assert (floor["success_rate"], floor["attempts"]) == (0.5, 20)
+    assert "post-hoc" in floor["note"] and "2026-10-15" in floor["note"]
+    for group in section["tasks"].values():
+        ids = {leg["id"]: leg for leg in group["legs"]}
+        for dataset, ordered in group["ranking"].items():
+            weak = group["unreliable"][dataset]
+            assert not {e["id"] for e in ordered} & {e["id"] for e in weak}
+            for entry in ordered:
+                assert entry["success_rate"] >= 0.5 and entry["attempted"] >= 20
+                assert entry["attempted"] == ids[entry["id"]]["attempted"]
+            for entry in weak:
+                leg = ids[entry["id"]]
+                assert leg["state"] == "closed" and not catalogue.reliable(leg)
+                assert entry["attempted"] == leg["attempted"] and "floor" in entry["reason"]
+            judged = {
+                leg["id"]
+                for leg in group["legs"]
+                if leg["dataset"] == dataset
+                and leg["state"] == "closed"
+                and leg.get("success_rate") is not None
+            }
+            assert judged == {e["id"] for e in ordered} | {e["id"] for e in weak}
+
+
+def test_reliable_needs_both_the_rate_and_the_attempts():
+    assert catalogue.reliable({"success_rate": 0.5, "attempted": 20})
+    assert not catalogue.reliable({"success_rate": 0.49, "attempted": 250})
+    assert not catalogue.reliable({"success_rate": 1.0, "attempted": 19})
+    assert not catalogue.reliable({"success_rate": None, "attempted": 250})

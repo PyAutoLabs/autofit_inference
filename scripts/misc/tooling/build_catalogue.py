@@ -30,8 +30,13 @@ judged under ``@2`` against its own realisation's reference, or, for a missing r
 closed cell, a failed attempt censored at the cell's timeout — and each (dataset × search
 × settings × leg) reports its success rate (Wilson 95 %) and expected wall per right
 answer (bootstrap 95 %). Within one task and one dataset (never across either) the
-fully-judged closed legs with at least one right answer are listed in ``ranking`` by expected
-wall per right answer, then success rate; zero-success and open legs are not positioned. Only rows at the wave's PyAutoFit pin are read; pilot rows never enter it.
+fully-judged closed legs that clear the **reliability floor** (:data:`RANK_FLOOR`: success
+rate >= 50 % over >= 20 attempts) are listed in ``ranking`` by expected wall per right
+answer, then success rate; the closed legs below the floor are listed in ``unreliable``
+with their numbers, never positioned; open legs are neither. The floor is a post-hoc
+presentation convention adopted 2026-10-15 after seeing the wave-2 data (B5b-2, protocol
+§8 note), not a pre-registered criterion: it changes no verdict. Only rows at the wave's
+PyAutoFit pin are read; pilot rows never enter it.
 
     python scripts/misc/tooling/build_catalogue.py                     # write the catalogue
     python scripts/misc/tooling/build_catalogue.py --check             # verify the committed one
@@ -78,6 +83,18 @@ UNSUPPORTED = {
     "Drawer": "not benchmarked: Drawer is a sanity floor that answers no task (protocol §1)",
 }
 BOOTSTRAP_RESAMPLES = 10_000
+#: The reliability floor for a ``gaussian_x3@2`` ranking position (B5b-2 ruling 2): a
+#: closed, fully-judged leg is ranked only with a success rate of at least
+#: ``success_rate`` over at least ``attempts`` attempts; the rest of the closed legs are
+#: listed as unreliable with their numbers. A **post-hoc presentation convention adopted
+#: 2026-10-15 after seeing the wave-2 data** (protocol §8 note), never a pre-registered
+#: criterion: it orders the catalogue and changes no verdict.
+RANK_FLOOR = {"success_rate": 0.5, "attempts": 20}
+RANK_FLOOR_NOTE = (
+    "post-hoc presentation convention adopted 2026-10-15 after seeing the wave-2 data "
+    "(B5b-2 ruling 2; protocol §8 note), not a pre-registered criterion: it orders the "
+    "catalogue and changes no verdict"
+)
 #: The failure kind of a run stopped by SIGTERM (the pilot's operational wall cap; on
 #: RAL, SLURM's --time).
 BUDGET_KILL = "Terminated"
@@ -400,6 +417,34 @@ def _ordering(leg: dict) -> tuple:
     return (leg["wall_per_success"]["value_s"], -leg["success_rate"], leg["id"])
 
 
+def reliable(leg: dict) -> bool:
+    """Whether a closed, fully-judged leg clears :data:`RANK_FLOOR`."""
+    return (
+        leg.get("success_rate") is not None
+        and leg["success_rate"] >= RANK_FLOOR["success_rate"]
+        and leg.get("attempted", 0) >= RANK_FLOOR["attempts"]
+    )
+
+
+def _unreliable_entry(leg: dict) -> dict:
+    wps = leg.get("wall_per_success") or {}
+    return {
+        "id": leg["id"],
+        "attempted": leg["attempted"],
+        "accepted": leg["acceptance"].get("accepted", 0),
+        "success_rate": leg["success_rate"],
+        "success_rate_wilson_95": leg["success_rate_wilson_95"],
+        "wall_per_success_s": wps.get("value_s"),
+        "wall_per_success_unbounded": bool(wps.get("unbounded")),
+        "wall_per_success_bootstrap_95": leg.get("wall_per_success_bootstrap_95"),
+        "reason": (
+            f"below the reliability floor: {leg['success_rate']:.0%} over "
+            f"{leg['attempted']} attempts (floor >= {RANK_FLOOR['success_rate']:.0%} over "
+            f">= {RANK_FLOOR['attempts']})"
+        ),
+    }
+
+
 def wave2_section(root: Path, refs: dict, offsets) -> dict:
     pulled = scan_wave2_rows(root)
     timeouts = wave2.wave_timeouts()
@@ -419,15 +464,26 @@ def wave2_section(root: Path, refs: dict, offsets) -> dict:
     for cell in wave2.cells(timeouts):
         tasks[cell.task]["legs"].append(wave2_leg(cell, admitted.get(cell.key, {}), refs, offsets))
     for group in tasks.values():
-        ordering = {}
+        ordering, unreliable = {}, {}
         for dataset in wave2.DATASETS:
-            legs = [
+            judged = [
                 leg
                 for leg in group["legs"]
                 if leg["dataset"] == dataset
                 and leg["state"] == "closed"
                 and leg.get("success_rate") is not None
-                and (leg.get("wall_per_success") or {}).get("value_s") is not None
+            ]
+            legs = [
+                leg
+                for leg in judged
+                if reliable(leg) and (leg.get("wall_per_success") or {}).get("value_s") is not None
+            ]
+            unreliable[dataset] = [
+                _unreliable_entry(leg)
+                for leg in sorted(
+                    (leg for leg in judged if not reliable(leg)),
+                    key=lambda leg: (-leg["success_rate"], leg["id"]),
+                )
             ]
             ordered, previous = [], None
             for i, leg in enumerate(sorted(legs, key=_ordering)):
@@ -442,6 +498,8 @@ def wave2_section(root: Path, refs: dict, offsets) -> dict:
                     {
                         "position": i + 1,
                         "id": leg["id"],
+                        "attempted": leg["attempted"],
+                        "accepted": leg["acceptance"].get("accepted", 0),
                         "success_rate": leg["success_rate"],
                         "success_rate_wilson_95": leg["success_rate_wilson_95"],
                         "wall_per_success_s": leg["wall_per_success"]["value_s"],
@@ -454,6 +512,7 @@ def wave2_section(root: Path, refs: dict, offsets) -> dict:
                 previous = ci
             ordering[dataset] = ordered
         group["ranking"] = ordering
+        group["unreliable"] = unreliable
     commits = sorted({row.get("pyautofit_commit") or "unknown" for _, row in pulled})
     return {
         "protocol_id": wave2.PROTOCOL_ID,
@@ -461,14 +520,15 @@ def wave2_section(root: Path, refs: dict, offsets) -> dict:
         "wave": "wave 2 (scored, protocol §9): ranks within a task and a dataset",
         "ranking": (
             "within one task and one dataset, never across: closed legs whose every attempt "
-            "is judged and that found the right answer at least once, by expected wall per "
-            "right answer (ascending), then success rate; a leg with zero successes "
-            "(unbounded wall per right answer) or still open is listed, never positioned. "
-            "This sort key is the catalogue's (B5b), not a protocol rule: §8 defines the "
-            "headline numbers, not an order. A cheap search with a low success rate can "
-            "lead on wall per right answer, so read the success rate beside it; entries "
-            "whose bootstrap intervals overlap the previous one are marked tied"
+            "is judged and that clear the reliability floor (success rate >= 50 % over >= 20 "
+            "attempts), by expected wall per right answer (ascending), then success rate; "
+            "closed legs below the floor (zero-success legs included) are listed under "
+            "unreliable with their numbers, never positioned; open legs are neither. "
+            "Entries whose bootstrap intervals overlap the previous one are marked tied. "
+            "The order and the floor are a presentation convention, not a verdict: §8 "
+            "defines the headline numbers"
         ),
+        "rank_floor": {**RANK_FLOOR, "note": RANK_FLOOR_NOTE},
         "pyautofit_pin": wave2.PYAUTOFIT_PIN,
         "pyautonerves_pin": wave2.PYAUTONERVES_PIN,
         "pyautofit_commits_pulled": commits,
@@ -482,8 +542,24 @@ def wave2_section(root: Path, refs: dict, offsets) -> dict:
         "limitations": [
             "Pilot-derived timeouts are 10 x laptop medians and RAL ran 4-7 x faster than "
             "the laptop (B5a dry run): censoring is lenient on RAL for those cells",
-            "Probe-first cells (Zeus on JAX, NSS 50-step) are open until their remaining "
-            "runs (submitted in B5b) are pulled in B5b-2; they are not ranked yet",
+            "Probe-first cells (Zeus on JAX, NSS 50-step) take 10 x their RAL probe median "
+            "or the 600 s floor (results/calibration/gaussian_x3_wave2_probe.json); their "
+            "remainder ran as RAL job 409930 (pulled in B5b-2)",
+            *(
+                [
+                    f"{len(still_open)} probe-first leg(s) still open (rows not all pulled): "
+                    + ", ".join(still_open)
+                ]
+                if (
+                    still_open := [
+                        leg["id"]
+                        for group in tasks.values()
+                        for leg in group["legs"]
+                        if leg.get("timeout_source") == "probe" and leg["state"] == "open"
+                    ]
+                )
+                else []
+            ),
         ],
         "coverage": {
             "expected_runs": len(wave2.expected_runs(timeouts)),
