@@ -9,20 +9,22 @@ It is the sibling of [autofit_profiling](https://github.com/PyAutoLabs/autofit_p
 (PyAutoFit timing) and the PyAutoFit counterpart of
 [autolens_inference](https://github.com/PyAutoLabs/autolens_inference).
 
-**Status: scored wave 2 judged under `gaussian_x3@2` (phase B5b of the
+**Status: scored wave 2 complete and judged under `gaussian_x3@2` (phases B5b and B5b-2
+of the
 [search-extensibility epic](https://github.com/PyAutoLabs/PyAutoMind/blob/main/draft/research/autofit/search_extensibility_epic.md)).**
 
-- **Scored wave 2.** 11,770 rows ran on RAL `--partition=ral` against PyAutoFit pinned at
-  `df6d218f10cd`: 50 seeds × 5 data realisations per leg, both datasets. They are judged
-  under the frozen `@2` thresholds and ordered within one task and one dataset (see
-  "Scored wave 2" below).
-- **Still running.** The probe-first cells (Zeus on JAX, NSS 50-step) are RAL job 409930,
-  judged in B5b-2.
+- **Scored wave 2.** 12,750 rows ran on RAL `--partition=ral` against PyAutoFit pinned at
+  `df6d218f10cd`: 50 seeds × 5 data realisations per leg, both datasets, every leg
+  closed (250 blend warm-NUTS runs deferred). They are judged under the frozen `@2`
+  thresholds and ranked within one task and one dataset among the legs that clear a
+  reliability floor (see "Scored wave 2" below).
 - **The wave-1 pilot** (223 rows, below) ranks nothing. It calibrated the protocol and
-  ran on PyAutoFit main before phase A2. The repo reports to
+  ran on PyAutoFit main before phase A2.
+- **Summary.** The repo reports to
   [PyAutoInsight](https://github.com/PyAutoLabs/PyAutoInsight) through
-  `inference-summary@1`. The summary holds the pilot records and the wave-2 accounting;
-  the wave-2 records are withheld on size, pending autofit_inference#10.
+  `inference-summary@3`: `dashboard/summary.json` is an index of per-protocol, per-leg
+  record files under `dashboard/records/`, so no file approaches GitHub's size limits and
+  a refresh re-copies only the shards that changed.
 
 Agents and contributors: start with [`AGENTS.md`](AGENTS.md). Rulings of record live in
 [PyAutoCortex](https://github.com/PyAutoLabs/PyAutoCortex) — see [`CORTEX.md`](CORTEX.md).
@@ -51,7 +53,7 @@ frozen before the scored wave 2.
 source activate.sh
 python scripts/gaussian_x3_blend/searches/nautilus/gaussian_x3.py \
     --config-name local_numpy_fp64 --settings n_live_100 --seed 0
-python scripts/misc/tooling/export_inference_summary.py   # dashboard/summary.json
+python scripts/misc/tooling/export_inference_summary.py   # dashboard/summary.json + records/
 python scripts/misc/tooling/build_readme.py               # the tables below
 ```
 
@@ -68,94 +70,94 @@ leg's counts, censoring and bootstrap intervals, is the `gaussian_x3@2` section 
 `results/accounting/gaussian_x3_wave2.json`.
 
 <!-- BEGIN auto-table:wave2 -->
-`gaussian_x3@2` at PyAutoFit `df6d218f10cd`: 11770 admitted rows of 11770 pulled (0 refused), 13000 expected runs. Protocol §7: an attempt that hit the timeout, crashed or wrote a non-finite answer is a failed attempt; in a closed leg a missing run is a failed attempt censored at the timeout; an operational kill (Terminated below the timeout) is not an attempt (rerun it).
+`gaussian_x3@2` at PyAutoFit `df6d218f10cd`: 12750 admitted rows of 12750 pulled (0 refused), 13000 expected runs. Protocol §7: an attempt that hit the timeout, crashed or wrote a non-finite answer is a failed attempt; in a closed leg a missing run is a failed attempt censored at the timeout; an operational kill (Terminated below the timeout) is not an attempt (rerun it).
 
-**Order (#):** by expected wall per right answer, then success rate, among closed legs with at least one right answer. This is the catalogue's sort key, not a protocol rule (§8 defines the numbers, not an order). A cheap search with a low success rate can lead, so read the success rate beside it; `=n` marks a leg whose bootstrap interval overlaps the one above it. Zero-success and open legs are listed without a position.
+**Order (#):** by expected wall per right answer, then success rate, among closed legs that clear the reliability floor (success rate ≥ 50% over ≥ 20 attempts); `=n` marks a leg whose bootstrap interval overlaps the one above it. Closed legs below the floor (zero-success legs included) follow, marked **unreliable** with their numbers and no position; open or unjudged legs come last. The floor is a post-hoc presentation convention adopted 2026-10-15 after seeing the wave-2 data (protocol §8 note), not a pre-registered criterion: it changes no verdict.
 
 **point/MAP** — `gaussian_x3_blend`
 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | `multi_start_prodigy` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 152 | 61% [55%, 67%] | 18 [17, 20] | 11.4 | 714 | closed |
-| — | `lbfgs` | `default` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 214) | 2.6 | 600 | closed |
-| — | `lbfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 236) | 3.0 | 600 | closed |
-| — | `bfgs` | `default` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 175) | 2.6 | 600 | closed |
-| — | `bfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 171) | 2.8 | 600 | closed |
-| — | `multi_start_adam` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 833) | 12.3 | 812 | closed |
-| — | `multi_start_adabelief` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 794) | 11.4 | 761 | closed |
-| — | `multi_start_lion` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 535) | 8.3 | 600 | closed |
+| unreliable | `bfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 171) | 2.8 | 600 | closed |
+| unreliable | `bfgs` | `default` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 175) | 2.6 | 600 | closed |
+| unreliable | `lbfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 236) | 3.0 | 600 | closed |
+| unreliable | `lbfgs` | `default` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 214) | 2.6 | 600 | closed |
+| unreliable | `multi_start_adabelief` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 794) | 11.4 | 761 | closed |
+| unreliable | `multi_start_adam` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 833) | 12.3 | 812 | closed |
+| unreliable | `multi_start_lion` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 535) | 8.3 | 600 | closed |
 
 **point/MAP** — `gaussian_x3_separated`
 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | `multi_start_prodigy` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 9 [9, 9] | 8.8 | 714 | closed |
-| — | `lbfgs` | `default` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 462) | 7.1 | 600 | closed |
-| — | `lbfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 352) | 4.9 | 600 | closed |
-| — | `bfgs` | `default` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 437) | 6.7 | 600 | closed |
-| — | `bfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 322) | 4.6 | 600 | closed |
-| — | `multi_start_adam` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 697) | 10.8 | 812 | closed |
-| — | `multi_start_adabelief` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 703) | 10.6 | 761 | closed |
-| — | `multi_start_lion` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 389) | 5.9 | 600 | closed |
+| unreliable | `bfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 322) | 4.6 | 600 | closed |
+| unreliable | `bfgs` | `default` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 437) | 6.7 | 600 | closed |
+| unreliable | `lbfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 352) | 4.9 | 600 | closed |
+| unreliable | `lbfgs` | `default` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 462) | 7.1 | 600 | closed |
+| unreliable | `multi_start_adabelief` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 703) | 10.6 | 761 | closed |
+| unreliable | `multi_start_adam` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 697) | 10.8 | 812 | closed |
+| unreliable | `multi_start_lion` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 389) | 5.9 | 600 | closed |
 
 **posterior** — `gaussian_x3_blend`
 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
-| — | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 4063) | 65.3 | 1987 | closed |
-| — | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 4896) | 79.3 | 14000 | closed |
-| — | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 11233) | 173.1 | 15775 | closed |
-| — | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 5 | 0 | 0% [0%, 43%] | unbounded (≥ 271) | 117.0 | 1168 | open |
-| — | `blackjax_nuts` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 418) | 6.2 | 1660 | closed |
+| unreliable | `blackjax_nuts` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 418) | 6.2 | 1660 | closed |
+| unreliable | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 4896) | 79.3 | 14000 | closed |
+| unreliable | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 4063) | 65.3 | 1987 | closed |
+| unreliable | `smc` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 1921) | 30.0 | 3224 | closed |
+| unreliable | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 6933) | 104.2 | 1168 | closed |
+| unreliable | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 11233) | 173.1 | 15775 | closed |
 | — | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 0 | 0 | — | — | — | 11502 | deferred |
-| — | `smc` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 1921) | 30.0 | 3224 | closed |
 
 **posterior** — `gaussian_x3_separated`
 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 198 | 79% [74%, 84%] | 216 [201, 233] | 175.9 | 15775 | closed |
-| =2 | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 237 [233, 241] | 225.3 | 11502 | closed |
-| — | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 4085) | 58.3 | 1987 | closed |
-| — | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 5137) | 83.7 | 14000 | closed |
-| — | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 5 | 4 | 80% [38%, 96%] | 134 [82, 296] | 116.3 | 1168 | open |
-| — | `blackjax_nuts` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 1490) | 17.4 | 1660 | closed |
-| — | `smc` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 1310) | 18.5 | 3224 | closed |
+| 1 | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 250 | 190 | 76% [70%, 81%] | 136 [126, 148] | 108.7 | 1168 | closed |
+| 2 | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 198 | 79% [74%, 84%] | 216 [201, 233] | 175.9 | 15775 | closed |
+| =3 | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 237 [233, 241] | 225.3 | 11502 | closed |
+| unreliable | `blackjax_nuts` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 1490) | 17.4 | 1660 | closed |
+| unreliable | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 5137) | 83.7 | 14000 | closed |
+| unreliable | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 4085) | 58.3 | 1987 | closed |
+| unreliable | `smc` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 1310) | 18.5 | 3224 | closed |
 
 **evidence** — `gaussian_x3_blend`
 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 250 | 36 | 14% [11%, 19%] | 170 [128, 237] | 24.2 | 2048 | closed |
-| =2 | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 36 | 14% [11%, 19%] | 190 [144, 266] | 27.0 | 1946 | closed |
-| =3 | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 247 [242, 251] | 247.1 | 10627 | closed |
-| =4 | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 253 [248, 259] | 252.9 | 10414 | closed |
-| 5 | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 299 [297, 302] | 297.7 | 11613 | closed |
-| =6 | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 306 [301, 312] | 300.1 | 11130 | closed |
-| =7 | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 250 | 59 | 24% [19%, 29%] | 346 [281, 444] | 80.2 | 7558 | closed |
-| =8 | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 59 | 24% [19%, 29%] | 378 [307, 484] | 87.4 | 8224 | closed |
-| 9 | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 513 [508, 518] | 504.3 | 15933 | closed |
-| =10 | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 522 [514, 531] | 507.9 | 19654 | closed |
-| — | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 5 | 3 | 60% [23%, 88%] | 40 [24, 121] | 24.2 | 600 | open |
+| 1 | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 250 | 158 | 63% [57%, 69%] | 33 [30, 36] | 20.5 | 600 | closed |
+| 2 | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 247 [242, 251] | 247.1 | 10627 | closed |
+| =3 | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 253 [248, 259] | 252.9 | 10414 | closed |
+| 4 | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 299 [297, 302] | 297.7 | 11613 | closed |
+| =5 | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 306 [301, 312] | 300.1 | 11130 | closed |
+| 6 | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 513 [508, 518] | 504.3 | 15933 | closed |
+| =7 | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 522 [514, 531] | 507.9 | 19654 | closed |
+| unreliable | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 59 | 24% [19%, 29%] | 378 [307, 484] | 87.4 | 8224 | closed |
+| unreliable | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 250 | 59 | 24% [19%, 29%] | 346 [281, 444] | 80.2 | 7558 | closed |
+| unreliable | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 36 | 14% [11%, 19%] | 190 [144, 266] | 27.0 | 1946 | closed |
+| unreliable | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 250 | 36 | 14% [11%, 19%] | 170 [128, 237] | 24.2 | 2048 | closed |
 
 **evidence** — `gaussian_x3_separated`
 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 250 | 103 | 41% [35%, 47%] | 62 [54, 72] | 25.2 | 2048 | closed |
-| =2 | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 103 | 41% [35%, 47%] | 69 [60, 81] | 28.3 | 1946 | closed |
-| 3 | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 250 | 145 | 58% [52%, 64%] | 143 [130, 160] | 83.2 | 7558 | closed |
-| =4 | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 145 | 58% [52%, 64%] | 156 [141, 175] | 90.8 | 8224 | closed |
-| 5 | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 284 [276, 292] | 293.7 | 11613 | closed |
-| =6 | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 293 [285, 301] | 298.9 | 11130 | closed |
-| 7 | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 339 [332, 347] | 324.2 | 10414 | closed |
-| =8 | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 344 [336, 352] | 332.1 | 10627 | closed |
-| 9 | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 393 [387, 399] | 395.3 | 19654 | closed |
-| 10 | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 414 [407, 422] | 420.6 | 15933 | closed |
-| — | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 5 | 5 | 100% [57%, 100%] | 29 [29, 29] | 29.3 | 600 | open |
+| 1 | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 250 | 210 | 84% [79%, 88%] | 24 [23, 26] | 20.2 | 600 | closed |
+| 2 | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 250 | 145 | 58% [52%, 64%] | 143 [130, 160] | 83.2 | 7558 | closed |
+| =3 | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 145 | 58% [52%, 64%] | 156 [141, 175] | 90.8 | 8224 | closed |
+| 4 | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 284 [276, 292] | 293.7 | 11613 | closed |
+| =5 | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 293 [285, 301] | 298.9 | 11130 | closed |
+| 6 | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 339 [332, 347] | 324.2 | 10414 | closed |
+| =7 | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 344 [336, 352] | 332.1 | 10627 | closed |
+| 8 | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 393 [387, 399] | 395.3 | 19654 | closed |
+| 9 | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 414 [407, 422] | 420.6 | 15933 | closed |
+| unreliable | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 103 | 41% [35%, 47%] | 69 [60, 81] | 28.3 | 1946 | closed |
+| unreliable | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 250 | 103 | 41% [35%, 47%] | 62 [54, 72] | 25.2 | 2048 | closed |
 
 - Pilot-derived timeouts are 10 x laptop medians and RAL ran 4-7 x faster than the laptop (B5a dry run): censoring is lenient on RAL for those cells
-- Probe-first cells (Zeus on JAX, NSS 50-step) are open until their remaining runs (submitted in B5b) are pulled in B5b-2; they are not ranked yet
+- Probe-first cells (Zeus on JAX, NSS 50-step) take 10 x their RAL probe median or the 600 s floor (results/calibration/gaussian_x3_wave2_probe.json); their remainder ran as RAL job 409930 (pulled in B5b-2)
 <!-- END auto-table:wave2 -->
 
 ## Searches by task

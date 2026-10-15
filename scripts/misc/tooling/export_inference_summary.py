@@ -1,38 +1,38 @@
-"""Publish the project-owned ``inference-summary@1`` exchange, with protocol verdicts.
+"""Publish the project-owned ``inference-summary@3`` exchange, with protocol verdicts.
 
 Copied from ``autolens_inference/scripts/misc/tooling/export_inference_summary.py`` and
 parametrised (``PROJECT``). Standard library only. The one change in substance: the
-``scientific`` block is **producer-asserted** from protocol ``gaussian_x3@1``
+``scientific`` block is **producer-asserted** from the protocol of the row's wave
 (``scripts/misc/searches/_protocol.py``, also stdlib only) — ``convergence`` and
 ``acceptance`` with ``protocol_id`` and ``reason`` — instead of a hard-coded
 ``not_assessed``. A row with no complete reference of its identity (dataset, backend,
 data seed, assertion mechanism) stays ``not_assessed`` with that reason.
 
-Scored wave 2 (B5b) is exported in the same ``inference-summary@1`` schema: each
-record names its own protocol (``protocol_id``, also ``scientific.protocol_id``:
-``gaussian_x3@1`` for a pilot row, ``gaussian_x3@2`` for a scored row) and the top level
-lists every protocol present (``protocols``); the top-level ``protocol_id`` stays the
-pilot's. A wave-2 record carries only the row's scalar diagnostics — the posterior
-blocks (``posterior``, ``posterior_relabelled``, ``truths``, ``truth_delta_sigma``) stay
-in the committed row its ``evidence_paths`` names. Only rows admitted by
-``_wave2.admit`` (the wave's protocol and PyAutoFit pin) are records; a refused wave-2
-row is listed under ``coverage.excluded`` with why.
+**Layout: ``inference-summary@3`` (B5b-2 ruling 1, autofit_inference#12).** The records
+are not inline: ``dashboard/summary.json`` is the index — the ``@1`` envelope plus
+``record_shards``, one entry per (protocol × dataset × search × settings × config) leg with
+the shard's path (relative to the index's directory), sha256 and record count — and each
+leg's records are one file under ``dashboard/records/<protocol_id>/``, written one record
+per line. No committed file approaches GitHub's 50 MB warning (B5b's 11 770-record
+wave-2 export was ~84 MB as one file), and an Insight refresh re-copies only the shards whose sha256
+changed. The record contract is ``@1``'s, unchanged: the 223 pilot records
+(``gaussian_x3@1``) and the scored records (``gaussian_x3@2``) keep their verdicts, and
+a reader that assembles the shards gets exactly the ``@1`` record list.
 
-**The committed summary withholds the wave-2 records (B5b, autofit_inference#10).** All
-11 770 of them validate against the Insight ``inference-summary@1`` contract, but the
-file is then ~84 MB (63 MB compact): above GitHub's 50 MB warning, near its 100 MB
-limit, and copied again into every Insight snapshot. Until a human chooses the form
-(``WAVE2_RECORDS``), ``dashboard/summary.json`` carries the wave-1 records plus the
-wave-2 attempt accounting (``coverage.expected_by_protocol``); ``--wave2-records`` writes
-the full export elsewhere for inspection. The scored results themselves are the
-``gaussian_x3@2`` section of ``catalogue/search_catalogue.json``.
+Each record names its own protocol (``scientific.protocol_id``, also ``protocol_id`` on a
+scored record) and so does its shard; the top level lists every protocol present
+(``protocols``); the top-level ``protocol_id`` stays the pilot's. A scored record carries
+only the row's scalar diagnostics — the posterior blocks (``posterior``,
+``posterior_relabelled``, ``truths``, ``truth_delta_sigma``) stay in the committed row its
+``evidence_paths`` names. Only rows admitted by ``_wave2.admit`` (the wave's protocol and
+PyAutoFit pin) are records; a refused wave-2 row is listed under ``coverage.excluded``.
 
 Scans ``results/searches/**/*.json`` (never ``results/reference/``, which holds the
 reference posteriors the rows are judged against). Git dates describe publication
 provenance only, never measurement freshness; ``measured_at`` comes from each row.
 
-    python scripts/misc/tooling/export_inference_summary.py            # write dashboard/summary.json
-    python scripts/misc/tooling/export_inference_summary.py --check    # verify the committed one
+    python scripts/misc/tooling/export_inference_summary.py            # write dashboard/summary.json + records/
+    python scripts/misc/tooling/export_inference_summary.py --check    # verify the committed ones
     # CI witness: judge rows written to a scratch root, require an accepted row
     python scripts/misc/tooling/export_inference_summary.py --rows-root /tmp/w \
         --output /tmp/w/summary.json --require-accepted
@@ -41,8 +41,10 @@ provenance only, never measurement freshness; ``measured_at`` comes from each ro
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
+import re
 import subprocess
 import sys
 from collections import Counter
@@ -110,16 +112,13 @@ DIAGNOSTICS = (
     "rhat_max",
     "ess_bulk_min",
 )
-#: Whether the committed summary carries the scored-wave records (see the module
-#: docstring: withheld on size until a human chooses the form, autofit_inference#10).
-WAVE2_RECORDS = False
-WAVE2_WITHHELD_REASON = (
-    "gaussian_x3@2 records withheld from the committed summary on size (11 770 records = "
-    "~84 MB, above GitHub's 50 MB warning), pending a human choice of form "
-    "(autofit_inference#10); they validate against inference-summary@1 when exported with "
-    "--wave2-records; the scored results are in catalogue/search_catalogue.json "
-    "(gaussian_x3@2 section)"
-)
+#: The contract version written: ``@1``'s envelope and records, the records split into
+#: per-leg shard files (``record_shards``; B5b-2 ruling 1).
+VERSION = 3
+SHARD_SCHEMA = "inference-summary-records"
+#: Shard files live here, relative to the index's directory.
+RECORDS_DIR = "records"
+_UNSAFE = re.compile(r"[^A-Za-z0-9_.@-]")
 #: Diagnostics a scored-wave record leaves in its row (``evidence_paths``): the per-
 #: parameter blocks are ~60 % of a record.
 WAVE2_ROW_ONLY_DIAGNOSTICS = ("posterior", "posterior_relabelled", "truths", "truth_delta_sigma")
@@ -376,14 +375,14 @@ def build(
     revision: str | None,
     generated_at: str,
     rows_root: Path | None = None,
-    wave2_records: bool | None = None,
 ):
+    """The summary with its records inline (the assembled view); :func:`split` turns it
+    into the ``@3`` index and its shards."""
     timestamp = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
     if timestamp.tzinfo is None:
         raise ValueError("Generation timestamp must include timezone")
     generated_at = timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
     rows_root = rows_root or root
-    wave2_records = WAVE2_RECORDS if wave2_records is None else wave2_records
     refs, offsets = references(root)
     timeouts = wave2.wave_timeouts()
     records, excluded, raw_rows, wave2_rows = [], [], [], []
@@ -405,8 +404,7 @@ def build(
                     excluded.append({"path": rel, "reason": why, "status": "refused"})
                     continue
                 wave2_rows.append(payload)
-                if wave2_records:
-                    records.append(record(payload, rel, refs, offsets))
+                records.append(record(payload, rel, refs, offsets))
                 continue
             if wave != 1:
                 raise ValueError(f"no protocol for wave {wave!r}")
@@ -429,7 +427,7 @@ def build(
     }
     doc = {
         "schema": "inference-summary",
-        "version": 1,
+        "version": VERSION,
         "project": PROJECT,
         "scope": "inference",
         "producer_revision": revision,
@@ -448,11 +446,7 @@ def build(
             "expected": expected_coverage(raw_rows),
             "expected_by_protocol": {
                 protocol.PROTOCOL_ID: f"coverage.expected ({pilot.PILOT_ID})",
-                wave2.PROTOCOL_ID: {
-                    **wave2_coverage(wave2_rows, timeouts),
-                    "records": "exported" if wave2_records else "withheld",
-                    **({} if wave2_records else {"records_reason": WAVE2_WITHHELD_REASON}),
-                },
+                wave2.PROTOCOL_ID: wave2_coverage(wave2_rows, timeouts),
             },
             "observed": {
                 "runs": len(records),
@@ -477,8 +471,14 @@ def build(
             "A warm-start record's total_s is its whole attempt cost (provider_wall_s + consumer_total_s, combined by the producer, protocol §8); cold records' total_s is the search.fit call alone",
             "Sample archives remain in project storage; current availability unknown",
             "gaussian_x3@2 (scored wave 2) rows are judged under the frozen @2 thresholds against their own data realisation's reference, at the pinned PyAutoFit revision; as records their posterior blocks stay in the committed row (evidence_paths)",
-            "gaussian_x3@2 timeouts are 10 x laptop pilot medians while RAL ran 4-7 x faster, so censoring is lenient on RAL; probe-first cells (Zeus on JAX, NSS 50-step) hold only their 5-run probes until B5b-2",
-            *([] if wave2_records or not wave2_rows else [WAVE2_WITHHELD_REASON]),
+            "gaussian_x3@2 timeouts are 10 x the laptop pilot medians while RAL ran 4-7 x faster, so censoring of those cells is lenient on RAL; the probe-first cells (Zeus on JAX, NSS 50-step) take 10 x their RAL probe medians, or the 600 s floor",
+            *(
+                [
+                    f"{missing} expected gaussian_x3@2 runs have no row yet (not pulled or not run); their legs stay open"
+                ]
+                if (missing := wave2_coverage(wave2_rows, timeouts).get("missing"))
+                else []
+            ),
         ],
     }
     if revision is None:
@@ -486,6 +486,74 @@ def build(
     if doc["evidence_updated_at"] is None:
         doc["evidence_updated_at_reason"] = "No result rows yet (wave 1 is phase B3)"
     return doc
+
+
+def _component(value) -> str:
+    text = _UNSAFE.sub("_", str(value)) if value not in (None, "") else "unknown"
+    return text if text not in (".", "..") else "unknown"
+
+
+def shard_of(rec: dict) -> tuple[str, str]:
+    """``(shard id, shard path)`` of a record: its protocol and leg (dataset, search,
+    settings, config); the path is relative to the index's directory."""
+    cfg = rec.get("configuration") or {}
+    dataset = (rec.get("dataset") or {}).get("id") or "unknown"
+    parts = [
+        _component(rec["scientific"]["protocol_id"]),
+        _component(dataset.split("/")[0]),
+        _component(rec.get("sampler")),
+        _component(cfg.get("settings_name")),
+        _component(cfg.get("config_id")),
+    ]
+    return "/".join(parts), f"{RECORDS_DIR}/{'/'.join(parts)}.json"
+
+
+def render_shard(head: dict, records: list[dict]) -> str:
+    """A shard file: its header, then one record per line (a refresh diff stays readable
+    and a shard stays small)."""
+    prefix = json.dumps(head, sort_keys=True, separators=(",", ":"), allow_nan=False)[:-1]
+    lines = [json.dumps(r, sort_keys=True, separators=(",", ":"), allow_nan=False) for r in records]
+    return prefix + ',"records":[\n' + ",\n".join(lines) + "\n]}\n"
+
+
+def split(doc: dict) -> tuple[dict, dict[str, str]]:
+    """The ``@3`` index (no inline ``records``; ``record_shards`` instead) and
+    ``{shard path: rendered shard}``, paths relative to the index's directory."""
+    groups: dict[tuple[str, str], list[dict]] = {}
+    for rec in doc["records"]:
+        groups.setdefault(shard_of(rec), []).append(rec)
+    shards, entries = {}, []
+    for (shard_id, path), recs in sorted(groups.items()):
+        text = render_shard(
+            {
+                "schema": SHARD_SCHEMA,
+                "version": VERSION,
+                "project": doc["project"],
+                "shard": shard_id,
+                "protocol_id": recs[0]["scientific"]["protocol_id"],
+            },
+            recs,
+        )
+        shards[path] = text
+        entries.append(
+            {
+                "id": shard_id,
+                "protocol_id": recs[0]["scientific"]["protocol_id"],
+                "path": path,
+                "records": len(recs),
+                "sha256": hashlib.sha256(text.encode()).hexdigest(),
+            }
+        )
+    index = {k: v for k, v in doc.items() if k != "records"}
+    index["record_shards"] = entries
+    return index, shards
+
+
+def files(doc: dict) -> dict[str, str]:
+    """Every file of the export, relative to the index's directory (``summary.json`` is
+    the index's own name only as a key here; the caller writes it at ``--output``)."""
+    index, shards = split(doc)
+    return {"": render(index), **shards}
 
 
 def git_revision(root: Path) -> tuple[str | None, str]:
@@ -505,6 +573,28 @@ def render(doc: dict) -> str:
     return json.dumps(doc, indent=2, sort_keys=True, allow_nan=False) + "\n"
 
 
+def _stray_shards(base: Path, wanted: set[str]) -> list[Path]:
+    folder = base / RECORDS_DIR
+    if not folder.is_dir():
+        return []
+    out = []
+    for p in sorted(folder.rglob("*.json")):
+        if p.relative_to(base).as_posix() in wanted:
+            continue
+        try:
+            head = json.loads(p.read_text())
+        except (OSError, ValueError):
+            continue
+        # Only this project's shards count: --output beside unrelated JSON never removes it.
+        if (
+            isinstance(head, dict)
+            and head.get("schema") == SHARD_SCHEMA
+            and head.get("project") == PROJECT
+        ):
+            out.append(p)
+    return out
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--check", action="store_true")
@@ -516,36 +606,60 @@ def main(argv=None) -> int:
         help="read results/searches from here instead of the repo (CI witness)",
     )
     parser.add_argument(
-        "--wave2-records",
-        action="store_true",
-        help="export the gaussian_x3@2 records too (never to the committed summary path)",
-    )
-    parser.add_argument(
         "--require-accepted",
         action="store_true",
         help="exit 1 unless every record is accepted (and there is at least one)",
+    )
+    parser.add_argument(
+        "--verbose", action="store_true", help="list every record (the witness always does)"
     )
     args = parser.parse_args(argv)
     revision, date = git_revision(ROOT)
     target = Path(args.output)
     if not target.is_absolute():
         target = ROOT / target
-    if args.wave2_records and target.resolve() == (ROOT / "dashboard" / "summary.json").resolve():
-        parser.error("--wave2-records is withheld from dashboard/summary.json; pass --output")
-    doc = build(ROOT, revision, date, args.rows_root, wave2_records=args.wave2_records or None)
-    content = render(doc)
+    doc = build(ROOT, revision, date, args.rows_root)
+    out = files(doc)
+    base = target.parent
+    # Shards first, the index last: an interrupted write never leaves a new index naming
+    # shards that are not there yet.
+    paths = {
+        rel: (target if rel == "" else base / rel) for rel in sorted(out, key=lambda r: r == "")
+    }
+    shown = target.relative_to(ROOT) if target.is_relative_to(ROOT) else target
     if args.check:
-        if not target.exists() or target.read_text() != content:
-            print("inference summary is stale; regenerate", file=sys.stderr)
+        stale = [
+            rel or target.name
+            for rel, path in paths.items()
+            if not path.exists() or path.read_text() != out[rel]
+        ]
+        stray = _stray_shards(base, set(out) - {""})
+        if stale or stray:
+            print(
+                f"inference summary is stale ({len(stale)} file(s) differ, {len(stray)} stray "
+                "shard(s)); regenerate",
+                file=sys.stderr,
+            )
             return 1
-        print(f"{target.relative_to(ROOT)} is current ({len(doc['records'])} records)")
+        print(f"{shown} is current ({len(doc['records'])} records in {len(out) - 1} shards)")
     else:
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content)
-        print(f"wrote {target} ({len(doc['records'])} records)")
-    for r in doc["records"]:
-        print(f"  {r['id']}: {r['scientific']['acceptance']} / {r['scientific']['convergence']}")
-        print(f"    {r['scientific']['reason']}")
+        for rel, path in paths.items():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if not path.exists() or path.read_text() != out[rel]:
+                path.write_text(out[rel])
+        for path in _stray_shards(base, set(out) - {""}):
+            path.unlink()
+            for folder in path.parents:
+                if folder == base or any(folder.iterdir()):
+                    break
+                folder.rmdir()
+        print(f"wrote {shown} ({len(doc['records'])} records in {len(out) - 1} shards)")
+    if args.verbose or args.require_accepted:
+        for r in doc["records"]:
+            print(
+                f"  {r['id']}: {r['scientific']['acceptance']} / {r['scientific']['convergence']}"
+            )
+            print(f"    {r['scientific']['reason']}")
     if args.require_accepted:
         if not doc["records"] or any(
             r["scientific"]["acceptance"] != "accepted" for r in doc["records"]

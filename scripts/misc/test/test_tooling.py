@@ -21,9 +21,36 @@ def fixture_doc():
     return exporter.build(FIXTURES / "root", FIXTURE_REVISION, FIXTURE_TIME)
 
 
+def _export_files(base, index_name):
+    """``{relative path: committed text}`` of an ``@3`` export rooted at ``base``."""
+    out = {"": (base / index_name).read_text()}
+    for path in sorted((base / exporter.RECORDS_DIR).rglob("*.json")):
+        out[path.relative_to(base).as_posix()] = path.read_text()
+    return out
+
+
 def test_fixture_summary_is_current():
-    committed = (FIXTURES / "summary_fixture.json").read_text()
-    assert exporter.render(fixture_doc()) == committed, "regenerate summary_fixture.json"
+    committed = _export_files(FIXTURES, "summary_fixture.json")
+    assert exporter.files(fixture_doc()) == committed, (
+        "regenerate the fixture: exporter.build(FIXTURES / 'root', ...) -> summary_fixture.json "
+        "+ records/"
+    )
+
+
+def test_index_carries_shards_not_records_and_every_shard_is_small():
+    doc = fixture_doc()
+    index, shards = exporter.split(doc)
+    assert "records" not in index and index["version"] == 3
+    assert sum(e["records"] for e in index["record_shards"]) == len(doc["records"])
+    assert {e["path"] for e in index["record_shards"]} == set(shards)
+    for entry in index["record_shards"]:
+        shard = json.loads(shards[entry["path"]])
+        assert shard["shard"] == entry["id"] and shard["protocol_id"] == entry["protocol_id"]
+        assert all(r["scientific"]["protocol_id"] == entry["protocol_id"] for r in shard["records"])
+    # the committed export: no file approaches GitHub's 50 MB warning
+    base = ROOT / "dashboard"
+    for path in [base / "summary.json", *(base / exporter.RECORDS_DIR).rglob("*.json")]:
+        assert path.stat().st_size < 10 * 1024 * 1024, path
 
 
 def test_fixture_verdicts_are_producer_asserted():
@@ -67,9 +94,20 @@ def test_fixture_validates_against_pyautoinsight():
     sys.path.insert(0, str(insight_root))
     from insight import summary
 
-    doc = json.loads((FIXTURES / "summary_fixture.json").read_text())
-    assert summary.classify(doc, ("inference-summary", 1)) == ("ok", [])
-    assert doc["project"] == "autofit_inference"
+    texts = _export_files(FIXTURES, "summary_fixture.json")
+    index = json.loads(texts[""])
+    assert index["project"] == "autofit_inference" and index["version"] == 3
+    if hasattr(summary, "load_sharded"):
+        # A reader with inference-summary@3: the shards assembled and validated natively.
+        doc, errors = summary.load_sharded(index, lambda path: texts[path].encode())
+        assert errors == []
+        assert summary.classify(doc, ("inference-summary", 3)) == ("ok", [])
+    # Every @3 record is an @1 record: the assembled list validates under @1 too (and
+    # this is all an @1-only reader, before the @3 reader is deployed, can check).
+    v1 = {k: v for k, v in index.items() if k != "record_shards"}
+    v1["version"] = 1
+    v1["records"] = [r for rel, text in texts.items() if rel for r in json.loads(text)["records"]]
+    assert summary.classify(v1, ("inference-summary", 1)) == ("ok", [])
 
 
 def test_committed_summary_is_current():
@@ -77,7 +115,9 @@ def test_committed_summary_is_current():
     revision, date = exporter.git_revision(ROOT)
     if revision is None:
         pytest.skip("not a git checkout")
-    assert path.read_text() == exporter.render(exporter.build(ROOT, revision, date))
+    assert _export_files(path.parent, path.name) == exporter.files(
+        exporter.build(ROOT, revision, date)
+    )
 
 
 def test_readme_tables_are_current():

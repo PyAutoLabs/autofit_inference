@@ -28,7 +28,7 @@ The work arrives in later phases of the `search-extensibility` epic, whose ledge
   reference posteriors.
 - **B3** — the first runs (the wave-1 pilot). From B3 this repo reports to
   [PyAutoInsight](https://github.com/PyAutoLabs/PyAutoInsight) as instance `fit`
-  (`inference-summary@1`), and its
+  (`inference-summary@1`; `@3`, the record-sharded layout, from B5b-2), and its
   [PyAutoCortex](https://github.com/PyAutoLabs/PyAutoCortex) row (`projects.yaml` key
   `autofit_inference`, currently `planned`) flips to `active`.
 
@@ -95,7 +95,8 @@ results/reference/         reference posteriors per dataset and backend
 results/searches/          result rows (from B3; scored wave-2 rows from B5b)
 results/calibration/       the wave-1 calibration and the wave-2 probe timeouts
 results/accounting/        the scored wave's attempt accounting (judge_wave2.py)
-dashboard/summary.json     inference-summary@1, generated
+dashboard/summary.json     inference-summary@3 index, generated; records/ holds its per-protocol,
+                           per-leg record shards (one record per line)
 hpc/                       hpc/sync (laptop-side RAL driver), the batch_cpu template and
                            the generated wave-2 submits + task tables (batch_cpu/wave2/)
 wiki/project/              the ledger (state.md) and the protocol
@@ -126,8 +127,8 @@ seed of Nautilus (`n_live=100`, numpy) on `gaussian_x3_blend` from PyAutoFit `ma
 fails unless the exporter judges the row `accepted` against the committed reference.
 
 After a change under `results/` or to the exporter, commit it, then regenerate
-`dashboard/summary.json` and commit that separately: the summary stamps the latest
-commit touching its producer paths, so it cannot sit in the same commit.
+`dashboard/summary.json` with `dashboard/records/` and commit them separately: the summary
+stamps the latest commit touching its producer paths, so it cannot sit in the same commit.
 
 ## Related Repos
 

@@ -2389,7 +2389,12 @@
     "protocol_id": "gaussian_x3@2",
     "campaign_task": "gaussian_x3_search_wave2",
     "wave": "wave 2 (scored, protocol \u00a79): ranks within a task and a dataset",
-    "ranking": "within one task and one dataset, never across: closed legs whose every attempt is judged and that found the right answer at least once, by expected wall per right answer (ascending), then success rate; a leg with zero successes (unbounded wall per right answer) or still open is listed, never positioned. This sort key is the catalogue's (B5b), not a protocol rule: \u00a78 defines the headline numbers, not an order. A cheap search with a low success rate can lead on wall per right answer, so read the success rate beside it; entries whose bootstrap intervals overlap the previous one are marked tied",
+    "ranking": "within one task and one dataset, never across: closed legs whose every attempt is judged and that clear the reliability floor (success rate >= 50 % over >= 20 attempts), by expected wall per right answer (ascending), then success rate; closed legs below the floor (zero-success legs included) are listed under unreliable with their numbers, never positioned; open legs are neither. Entries whose bootstrap intervals overlap the previous one are marked tied. The order and the floor are a presentation convention, not a verdict: \u00a78 defines the headline numbers",
+    "rank_floor": {
+      "success_rate": 0.5,
+      "attempts": 20,
+      "note": "post-hoc presentation convention adopted 2026-10-15 after seeing the wave-2 data (B5b-2 ruling 2; protocol \u00a78 note), not a pre-registered criterion: it orders the catalogue and changes no verdict"
+    },
     "pyautofit_pin": "df6d218f10cd75a7f0d79bb03dca5c131fd29d33",
     "pyautonerves_pin": "7f3055b7f3d1967f372bdb41ee732135bca0e68d",
     "pyautofit_commits_pulled": [
@@ -2399,12 +2404,12 @@
     "censoring": "protocol \u00a77: an attempt that hit the timeout, crashed or wrote a non-finite answer is a failed attempt; in a closed leg a missing run is a failed attempt censored at the timeout; an operational kill (Terminated below the timeout) is not an attempt (rerun it)",
     "limitations": [
       "Pilot-derived timeouts are 10 x laptop medians and RAL ran 4-7 x faster than the laptop (B5a dry run): censoring is lenient on RAL for those cells",
-      "Probe-first cells (Zeus on JAX, NSS 50-step) are open until their remaining runs (submitted in B5b) are pulled in B5b-2; they are not ranked yet"
+      "Probe-first cells (Zeus on JAX, NSS 50-step) take 10 x their RAL probe median or the 600 s floor (results/calibration/gaussian_x3_wave2_probe.json); their remainder ran as RAL job 409930 (pulled in B5b-2)"
     ],
     "coverage": {
       "expected_runs": 13000,
-      "pulled_rows": 11770,
-      "admitted_rows": 11770,
+      "pulled_rows": 12750,
+      "admitted_rows": 12750,
       "refused_rows": 0
     },
     "tasks": {
@@ -3391,6 +3396,8 @@
             {
               "position": 1,
               "id": "gaussian_x3_blend/multi_start_prodigy/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 152,
               "success_rate": 0.608,
               "success_rate_wilson_95": [
                 0.5462866446092448,
@@ -3408,6 +3415,8 @@
             {
               "position": 1,
               "id": "gaussian_x3_separated/multi_start_prodigy/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -3419,6 +3428,208 @@
                 8.820660593387672
               ],
               "tied_with_previous": false
+            }
+          ]
+        },
+        "unreliable": {
+          "gaussian_x3_blend": [
+            {
+              "id": "gaussian_x3_blend/bfgs/default/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/bfgs/default/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/lbfgs/default/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/lbfgs/default/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/multi_start_adabelief/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/multi_start_adam/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/multi_start_lion/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            }
+          ],
+          "gaussian_x3_separated": [
+            {
+              "id": "gaussian_x3_separated/bfgs/default/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/bfgs/default/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/lbfgs/default/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/lbfgs/default/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/multi_start_adabelief/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/multi_start_adam/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/multi_start_lion/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
             }
           ]
         }
@@ -3618,13 +3829,13 @@
             "timeout_s": 1168.2097229652572,
             "timeout_source": "probe",
             "expected": 250,
-            "state": "open",
-            "attempted": 5,
+            "state": "closed",
+            "attempted": 250,
             "acceptance": {
-              "rejected": 5
+              "rejected": 250
             },
             "convergence": {
-              "not_converged": 5
+              "not_converged": 250
             },
             "failures": {},
             "censored_at_timeout": 0,
@@ -3632,38 +3843,37 @@
             "operational_kills": 0,
             "by_realisation": {
               "data_seed1": {
-                "attempted": 5,
+                "attempted": 50,
                 "accepted": 0
               },
               "data_seed2": {
-                "attempted": 0,
+                "attempted": 50,
                 "accepted": 0
               },
               "data_seed3": {
-                "attempted": 0,
+                "attempted": 50,
                 "accepted": 0
               },
               "data_seed4": {
-                "attempted": 0,
+                "attempted": 50,
                 "accepted": 0
               },
               "data_seed5": {
-                "attempted": 0,
+                "attempted": 50,
                 "accepted": 0
               }
             },
-            "median_attempt_wall_s": 117.02820981503464,
-            "reason": "probe-first cell: its timeout comes from the 5-run probe (results/calibration/gaussian_x3_wave2_probe.json); the other runs were submitted after the probe (B5b) and are pulled by B5b-2",
+            "median_attempt_wall_s": 104.20166743488517,
             "success_rate": 0.0,
             "success_rate_wilson_95": [
-              0.0,
-              0.43448246478317476
+              8.673617379884035e-19,
+              0.015133299495444574
             ],
             "wall_per_success": {
               "value_s": null,
               "unbounded": true,
-              "lower_bound_s": 270.84455774882997,
-              "n": 5,
+              "lower_bound_s": 6932.9340520828455,
+              "n": 250,
               "successes": 0
             },
             "wall_per_success_bootstrap_95": null
@@ -3998,14 +4208,14 @@
             "timeout_s": 1168.2097229652572,
             "timeout_source": "probe",
             "expected": 250,
-            "state": "open",
-            "attempted": 5,
+            "state": "closed",
+            "attempted": 250,
             "acceptance": {
-              "accepted": 4,
-              "rejected": 1
+              "accepted": 190,
+              "rejected": 60
             },
             "convergence": {
-              "not_converged": 5
+              "not_converged": 250
             },
             "failures": {},
             "censored_at_timeout": 0,
@@ -4013,42 +4223,41 @@
             "operational_kills": 0,
             "by_realisation": {
               "data_seed1": {
-                "attempted": 5,
-                "accepted": 4
+                "attempted": 50,
+                "accepted": 38
               },
               "data_seed2": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 41
               },
               "data_seed3": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 36
               },
               "data_seed4": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 36
               },
               "data_seed5": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 39
               }
             },
-            "median_attempt_wall_s": 116.29119950602762,
-            "reason": "probe-first cell: its timeout comes from the 5-run probe (results/calibration/gaussian_x3_wave2_probe.json); the other runs were submitted after the probe (B5b) and are pulled by B5b-2",
-            "success_rate": 0.8,
+            "median_attempt_wall_s": 108.69211869454011,
+            "success_rate": 0.76,
             "success_rate_wilson_95": [
-              0.37553462976252533,
-              0.9637758913675698
+              0.7033795246798652,
+              0.8087511595825035
             ],
             "wall_per_success": {
-              "value_s": 134.07857889967272,
+              "value_s": 135.95966827280967,
               "unbounded": false,
-              "n": 5,
-              "successes": 4
+              "n": 250,
+              "successes": 190
             },
             "wall_per_success_bootstrap_95": [
-              81.55777657027356,
-              295.9866394539131
+              125.89166092441883,
+              147.8217234303043
             ]
           },
           {
@@ -4240,7 +4449,26 @@
           "gaussian_x3_separated": [
             {
               "position": 1,
+              "id": "gaussian_x3_separated/zeus/walkers_50_steps_2000/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 190,
+              "success_rate": 0.76,
+              "success_rate_wilson_95": [
+                0.7033795246798652,
+                0.8087511595825035
+              ],
+              "wall_per_success_s": 135.95966827280967,
+              "wall_per_success_bootstrap_95": [
+                125.89166092441883,
+                147.8217234303043
+              ],
+              "tied_with_previous": false
+            },
+            {
+              "position": 2,
               "id": "gaussian_x3_separated/zeus/walkers_50_steps_2000/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 198,
               "success_rate": 0.792,
               "success_rate_wilson_95": [
                 0.7374559719572936,
@@ -4254,8 +4482,10 @@
               "tied_with_previous": false
             },
             {
-              "position": 2,
+              "position": 3,
               "id": "gaussian_x3_separated/blackjax_nuts_warm/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -4267,6 +4497,152 @@
                 241.37702118305305
               ],
               "tied_with_previous": true
+            }
+          ]
+        },
+        "unreliable": {
+          "gaussian_x3_blend": [
+            {
+              "id": "gaussian_x3_blend/blackjax_nuts/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/emcee/walkers_50_steps_2000/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/emcee/walkers_50_steps_2000/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/smc/default/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/zeus/walkers_50_steps_2000/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/zeus/walkers_50_steps_2000/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            }
+          ],
+          "gaussian_x3_separated": [
+            {
+              "id": "gaussian_x3_separated/blackjax_nuts/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/emcee/walkers_50_steps_2000/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/emcee/walkers_50_steps_2000/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/smc/default/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 0,
+              "success_rate": 0.0,
+              "success_rate_wilson_95": [
+                8.673617379884035e-19,
+                0.015133299495444574
+              ],
+              "wall_per_success_s": null,
+              "wall_per_success_unbounded": true,
+              "wall_per_success_bootstrap_95": null,
+              "reason": "below the reliability floor: 0% over 250 attempts (floor >= 50% over >= 20)"
             }
           ]
         }
@@ -4910,14 +5286,14 @@
             "timeout_s": 600.0,
             "timeout_source": "probe",
             "expected": 250,
-            "state": "open",
-            "attempted": 5,
+            "state": "closed",
+            "attempted": 250,
             "acceptance": {
-              "accepted": 3,
-              "rejected": 2
+              "accepted": 158,
+              "rejected": 92
             },
             "convergence": {
-              "not_assessed": 5
+              "not_assessed": 250
             },
             "failures": {},
             "censored_at_timeout": 0,
@@ -4925,42 +5301,41 @@
             "operational_kills": 0,
             "by_realisation": {
               "data_seed1": {
-                "attempted": 5,
-                "accepted": 3
+                "attempted": 50,
+                "accepted": 29
               },
               "data_seed2": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 31
               },
               "data_seed3": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 34
               },
               "data_seed4": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 31
               },
               "data_seed5": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 33
               }
             },
-            "median_attempt_wall_s": 24.222511960193515,
-            "reason": "probe-first cell: its timeout comes from the 5-run probe (results/calibration/gaussian_x3_wave2_probe.json); the other runs were submitted after the probe (B5b) and are pulled by B5b-2",
-            "success_rate": 0.6,
+            "median_attempt_wall_s": 20.496162949479185,
+            "success_rate": 0.632,
             "success_rate_wilson_95": [
-              0.2307242812760128,
-              0.882379225767352
+              0.5706422103010869,
+              0.6893625986321157
             ],
             "wall_per_success": {
-              "value_s": 40.21318908330674,
+              "value_s": 32.76161818916297,
               "unbounded": false,
-              "n": 5,
-              "successes": 3
+              "n": 250,
+              "successes": 158
             },
             "wall_per_success_bootstrap_95": [
-              24.002197711123152,
-              121.26814594422467
+              29.936232907523944,
+              36.21691930147709
             ]
           },
           {
@@ -5598,13 +5973,14 @@
             "timeout_s": 600.0,
             "timeout_source": "probe",
             "expected": 250,
-            "state": "open",
-            "attempted": 5,
+            "state": "closed",
+            "attempted": 250,
             "acceptance": {
-              "accepted": 5
+              "accepted": 210,
+              "rejected": 40
             },
             "convergence": {
-              "not_assessed": 5
+              "not_assessed": 250
             },
             "failures": {},
             "censored_at_timeout": 0,
@@ -5612,42 +5988,41 @@
             "operational_kills": 0,
             "by_realisation": {
               "data_seed1": {
-                "attempted": 5,
-                "accepted": 5
+                "attempted": 50,
+                "accepted": 45
               },
               "data_seed2": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 41
               },
               "data_seed3": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 41
               },
               "data_seed4": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 43
               },
               "data_seed5": {
-                "attempted": 0,
-                "accepted": 0
+                "attempted": 50,
+                "accepted": 40
               }
             },
-            "median_attempt_wall_s": 29.291544389910996,
-            "reason": "probe-first cell: its timeout comes from the 5-run probe (results/calibration/gaussian_x3_wave2_probe.json); the other runs were submitted after the probe (B5b) and are pulled by B5b-2",
-            "success_rate": 1.0,
+            "median_attempt_wall_s": 20.21722144202795,
+            "success_rate": 0.84,
             "success_rate_wilson_95": [
-              0.5655175352168251,
-              1.0
+              0.7894631614651632,
+              0.8802461948779344
             ],
             "wall_per_success": {
-              "value_s": 29.18692007744685,
+              "value_s": 24.44984073323264,
               "unbounded": false,
-              "n": 5,
-              "successes": 5
+              "n": 250,
+              "successes": 210
             },
             "wall_per_success_bootstrap_95": [
-              29.035165599314496,
-              29.303995360434055
+              23.235585929578185,
+              25.835593870616325
             ]
           }
         ],
@@ -5655,37 +6030,26 @@
           "gaussian_x3_blend": [
             {
               "position": 1,
-              "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_numpy_fp64",
-              "success_rate": 0.144,
+              "id": "gaussian_x3_blend/nss/n_live_200_mcmc_steps_50/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 158,
+              "success_rate": 0.632,
               "success_rate_wilson_95": [
-                0.10586256867804505,
-                0.19291234056271145
+                0.5706422103010869,
+                0.6893625986321157
               ],
-              "wall_per_success_s": 169.75056690310723,
+              "wall_per_success_s": 32.76161818916297,
               "wall_per_success_bootstrap_95": [
-                128.38911570598214,
-                237.2702227158275
+                29.936232907523944,
+                36.21691930147709
               ],
               "tied_with_previous": false
             },
             {
               "position": 2,
-              "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
-              "success_rate": 0.144,
-              "success_rate_wilson_95": [
-                0.10586256867804505,
-                0.19291234056271145
-              ],
-              "wall_per_success_s": 189.96922116407788,
-              "wall_per_success_bootstrap_95": [
-                143.6907563966134,
-                265.7096355460101
-              ],
-              "tied_with_previous": true
-            },
-            {
-              "position": 3,
               "id": "gaussian_x3_blend/nautilus/n_live_100/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5696,11 +6060,13 @@
                 242.36437101578525,
                 251.13307447335404
               ],
-              "tied_with_previous": true
+              "tied_with_previous": false
             },
             {
-              "position": 4,
+              "position": 3,
               "id": "gaussian_x3_blend/nautilus/n_live_100/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5714,8 +6080,10 @@
               "tied_with_previous": true
             },
             {
-              "position": 5,
+              "position": 4,
               "id": "gaussian_x3_blend/nautilus/n_live_200/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5729,8 +6097,10 @@
               "tied_with_previous": false
             },
             {
-              "position": 6,
+              "position": 5,
               "id": "gaussian_x3_blend/nautilus/n_live_200/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5744,38 +6114,10 @@
               "tied_with_previous": true
             },
             {
-              "position": 7,
-              "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_numpy_fp64",
-              "success_rate": 0.236,
-              "success_rate_wilson_95": [
-                0.18760668102989272,
-                0.29238370110370193
-              ],
-              "wall_per_success_s": 346.2438899292019,
-              "wall_per_success_bootstrap_95": [
-                281.30396090915826,
-                443.98019012148774
-              ],
-              "tied_with_previous": true
-            },
-            {
-              "position": 8,
-              "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
-              "success_rate": 0.236,
-              "success_rate_wilson_95": [
-                0.18760668102989272,
-                0.29238370110370193
-              ],
-              "wall_per_success_s": 377.86891402962414,
-              "wall_per_success_bootstrap_95": [
-                307.1507877576203,
-                484.2247657502202
-              ],
-              "tied_with_previous": true
-            },
-            {
-              "position": 9,
+              "position": 6,
               "id": "gaussian_x3_blend/nautilus/n_live_400/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5789,8 +6131,10 @@
               "tied_with_previous": false
             },
             {
-              "position": 10,
+              "position": 7,
               "id": "gaussian_x3_blend/nautilus/n_live_400/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5807,37 +6151,26 @@
           "gaussian_x3_separated": [
             {
               "position": 1,
-              "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_numpy_fp64",
-              "success_rate": 0.412,
+              "id": "gaussian_x3_separated/nss/n_live_200_mcmc_steps_50/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 210,
+              "success_rate": 0.84,
               "success_rate_wilson_95": [
-                0.35276848978585706,
-                0.47389497092534105
+                0.7894631614651632,
+                0.8802461948779344
               ],
-              "wall_per_success_s": 62.085115535017465,
+              "wall_per_success_s": 24.44984073323264,
               "wall_per_success_bootstrap_95": [
-                54.003552018032806,
-                72.45726729264292
+                23.235585929578185,
+                25.835593870616325
               ],
               "tied_with_previous": false
             },
             {
               "position": 2,
-              "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
-              "success_rate": 0.412,
-              "success_rate_wilson_95": [
-                0.35276848978585706,
-                0.47389497092534105
-              ],
-              "wall_per_success_s": 69.20609173787649,
-              "wall_per_success_bootstrap_95": [
-                60.09847820372156,
-                80.84869915228442
-              ],
-              "tied_with_previous": true
-            },
-            {
-              "position": 3,
               "id": "gaussian_x3_separated/dynesty_dynamic/default/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 145,
               "success_rate": 0.58,
               "success_rate_wilson_95": [
                 0.5180609451155799,
@@ -5851,8 +6184,10 @@
               "tied_with_previous": false
             },
             {
-              "position": 4,
+              "position": 3,
               "id": "gaussian_x3_separated/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 145,
               "success_rate": 0.58,
               "success_rate_wilson_95": [
                 0.5180609451155799,
@@ -5866,8 +6201,10 @@
               "tied_with_previous": true
             },
             {
-              "position": 5,
+              "position": 4,
               "id": "gaussian_x3_separated/nautilus/n_live_200/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5881,8 +6218,10 @@
               "tied_with_previous": false
             },
             {
-              "position": 6,
+              "position": 5,
               "id": "gaussian_x3_separated/nautilus/n_live_200/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5896,8 +6235,10 @@
               "tied_with_previous": true
             },
             {
-              "position": 7,
+              "position": 6,
               "id": "gaussian_x3_separated/nautilus/n_live_100/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5911,8 +6252,10 @@
               "tied_with_previous": false
             },
             {
-              "position": 8,
+              "position": 7,
               "id": "gaussian_x3_separated/nautilus/n_live_100/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5926,8 +6269,10 @@
               "tied_with_previous": true
             },
             {
-              "position": 9,
+              "position": 8,
               "id": "gaussian_x3_separated/nautilus/n_live_400/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5941,8 +6286,10 @@
               "tied_with_previous": false
             },
             {
-              "position": 10,
+              "position": 9,
               "id": "gaussian_x3_separated/nautilus/n_live_400/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 250,
               "success_rate": 1.0,
               "success_rate_wilson_95": [
                 0.9848667005045553,
@@ -5954,6 +6301,114 @@
                 421.7717032359056
               ],
               "tied_with_previous": false
+            }
+          ]
+        },
+        "unreliable": {
+          "gaussian_x3_blend": [
+            {
+              "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 59,
+              "success_rate": 0.236,
+              "success_rate_wilson_95": [
+                0.18760668102989272,
+                0.29238370110370193
+              ],
+              "wall_per_success_s": 377.86891402962414,
+              "wall_per_success_unbounded": false,
+              "wall_per_success_bootstrap_95": [
+                307.1507877576203,
+                484.2247657502202
+              ],
+              "reason": "below the reliability floor: 24% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 59,
+              "success_rate": 0.236,
+              "success_rate_wilson_95": [
+                0.18760668102989272,
+                0.29238370110370193
+              ],
+              "wall_per_success_s": 346.2438899292019,
+              "wall_per_success_unbounded": false,
+              "wall_per_success_bootstrap_95": [
+                281.30396090915826,
+                443.98019012148774
+              ],
+              "reason": "below the reliability floor: 24% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 36,
+              "success_rate": 0.144,
+              "success_rate_wilson_95": [
+                0.10586256867804505,
+                0.19291234056271145
+              ],
+              "wall_per_success_s": 189.96922116407788,
+              "wall_per_success_unbounded": false,
+              "wall_per_success_bootstrap_95": [
+                143.6907563966134,
+                265.7096355460101
+              ],
+              "reason": "below the reliability floor: 14% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 36,
+              "success_rate": 0.144,
+              "success_rate_wilson_95": [
+                0.10586256867804505,
+                0.19291234056271145
+              ],
+              "wall_per_success_s": 169.75056690310723,
+              "wall_per_success_unbounded": false,
+              "wall_per_success_bootstrap_95": [
+                128.38911570598214,
+                237.2702227158275
+              ],
+              "reason": "below the reliability floor: 14% over 250 attempts (floor >= 50% over >= 20)"
+            }
+          ],
+          "gaussian_x3_separated": [
+            {
+              "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
+              "attempted": 250,
+              "accepted": 103,
+              "success_rate": 0.412,
+              "success_rate_wilson_95": [
+                0.35276848978585706,
+                0.47389497092534105
+              ],
+              "wall_per_success_s": 69.20609173787649,
+              "wall_per_success_unbounded": false,
+              "wall_per_success_bootstrap_95": [
+                60.09847820372156,
+                80.84869915228442
+              ],
+              "reason": "below the reliability floor: 41% over 250 attempts (floor >= 50% over >= 20)"
+            },
+            {
+              "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_numpy_fp64",
+              "attempted": 250,
+              "accepted": 103,
+              "success_rate": 0.412,
+              "success_rate_wilson_95": [
+                0.35276848978585706,
+                0.47389497092534105
+              ],
+              "wall_per_success_s": 62.085115535017465,
+              "wall_per_success_unbounded": false,
+              "wall_per_success_bootstrap_95": [
+                54.003552018032806,
+                72.45726729264292
+              ],
+              "reason": "below the reliability floor: 41% over 250 attempts (floor >= 50% over >= 20)"
             }
           ]
         }
