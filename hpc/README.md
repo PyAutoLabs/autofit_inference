@@ -26,7 +26,7 @@ with `sinfo` before inventing a partition name.
 On the login node:
 
 ```bash
-cd /mnt/ral/jnightin/autofit_inference
+cd /mnt/ral/jnightin/inference/autofit_inference
 source activate.sh          # shared venv + PYTHONPATH at PyAutoNerves and PyAutoFit
 cd hpc/batch_cpu && sbatch submit_<name>
 ```
@@ -91,6 +91,6 @@ pulled `results/` as a parallel per-directory `tar` on the login node instead.
 
 ### There is no `push`
 
-The RAL copy is a **git clone** at `/mnt/ral/jnightin/autofit_inference`. Code goes to RAL
+The RAL copy is a **git clone** at `/mnt/ral/jnightin/inference/autofit_inference`. Code goes to RAL
 with git on the login node (`git status`, then `git pull`); `hpc/sync push` prints that
 procedure and exits non-zero.

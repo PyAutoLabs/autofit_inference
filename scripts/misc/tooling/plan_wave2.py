@@ -62,7 +62,7 @@ from wall import rates  # noqa: E402
 
 BATCH = ROOT / "hpc" / "batch_cpu"
 TABLES = BATCH / "wave2"
-RAL_ROOT = "/mnt/ral/jnightin/autofit_inference"
+RAL_ROOT = "/mnt/ral/jnightin/inference/autofit_inference"
 
 #: Seconds added to a task's ``--time`` beyond the sum of its runs' limits.
 TASK_MARGIN_S = 600.0

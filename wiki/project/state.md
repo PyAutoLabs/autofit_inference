@@ -74,7 +74,7 @@ and A4 (PyAutoFit#1685–#1687, merged as `df6d218f1`).
 (13 000 expected runs: 11 750 scored now, 20 probe runs for the 4 probe-first cells whose
 other 980 runs follow the probe, 250 deferred — blend warm NUTS), on RAL `--partition=ral`
 against a private PyAutoFit pinned at `df6d218f10cd` (PyAutoNerves `7f3055b7f3d1`) under
-`/mnt/ral/jnightin/autofit_inference/.pyauto_pin/`, never the shared mirror. References
+`/mnt/ral/jnightin/inference/autofit_inference/.pyauto_pin/`, never the shared mirror. References
 for the four new realisations per dataset run first. Submission and job ids: `## Runs`.
 Pull, catalogue and `@2` verdicts are the next task (B5b).
 
