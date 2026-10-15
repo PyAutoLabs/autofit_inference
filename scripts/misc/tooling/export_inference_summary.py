@@ -621,7 +621,11 @@ def main(argv=None) -> int:
     doc = build(ROOT, revision, date, args.rows_root)
     out = files(doc)
     base = target.parent
-    paths = {rel: (target if rel == "" else base / rel) for rel in out}
+    # Shards first, the index last: an interrupted write never leaves a new index naming
+    # shards that are not there yet.
+    paths = {
+        rel: (target if rel == "" else base / rel) for rel in sorted(out, key=lambda r: r == "")
+    }
     shown = target.relative_to(ROOT) if target.is_relative_to(ROOT) else target
     if args.check:
         stale = [
