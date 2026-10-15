@@ -18,8 +18,9 @@ its reason, when it cannot answer its task by construction at that dimension
    the menu's 50 walkers are an invalid configuration for ``D >= 26``.
 3. *Warm-start provider.* A warm start whose provider leg is deferred is deferred with it.
 
-The pilot ranks nothing (protocol §9). Standard library only (the planner and any future
-exporter import it).
+The pilot ranks nothing (protocol §9). No numpy or autofit at import: it needs only the
+standard library and the stdlib-only ``_runner``/``_wave2`` registries (the planner, the
+catalogue and the cap-stub writer import it).
 
 Identity: a pilot row belongs to the pilot only when its manifest key —
 ``(dataset, sampler, settings_name, config_id, data_seed, protocol_id, pyautofit_sha)``,

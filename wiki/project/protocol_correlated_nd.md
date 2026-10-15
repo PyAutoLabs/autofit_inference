@@ -206,9 +206,12 @@ seeds (0–9) × realisation 1 × every planned cell × the four datasets = 930 
 `.pyauto_pin/` in the RAL clone, never the shared mirror. Every search receives the A4
 search-level `seed`. One run per array task, each under a **4 h operational cap** on the
 run's process (`timeout -s TERM` at 4 h + 120 s of start-up overhead; the runner writes a
-`Terminated` failure row carrying `process_elapsed_s`; A1): a `Terminated` run whose
-`process_elapsed_s` reached 4 h is a failed attempt whose wall is a censored lower bound,
-and one stopped earlier is an operational kill (`missing`, rerun). A RAL run at any
+`Terminated` failure row carrying `process_elapsed_s`, the wall from the runner's entry;
+A1): a `Terminated` run whose `process_elapsed_s` reached 4 h is a failed attempt whose
+wall is a censored lower bound, and one stopped earlier is an operational kill (`missing`,
+rerun). A run that `timeout` stopped (exit 124/137) without writing its row — a signal is
+handled only between Python bytecodes, so a long native call can reach the SIGKILL — gets
+a censored stub row from `scripts/misc/tooling/cnd_cap_stub.py` (A1). A RAL run at any
 PyAutoFit other than the pin is refused before it starts. The cap is not a protocol
 timeout.
 
@@ -221,11 +224,13 @@ backend × dataset); a band may move only on ≥ 20 completed pilot rows of its 
 it. A cell whose every pilot attempt hit the cap is deferred from the scored wave with
 that reason. Pilot verdicts stay `@1`.
 
-**Freeze commit:** `correlated_nd@1` (§1–§9 as first committed) is
-**`9ec37795f404`** (`9ec37795f404200e72f4ffdacce3d89ff694b3d5`, autofit_inference branch
-`feature/search-ext-b5c-family`, 2026-10-15), committed before the generator, the
-references, the harness and any `correlated_nd` row; this line and §10 are bookkeeping
-added by a later commit.
+**Freeze commit:** `correlated_nd@1` was first committed as **`9ec37795f404`**
+(`9ec37795f404200e72f4ffdacce3d89ff694b3d5`, autofit_inference branch
+`feature/search-ext-b5c-family`, 2026-10-15), before the generator, the references, the
+harness and any `correlated_nd` row, and amended in place by **A1** (§11; commit
+`2d81df8`, its cap-censoring clause completed by the review-round-2 commit that adds
+`cnd_cap_stub.py`), still before any row or submission. `correlated_nd@1` is §1–§9 with A1
+applied. This line and §10 are bookkeeping added by later commits.
 
 ## 8. Headline numbers
 
@@ -282,7 +287,8 @@ Amendments made before any row they could affect exists.
   d100, banana) now run: 930 planned runs, 110 deferred (was 820 / 220). *(ii) The pilot
   cap is on the process*, judged by the row's `process_elapsed_s`: `search.fit`'s
   `total_wall_s` excludes imports, the admission bar and a warm start's provider, so a
-  capped run would otherwise have been miscounted as an operational kill. *(iii)* A RAL run
+  capped run would otherwise have been miscounted as an operational kill; a run killed
+  without a row gets a censored stub row (`cnd_cap_stub.py`). *(iii)* A RAL run
   at another PyAutoFit is refused by the runner. *Timing:* committed after the first
   commit of this file (`9ec37795f404`) and before any `correlated_nd` row or submission;
   `correlated_nd@1` is this file with A1 applied.

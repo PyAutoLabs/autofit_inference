@@ -432,3 +432,29 @@ def test_runner_shaped_rows_are_admitted():
         config_id = config_segment(cell.config_name, cache)
         row = _pilot_row(cell, 9, config_id=config_id, config_name=cell.config_name)
         assert cnd.admit(row) is None, (cell, cnd.admit(row))
+
+
+def test_cap_stub_row_is_a_censored_admitted_failure(tmp_path):
+    import cnd_cap_stub as stub
+
+    argv = [
+        "--dataset", "corr_gaussian_d100", "--sampler", "blackjax_nuts", "--settings",
+        "warmup_200_samples_500", "--config", "ral_jax_cpu_fp64", "--data-seed", "1",
+        "--seed", "4", "--limit", "14520", "--root", str(tmp_path),
+    ]  # fmt: skip
+    assert stub.main([*argv, "--exit-code", "1"]) == 0  # not a timeout: nothing written
+    assert not list(tmp_path.rglob("*.json"))
+    assert stub.main([*argv, "--exit-code", "137"]) == 0
+    (path,) = tmp_path.rglob("search_seed4.json")
+    row = json.loads(path.read_text())
+    assert cnd.admit(row) is None
+    assert not cnd.operational_kill(row)
+    leg = next(
+        leg
+        for leg in cnd.accounting([row])["legs"]
+        if leg["id"].startswith("corr_gaussian_d100/blackjax_nuts/")
+    )
+    assert leg["failed"] == [4]
+    first = path.read_text()
+    assert stub.main([*argv, "--exit-code", "124"]) == 0  # an existing row is never replaced
+    assert path.read_text() == first

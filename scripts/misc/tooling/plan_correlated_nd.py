@@ -67,9 +67,7 @@ def search_call(dataset: str, sampler: str) -> str:
         f'timeout -s TERM -k {int(cnd.KILL_GRACE_S)} "$LIMIT" python3 '
         f"scripts/{dataset}/searches/{sampler}/{cnd.MODEL_TYPE}.py --wave 1 "
         '--config-name "$CONFIG" --settings "$SETTINGS" --data-seed "$DATA_SEED" '
-        '--seed "$SEED" --cores 1 || echo "run '
-        f"{dataset}/{sampler}/$SETTINGS/data_seed$DATA_SEED/seed$SEED exited $? (its row, if "
-        'any, records the failure)"'
+        '--seed "$SEED" --cores 1 || RC=$?'
     )
 
 
@@ -103,6 +101,8 @@ def submit(tasks: list[cnd.Task]) -> str:
         "#",
         "# WALL-BASIS: -- one row per cell this submit runs; no correlated_nd cell has a",
         "#   measured wall yet (the pilot is the probe; every run is capped as above)",
+        "#   cell: misc/tooling/cnd_cap_stub  device: ral_cpu  precision: fp64",
+        "#   lanes: 1  steps: 1  source: unmeasured  probe-first: yes",
     ]
     for dataset, sampler in pairs:
         lines += [
@@ -160,11 +160,18 @@ LINE=$(sed -n "$((SLURM_ARRAY_TASK_ID + 2))p" "$TASKS")
 if [ -z "$LINE" ]; then echo "no task line $SLURM_ARRAY_TASK_ID in $TASKS" >&2; exit 1; fi
 read -r DATASET SAMPLER SETTINGS CONFIG DATA_SEED LIMIT SEED <<< "$LINE"
 echo "task $SLURM_ARRAY_TASK_ID: $LINE"
+RC=0
 case "$DATASET/$SAMPLER" in
 """
     for dataset, sampler in pairs:
         text += f"    {dataset}/{sampler})\n        {search_call(dataset, sampler)}\n        ;;\n"
     text += '    *) echo "unknown cell $DATASET/$SAMPLER" >&2; exit 1 ;;\nesac\n'
+    text += """if [ "$RC" -ne 0 ]; then
+    echo "run $DATASET/$SAMPLER/$SETTINGS/data_seed$DATA_SEED/seed$SEED exited $RC (its row, if any, records the failure)"
+    # A run killed by the cap without writing its row gets a censored stub (protocol 7).
+    python3 scripts/misc/tooling/cnd_cap_stub.py --dataset "$DATASET" --sampler "$SAMPLER" --settings "$SETTINGS" --config "$CONFIG" --data-seed "$DATA_SEED" --seed "$SEED" --limit "$LIMIT" --exit-code "$RC" || echo "cap stub failed"
+fi
+"""
     text += '\necho "Finished."\ndate\n'
     return text
 
