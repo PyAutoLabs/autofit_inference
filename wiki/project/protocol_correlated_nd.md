@@ -213,7 +213,11 @@ backend × dataset); a band may move only on ≥ 20 completed pilot rows of its 
 it. A cell whose every pilot attempt hit the cap is deferred from the scored wave with
 that reason. Pilot verdicts stay `@1`.
 
-**Freeze commit:** recorded here by the commit that follows it (B5c, 2026-10-15).
+**Freeze commit:** `correlated_nd@1` (§1–§9 as first committed) is
+**`9ec37795f404`** (`9ec37795f404200e72f4ffdacce3d89ff694b3d5`, autofit_inference branch
+`feature/search-ext-b5c-family`, 2026-10-15), committed before the generator, the
+references, the harness and any `correlated_nd` row; this line and §10 are bookkeeping
+added by a later commit.
 
 ## 8. Headline numbers
 
@@ -249,10 +253,14 @@ closed leg is listed below as unreliable with its numbers.
 
 | Dataset | Backend | Realisation 1 |
 |---|---|---|
-| `corr_gaussian_d20` | numpy, jax_cpu | pending (written with the generator, B5c) |
-| `corr_gaussian_d50` | numpy, jax_cpu | pending |
-| `corr_gaussian_d100` | numpy, jax_cpu | pending |
-| `rosenbrock_d20` | numpy, jax_cpu | pending |
+| `corr_gaussian_d20` | numpy, jax_cpu | complete (B5c): ln Z −93.0195, backend identity ≤ 1.4e-14 nat, draws worst median 0.004 σ, control verdicts accepted |
+| `corr_gaussian_d50` | numpy, jax_cpu | complete (B5c): ln Z −233.0188, identity ≤ 2.8e-14 nat, draws worst median 0.008 σ, accepted |
+| `corr_gaussian_d100` | numpy, jax_cpu | complete (B5c): ln Z −467.0880, identity ≤ 5.7e-14 nat, draws worst median 0.008 σ, accepted |
+| `rosenbrock_d20` | numpy, jax_cpu | complete (B5c): ln Z −140.9460 (box mass 1 − 1e-16), identity ≤ 7.1e-15 nat, draws worst median 0.002 σ, accepted |
+
+Written at PyAutoFit `df6d218f10cd` (the pilot pin) by
+`scripts/misc/reference/exact_correlated_nd.py --all`; the self-test numbers are each
+file's `agreement` block.
 
 ## 11. Amendments
 
