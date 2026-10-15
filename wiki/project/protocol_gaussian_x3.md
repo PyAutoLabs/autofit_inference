@@ -215,6 +215,20 @@ Per (search × settings × config), never per best seed:
   (persistent cache disabled) and warm runs (`--compile-cache`), never one run's first
   and second call.
 
+> **Presentation note — post-hoc, not pre-registered (adopted 2026-10-15, B5b-2).**
+> This note was written **after seeing the wave-2 data** (DynestyStatic, accepted on 14 %
+> of its blend evidence attempts, led that task on expected wall per right answer). It is
+> a convention for how the catalogue *presents* the headline numbers above, **not** a
+> criterion of this protocol: it changes no verdict, no threshold and no headline number,
+> it belongs to no protocol version, and the pre-registered rules of §4–§8 are untouched.
+> The `gaussian_x3@2` section of `catalogue/search_catalogue.json` orders legs within one
+> task and one dataset (never across) by expected wall per right answer (ascending), then
+> success rate, and positions **only** closed, fully-judged legs whose success rate is
+> **≥ 50 % over ≥ 20 attempts**. Every other closed leg, zero-success legs included, is
+> listed below the ranked block as **unreliable** with its numbers. Every leg shows its
+> success rate (Wilson 95 %) and its attempt count. The values live once, in
+> `scripts/misc/tooling/build_catalogue.py` (`RANK_FLOOR`).
+
 ## 9. Waves
 
 - **Wave 1 is an exploratory pilot; it ranks nothing.** 10 search seeds, local CPU,
@@ -327,3 +341,12 @@ changes; the change rule (top) still governs anything after a wave-1 row.
   *Why:* §7's freeze gate (B3c) — freeze from the calibration that exists, before any
   scored run, never restarting the pilot. *Timing:* no wave-2 row existed when it was
   committed; the arrays were submitted afterwards (job ids in `state.md`).
+
+- **Note N1 — 2026-10-15, the catalogue's reliability floor (B5b-2; not an amendment).**
+  The §8 presentation note was added after the scored wave-2 rows existed, so under the
+  change rule it cannot be a criterion, and it is not one: it changes no verdict, no
+  threshold and no headline number, and it creates no protocol version. *Why:* the
+  catalogue's own sort key (expected wall per right answer) let a leg that is right on
+  14 % of attempts lead its task; the human-delegated ruling of 2026-10-15
+  (autofit_inference#12, ruling 2) keeps that key but ranks only legs with a success rate
+  ≥ 50 % over ≥ 20 attempts and lists the rest as unreliable, with every number shown.
