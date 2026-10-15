@@ -10,7 +10,7 @@ What it writes
 
 - ``hpc/batch_cpu/correlated_nd/pilot.tsv`` — one line per array task (header first; the
   submit reads line ``SLURM_ARRAY_TASK_ID + 2``): one run each, every planned cell × the
-  10 pilot seeds on realisation 1.
+  10 pilot seeds on realisation 1 (930 runs).
 - ``hpc/batch_cpu/submit_correlated_nd_pilot`` — the array, ``--partition=ral`` only,
   excluding the four 252-CPU nodes, no GPU resources, the private PyAutoFit/PyAutoNerves pin
   guarded before anything runs. Every run is limited to the pilot's 4 h operational cap
@@ -148,10 +148,12 @@ export NPROC=1
 echo "=========================================="
 date
 cd $AP_ROOT
-# Refuse to run anything unless both pins are at their commits and are what imports.
-test "$(git -C $AF_PIN/PyAutoFit rev-parse HEAD)" = "{cnd.PYAUTOFIT_PIN}"
-test "$(git -C $AF_PIN/PyAutoNerves rev-parse HEAD)" = "{cnd.PYAUTONERVES_PIN}"
-python3 -c "import autofit, autonerves, os; pin = os.environ['AF_PIN']; assert autofit.__file__.startswith(pin) and autonerves.__file__.startswith(pin), (autofit.__file__, autonerves.__file__); print('autofit', autofit.__version__, autofit.__file__); print('autonerves', autonerves.__file__)"
+# Refuse to run anything unless both pins are at their commits and are what imports
+# (explicit exits: these hold even without activate.sh's SLURM errexit guard; the runner
+# also refuses a RAL correlated_nd run at any other PyAutoFit).
+test "$(git -C $AF_PIN/PyAutoFit rev-parse HEAD)" = "{cnd.PYAUTOFIT_PIN}" || {{ echo "PyAutoFit pin mismatch" >&2; exit 1; }}
+test "$(git -C $AF_PIN/PyAutoNerves rev-parse HEAD)" = "{cnd.PYAUTONERVES_PIN}" || {{ echo "PyAutoNerves pin mismatch" >&2; exit 1; }}
+python3 -c "import autofit, autonerves, os; pin = os.environ['AF_PIN']; assert autofit.__file__.startswith(pin) and autonerves.__file__.startswith(pin), (autofit.__file__, autonerves.__file__); print('autofit', autofit.__version__, autofit.__file__); print('autonerves', autonerves.__file__)" || {{ echo "pin import check failed" >&2; exit 1; }}
 
 TASKS=hpc/batch_cpu/correlated_nd/pilot.tsv
 LINE=$(sed -n "$((SLURM_ARRAY_TASK_ID + 2))p" "$TASKS")

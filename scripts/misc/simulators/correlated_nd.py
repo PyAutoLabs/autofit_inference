@@ -31,7 +31,7 @@ The uniform prior box is fixed by the structure (never by the data): per axis it
 ``[-c sigma2, max(x1)^2 + c sigma2]`` with ``c`` seeded in 12–16. A realisation whose
 data sit more than :data:`MAX_DEVIATION_SIGMA` sigma from the truth on any axis is
 refused (probability below 1e-4 at D = 100), so the truncation of the posterior by the
-box is bounded (Gaussians, by a union bound below 1e-11) or integrated exactly
+box is bounded (Gaussians, by a union bound, below 1e-25 on the committed realisations) or integrated exactly
 (banana) — the exact reference (``scripts/misc/reference/exact_correlated_nd.py``)
 records which.
 

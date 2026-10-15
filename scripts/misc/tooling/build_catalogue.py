@@ -254,6 +254,7 @@ def scan_wave2_rows(root: Path) -> list[tuple[str, dict]]:
             isinstance(payload, dict)
             and payload.get("schema_version") == 1
             and protocol.wave_of(payload) == wave2.WAVE
+            and not protocol.is_family_row(payload)
         ):
             rows.append((path.relative_to(root).as_posix(), payload))
     return rows

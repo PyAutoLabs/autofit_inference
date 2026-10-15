@@ -43,7 +43,11 @@ def wave2_rows(root: Path = ROOT) -> list[tuple[str, dict]]:
     out = []
     for path in sorted((root / "results" / "searches").rglob("*.json")):
         payload = protocol.load_json(path)
-        if isinstance(payload, dict) and protocol.wave_of(payload) == wave2.WAVE:
+        if (
+            isinstance(payload, dict)
+            and protocol.wave_of(payload) == wave2.WAVE
+            and not protocol.is_family_row(payload)
+        ):
             out.append((path.relative_to(root).as_posix(), payload))
     return out
 

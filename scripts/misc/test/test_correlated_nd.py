@@ -235,21 +235,23 @@ def test_manifest_matches_the_simulator_and_the_cli():
 
 def test_pilot_size_and_deferrals_are_the_pre_registered_ones():
     summary = cnd.summary()
-    assert summary["expected_runs"] == 1040 and summary["planned_runs"] == 820
+    assert summary["expected_runs"] == 1040 and summary["planned_runs"] == 930
     assert summary["by_dataset"] == {
         "corr_gaussian_d20": 260,
-        "corr_gaussian_d50": 190,
-        "corr_gaussian_d100": 140,
-        "rosenbrock_d20": 230,
+        "corr_gaussian_d50": 220,
+        "corr_gaussian_d100": 190,
+        "rosenbrock_d20": 260,
     }
     deferred = {(c.dataset, c.sampler, c.settings) for c in cnd.cells() if c.status == "deferred"}
     assert ("corr_gaussian_d100", "nautilus", "n_live_400") not in deferred
     assert ("corr_gaussian_d100", "dynesty_dynamic", "default") not in deferred
     assert ("corr_gaussian_d50", "nautilus", "n_live_200") not in deferred
-    assert ("corr_gaussian_d100", "nautilus", "n_live_200") in deferred
+    # Nautilus is exempt from the live-point floor (protocol §11 A1).
+    assert ("corr_gaussian_d100", "nautilus", "n_live_100") not in deferred
+    assert ("corr_gaussian_d100", "dynesty_static", "nlive_200") in deferred
     assert ("corr_gaussian_d20", "emcee", "walkers_50_steps_2000") not in deferred
     assert ("corr_gaussian_d50", "zeus", "walkers_50_steps_2000") in deferred
-    assert ("rosenbrock_d20", "blackjax_nuts_warm", "warmup_200_samples_500") in deferred
+    assert ("rosenbrock_d20", "blackjax_nuts_warm", "warmup_200_samples_500") not in deferred
     for cell in cnd.cells():
         assert (cell.status == "deferred") == bool(cell.reason)
 
@@ -305,14 +307,23 @@ def test_accounting_sums_and_refuses():
     rows = [
         _pilot_row(planned[0], 0),
         _pilot_row(planned[0], 1, status="failed: RuntimeError: x", completed=False),
-        _pilot_row(planned[0], 2, status="failed: Terminated: signal", total_wall_s=10.0),
-        _pilot_row(planned[0], 3, status="failed: Terminated", total_wall_s=cnd.PILOT_CAP_S),
+        _pilot_row(planned[0], 2, status="failed: Terminated: signal", process_elapsed_s=10.0),
+        # A warm-start-shaped capped run: search.fit's own wall is short (the provider took
+        # the time), but the process reached the cap, so it is a censored failure.
+        _pilot_row(
+            planned[0],
+            3,
+            status="failed: Terminated",
+            total_wall_s=30.0,
+            provider_wall_s=cnd.PILOT_CAP_S - 100.0,
+            process_elapsed_s=cnd.PILOT_CAP_S + 60.0,
+        ),
         _pilot_row(planned[0], 4, pyautofit_commit="deadbeef"),
         _pilot_row(planned[0], 5, model="gaussian_x3"),
     ]
     out = cnd.accounting(rows)
     totals = out["totals"]
-    assert totals["expected"] == 1040 and totals["deferred"] == 220
+    assert totals["expected"] == 1040 and totals["deferred"] == 110
     assert totals["row"] + totals["failed"] + totals["missing"] + totals["deferred"] == 1040
     leg = out["legs"][0]
     assert leg["row"] == 1 and leg["failed"] == [1, 3]
@@ -400,3 +411,24 @@ def test_summarise_without_relabelling_has_no_modes():
     assert out["posterior_relabelled"] is out["posterior"]
     assert out["modes"] is None and out["modes_found"] is None
     assert out["label_permutations_found"] is None
+
+
+def test_family_chain_convergence_uses_the_cnd1_bars():
+    ref = _reference()
+    row = _judged_row("posterior", ref, rhat_max=1.005, ess_bulk_min=450.0)
+    assert protocol.verdict(row, ref)["convergence"] == "converged"
+    row = _judged_row("posterior", ref, rhat_max=1.02, ess_bulk_min=450.0)
+    assert protocol.verdict(row, ref)["convergence"] == "not_converged"
+
+
+def test_runner_shaped_rows_are_admitted():
+    """The manifest key the runner writes (config_segment, warm cache on JAX) is a cell key."""
+    from searches._runner import config_segment
+
+    for cell in cnd.cells():
+        if cell.status != "planned":
+            continue
+        cache = cnd.COMPILE_CACHE if cell.backend == "jax_cpu" else None
+        config_id = config_segment(cell.config_name, cache)
+        row = _pilot_row(cell, 9, config_id=config_id, config_name=cell.config_name)
+        assert cnd.admit(row) is None, (cell, cnd.admit(row))

@@ -177,9 +177,12 @@ between reference runs); a reference is `complete` only when every item passes, 
 expected run (`searches/_correlated_nd.deferral`), when it cannot answer its task by
 construction:
 
-1. *Live-point floor (nested).* Nested sampling's ln Z scatter is ≈ `√(H / n_live)`
-   (Skilling 2006). A leg with `n_live < H` has an expected scatter above the 1-nat
-   tolerance of §4(c). `DynestyDynamic`'s default `nlive_init` is 500.
+1. *Live-point floor (classic nested: DynestyStatic, DynestyDynamic, NSS; amendment A1).*
+   Classic nested sampling's ln Z scatter is ≈ `√(H / n_live)` (Skilling 2006). A leg with
+   `n_live < H` has an expected scatter above the 1-nat tolerance of §4(c).
+   `DynestyDynamic`'s default `nlive_init` is 500. Nautilus is exempt (A1): it estimates
+   ln Z by importance sampling over its neural-network bounds, the formula does not bound
+   its error, and §4(c) judges it directly.
 2. *Walker floor (ensemble chains).* Emcee and Zeus refuse fewer than `2D` walkers, so the
    menu's 50 walkers are an invalid configuration at `D ≥ 26`.
 3. *Warm-start provider.* Warm BlackJAXNUTS starts from Nautilus `n_live_100`; where that
@@ -190,19 +193,24 @@ Applied to the menu (26 cells per dataset):
 | Dataset | Deferred cells (both backends where the search has them) | Planned cells |
 |---|---|---|
 | `corr_gaussian_d20` | none | 26 |
-| `corr_gaussian_d50` | Nautilus `n_live_100` (rule 1: 100 < 133.3); Emcee, Zeus (rule 2); warm NUTS (rule 3) | 19 |
-| `corr_gaussian_d100` | Nautilus `n_live_100` and `n_live_200`, DynestyStatic `nlive_200`, NSS (rule 1: < 267.6); Emcee, Zeus (rule 2); warm NUTS (rule 3) | 14 |
-| `rosenbrock_d20` | Nautilus `n_live_100` (rule 1: 100 < 133.3); warm NUTS (rule 3) | 23 |
+| `corr_gaussian_d50` | Emcee, Zeus (rule 2) | 22 |
+| `corr_gaussian_d100` | DynestyStatic `nlive_200`, NSS (rule 1: 200 < 267.6); Emcee, Zeus (rule 2) | 19 |
+| `rosenbrock_d20` | none | 26 |
+
+(Rule 3 defers nothing once Nautilus is exempt from rule 1, A1.)
 
 **The pilot** (wave 1, exploratory, ranks nothing; flagged `pilot: true`): **10 search
-seeds (0–9) × realisation 1 × every planned cell × the four datasets = 820 runs**
-(1040 expected, 220 deferred), on RAL `--partition=ral` against the private PyAutoFit pin
+seeds (0–9) × realisation 1 × every planned cell × the four datasets = 930 runs**
+(1040 expected, 110 deferred; A1), on RAL `--partition=ral` against the private PyAutoFit pin
 `df6d218f10cd` (PyAutoNerves `7f3055b7f3d1`) — the pin of `gaussian_x3` wave 2 — under
 `.pyauto_pin/` in the RAL clone, never the shared mirror. Every search receives the A4
-search-level `seed`. One run per array task, each under a **4 h operational cap** on
-`search.fit` (`timeout -s TERM`; the runner writes a `Terminated` failure row): a run
-stopped at the cap is a failed attempt whose wall is a censored lower bound. The cap is not
-a protocol timeout.
+search-level `seed`. One run per array task, each under a **4 h operational cap** on the
+run's process (`timeout -s TERM` at 4 h + 120 s of start-up overhead; the runner writes a
+`Terminated` failure row carrying `process_elapsed_s`; A1): a `Terminated` run whose
+`process_elapsed_s` reached 4 h is a failed attempt whose wall is a censored lower bound,
+and one stopped earlier is an operational kill (`missing`, rerun). A RAL run at any
+PyAutoFit other than the pin is refused before it starts. The cap is not a protocol
+timeout.
 
 **Calibration, then freeze.** Every PLACEHOLDER (the two σ-ratio bands, the ESS and R-hat
 bars), the per-cell timeout and the censoring rule are calibrated on the pilot and frozen as
@@ -253,15 +261,28 @@ closed leg is listed below as unreliable with its numbers.
 
 | Dataset | Backend | Realisation 1 |
 |---|---|---|
-| `corr_gaussian_d20` | numpy, jax_cpu | complete (B5c): ln Z −93.0195, backend identity ≤ 1.4e-14 nat, draws worst median 0.004 σ, control verdicts accepted |
-| `corr_gaussian_d50` | numpy, jax_cpu | complete (B5c): ln Z −233.0188, identity ≤ 2.8e-14 nat, draws worst median 0.008 σ, accepted |
-| `corr_gaussian_d100` | numpy, jax_cpu | complete (B5c): ln Z −467.0880, identity ≤ 5.7e-14 nat, draws worst median 0.008 σ, accepted |
-| `rosenbrock_d20` | numpy, jax_cpu | complete (B5c): ln Z −140.9460 (box mass 1 − 1e-16), identity ≤ 7.1e-15 nat, draws worst median 0.002 σ, accepted |
+| `corr_gaussian_d20` | numpy, jax_cpu | complete (B5c): ln Z −93.0195, backend identity ≤ 1.4e-14 nat, draws worst median 0.005 σ, control verdicts accepted |
+| `corr_gaussian_d50` | numpy, jax_cpu | complete (B5c): ln Z −233.0188, identity ≤ 2.8e-14 nat, draws worst median 0.004 σ, accepted |
+| `corr_gaussian_d100` | numpy, jax_cpu | complete (B5c): ln Z −467.0880, identity ≤ 5.7e-14 nat, draws worst median 0.006 σ, accepted |
+| `rosenbrock_d20` | numpy, jax_cpu | complete (B5c): ln Z −140.9460 (box mass 1 − 1e-16), identity ≤ 7.1e-15 nat, draws worst median 0.001 σ, accepted |
 
-Written at PyAutoFit `df6d218f10cd` (the pilot pin) by
+Written (and rewritten after review round 1 seeded the exact draws by `structure_seed`) at PyAutoFit `df6d218f10cd` (the pilot pin) by
 `scripts/misc/reference/exact_correlated_nd.py --all`; the self-test numbers are each
 file's `agreement` block.
 
 ## 11. Amendments
 
-None.
+Amendments made before any row they could affect exists.
+
+- **A1 — 2026-10-15, before any `correlated_nd` row (B5c review round 1).** Changes §7
+  only. *(i) Nautilus is exempt from the live-point floor*: the `√(H/n_live)` scatter is
+  the classic nested-sampling error; Nautilus's importance-sampled ln Z is not bounded by
+  it, so deferring it was not "cannot answer by construction". Nautilus `n_live_100` (d50,
+  d100, banana) and `n_live_200` (d100) and, with their provider back, warm NUTS (d50,
+  d100, banana) now run: 930 planned runs, 110 deferred (was 820 / 220). *(ii) The pilot
+  cap is on the process*, judged by the row's `process_elapsed_s`: `search.fit`'s
+  `total_wall_s` excludes imports, the admission bar and a warm start's provider, so a
+  capped run would otherwise have been miscounted as an operational kill. *(iii)* A RAL run
+  at another PyAutoFit is refused by the runner. *Timing:* committed after the first
+  commit of this file (`9ec37795f404`) and before any `correlated_nd` row or submission;
+  `correlated_nd@1` is this file with A1 applied.

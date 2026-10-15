@@ -743,6 +743,9 @@ def run_search(
     refused combination (unknown sampler, a deferred search, a JAX leg of a search that
     is not JAX-native, a ``--dataset`` that disagrees with the leaf).
     """
+    # The process clock a correlated_nd row records (``process_elapsed_s``): its pilot cap
+    # limits the whole process, so censoring compares this, not ``search.fit`` alone.
+    process_start = time.perf_counter()
     cli = parse_inference_cli(argv, default_dataset=dataset_class)
     if sampler not in SAMPLERS:
         print(
@@ -800,6 +803,15 @@ def run_search(
         refusal = wave_refusal(wave, library_revisions(), wave2.PYAUTOFIT_PIN)
         if refusal:
             print(f"ERROR: {refusal}", file=sys.stderr)
+            return 2
+    if family and cli.where == "ral":
+        # A correlated_nd run on RAL is a pilot row only at the pin (protocol correlated_nd
+        # §7): refuse any other PyAutoFit before spending the run (local runs are free).
+        from searches import _correlated_nd as cnd
+
+        refusal = wave_refusal(2, library_revisions(), cnd.PYAUTOFIT_PIN)
+        if refusal:
+            print(f"ERROR: correlated_nd pilot: {refusal}", file=sys.stderr)
             return 2
 
     # --- imports: everything below here sees the backend environment above ---
@@ -1146,7 +1158,14 @@ def run_search(
             "chain_diagnostics": chain_diag or None,
             "ppc_chi2": ppc_chi2,
             # correlated_nd only (gaussian_x3 rows keep their schema): §4(b)3's statistic.
-            **({"whitened": whitened} if family else {}),
+            **(
+                {
+                    "whitened": whitened,
+                    "process_elapsed_s": time.perf_counter() - process_start,
+                }
+                if family
+                else {}
+            ),
             "truths": truths,
             "truth_delta_sigma": truth_delta_sigma_from(
                 summary.get("posterior_relabelled", {}), truths

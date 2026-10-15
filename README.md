@@ -20,7 +20,7 @@ of the
   reliability floor (see "Scored wave 2" below).
 - **A second family, `correlated_nd` (B5c).** High-D correlated Gaussians and a
   Rosenbrock banana with exact references, under its own pre-registered protocol
-  `correlated_nd@1`; its 820-run pilot runs on RAL and ranks nothing (see "The second
+  `correlated_nd@1`; its 930-run pilot runs on RAL and ranks nothing (see "The second
   family" below).
 - **The wave-1 pilot** (223 rows, below) ranks nothing. It calibrated the protocol and
   ran on PyAutoFit main before phase A2.
@@ -62,7 +62,7 @@ Rosenbrock banana (Pagani et al. 2022). Datasets come from
 any row is judged. Rows are judged by their own pre-registered protocol,
 [`wiki/project/protocol_correlated_nd.md`](wiki/project/protocol_correlated_nd.md)
 (`correlated_nd@1`), and catalogued by task and dataset **apart from `gaussian_x3`;
-nothing is ranked across families.** The pilot (820 runs: 10 seeds × every non-deferred
+nothing is ranked across families.** The pilot (930 runs: 10 seeds × every non-deferred
 cell of the gaussian_x3 wave-2 menu × the four datasets) runs on RAL `--partition=ral`.
 
 <!-- BEGIN auto-table:correlated_nd -->

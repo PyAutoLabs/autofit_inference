@@ -211,7 +211,7 @@ def reference_payload(dataset: str, backend: str, data_seed: int | None = None) 
 
 
 def _unconstrained_draws(ds, n: int, np):
-    rng = np.random.default_rng([ds.dimension, ds.data_seed, 99])
+    rng = np.random.default_rng([ds.structure_seed, ds.data_seed, 99])
     z = rng.standard_normal((n, ds.dimension))
     if ds.kind == "gaussian":
         return ds.y + (z * np.sqrt(ds.eigenvalues)) @ ds.eigenvectors.T

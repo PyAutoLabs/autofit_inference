@@ -7,7 +7,7 @@ dataset directory, by construction rather than by a reference search:
 - **ln Z.** The likelihood is a normalised density in ``theta`` and the prior is uniform
   on the box of volume ``V``, so ``Z = mass / V`` with ``mass`` the posterior mass inside
   the box. Gaussians: ``mass = 1 - eps`` with ``eps`` bounded by a union bound
-  (``truncation_bound``; below 1e-11 on every committed realisation) and
+  (``truncation_bound``; below 1e-25 on every committed realisation) and
   ``ln Z = -ln V``. Banana: ``mass`` is integrated exactly (1-D Gauss–Legendre over
   ``x1``; every ``x_j`` factor is a closed-form normal CDF) and ``ln Z = ln mass - ln V``.
 - **Marginals** in the convention of ``searches/_posterior.marginal`` (weighted quantiles
@@ -63,6 +63,7 @@ class Dataset:
     lower: np.ndarray
     upper: np.ndarray
     truth: np.ndarray
+    structure_seed: int = 0
     eigenvalues: np.ndarray | None = None
     eigenvectors: np.ndarray | None = None
     sigma1: float | None = None
@@ -90,6 +91,7 @@ def load(dataset_path: Path) -> Dataset:
         "lower": np.asarray([priors["lower"][k] for k in keys], dtype=float),
         "upper": np.asarray([priors["upper"][k] for k in keys], dtype=float),
         "truth": np.asarray([truth["parameters"][k] for k in keys], dtype=float),
+        "structure_seed": int(truth["structure_seed"]),
     }
     if model["kind"] == "gaussian":
         return Dataset(
@@ -186,7 +188,9 @@ def _banana_x1_marginal(ds: Dataset) -> dict:
     """x1 under the box: the x_j box factors (each 1 - O(1e-9)) are kept in the CDF."""
     nodes, weights = _x1_nodes(ds)
     w = weights * np.prod(_xj_box_mass(ds, nodes), axis=1)
-    cdf = np.cumsum(w) / np.sum(w)
+    # Mid-node cumulative weight (each node holds half its own weight), so the quantile
+    # carries no half-node bias.
+    cdf = (np.cumsum(w) - 0.5 * w) / np.sum(w)
     q = np.interp(QUANTILES, cdf, nodes)
     mean = float(np.sum(w * nodes) / np.sum(w))
     return _marginal_dict(q, mean)
@@ -293,7 +297,7 @@ def information(ds: Dataset, log_z: float) -> float:
 
 def sample(ds: Dataset, n: int, seed: int = 0) -> np.ndarray:
     """``n`` exact iid posterior draws (rejection of the rare out-of-box draw)."""
-    rng = np.random.default_rng([ds.dimension, ds.data_seed, int(seed)])
+    rng = np.random.default_rng([ds.structure_seed, ds.data_seed, int(seed)])
     out = []
     have = 0
     while have < n:

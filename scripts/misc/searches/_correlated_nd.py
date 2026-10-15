@@ -8,8 +8,9 @@ PyAutoFit pin as gaussian_x3 wave 2 (:data:`PYAUTOFIT_PIN`). A cell is **deferre
 its reason, when it cannot answer its task by construction at that dimension
 (:func:`deferral`, protocol §7):
 
-1. *Live-point floor (nested searches).* Nested sampling's ln Z scatter is
-   ``sqrt(H / n_live)`` (Skilling 2006), with ``H`` the exact prior-to-posterior
+1. *Live-point floor (classic nested searches: Dynesty, NSS; not Nautilus, §11 A1).*
+   Nested sampling's ln Z scatter is ``sqrt(H / n_live)`` (Skilling 2006), with ``H`` the
+   exact prior-to-posterior
    information of the dataset (:data:`INFORMATION_NATS`, computed by
    ``models/correlated_nd_exact.information`` and pinned by a test). A leg with
    ``n_live < H`` has an expected ln Z scatter above the 1-nat tolerance of §4(c).
@@ -75,6 +76,12 @@ SETTINGS = wave2.SETTINGS
 #: settings pass no kwargs).
 DYNESTY_DYNAMIC_NLIVE_INIT = 500
 
+#: The searches the live-point floor applies to: classic nested samplers, whose ln Z
+#: scatter is ``sqrt(H / n_live)``. Nautilus is exempt — it estimates ln Z by importance
+#: sampling over its neural-network bounds, so the formula does not bound its error and
+#: §4(c) judges it directly (protocol §11 A1).
+LIVE_POINT_FLOOR_CLASSES = ("DynestyStatic", "DynestyDynamic", "NSS")
+
 #: Ensemble chains need at least this many walkers per dimension (emcee's red-blue move
 #: and zeus both raise below ``2 * ndim``).
 WALKERS_PER_DIMENSION = 2
@@ -106,7 +113,7 @@ def deferral(dataset: str, sampler: str, settings: str) -> str | None:
     dimension = DIMENSION[dataset]
     information = INFORMATION_NATS[dataset]
     n_live = live_points(sampler, settings)
-    if n_live is not None and n_live < information:
+    if n_live is not None and spec.cls in LIVE_POINT_FLOOR_CLASSES and n_live < information:
         return (
             f"deferred (live-point floor, protocol §7): n_live {n_live} < H {information:.1f} "
             f"nat at D = {dimension}, so the expected ln Z scatter sqrt(H/n_live) = "
@@ -229,10 +236,13 @@ def admit(row: dict) -> str | None:
 
 def operational_kill(row: dict) -> bool:
     """A ``Terminated`` row stopped before the pilot cap: not a censored attempt, so it is
-    ``missing`` (to rerun)."""
+    ``missing`` (to rerun). The cap limits the whole process (``timeout`` at
+    ``PILOT_CAP_S + RUN_OVERHEAD_S``), so the row's ``process_elapsed_s`` is compared with
+    ``PILOT_CAP_S``; ``search.fit``'s ``total_wall_s`` excludes the imports, the admission
+    bar and a warm start's provider, and would mark a capped run as an operational kill."""
     if "Terminated" not in str(row.get("status")):
         return False
-    wall = row.get("total_wall_s")
+    wall = row.get("process_elapsed_s")
     return wall is None or float(wall) < PILOT_CAP_S
 
 
