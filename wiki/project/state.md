@@ -23,12 +23,18 @@ Rosenbrock banana, with exact posteriors and ln Z. Eight exact references (4 dat
 backends) are complete and passed the §6 agreement test (backend `Fitness` identity
 ≤ 6e-14 nat, 200 000 exact draws, truncation, control verdicts accepted).
 
-**Pilot on RAL.** Job **409957** (`submit_correlated_nd_pilot`, array `0-929%100`,
+**Pilot on RAL.** Job **410866** (`submit_correlated_nd_pilot`, array `0-929%100`,
 `--partition=ral`, excluding `euclid-ral-compute-[1-4]`, no GPU resources, 2 CPUs / 8 GB,
-4 h process cap per run), submitted 2026-10-15 ~22:40 UTC against the private pin PyAutoFit
-`df6d218f10cd` / PyAutoNerves `7f3055b7f3d1`: 930 runs (10 seeds × realisation 1 × 93
-planned cells), 110 deferred with reasons. Delivered to the RAL clone by tar/scp of
-168 files from `d44d5c7`, sha256-verified (the clone's git HEAD stays `f0b3eef`). The
+4 h process cap per run), submitted 2026-10-15 ~23:10 UTC (pending at hand-back) against
+the private pin PyAutoFit `df6d218f10cd` / PyAutoNerves `7f3055b7f3d1`: 930 runs (10
+seeds × realisation 1 × 93 planned cells), 110 deferred with reasons. It runs from the
+**private copy `/mnt/ral/jnightin/inference/autofit_inference_b5c`** (191 delivered files
+from `245a3ef`, sha256-verified, plus its own copy of `.pyauto_pin/`), so B5c-2 pulls
+`results/` from there. The first submission, **409957**, failed at import in every task
+and was cancelled: the shared clone `inference/autofit_inference` had been switched by
+another session to an old local `main` (`6114082`; stash "pre-main-switch", 19:24 UTC) and
+lost `_autofit_inference_cli.py` and `config/` as the array started. No row was written;
+the shared clone is left as found (with this task's delivered, untracked files in it). The
 catalogue's `correlated_nd@1` section groups the family by task and dataset, apart from
 `gaussian_x3`; nothing is ranked across families. **Next (B5c-2):** pull `results/` only,
 judge under `@1`, calibrate and freeze `correlated_nd@2`, then the scored wave.
@@ -155,7 +161,8 @@ on RAL. B2 brought the harness and datasets; B3's pilot flips the Cortex row to
 
 | job | array (throttle) | what |
 |---|---|---|
-| 409957 | 0-929 (%100) | `correlated_nd@1` pilot: 930 runs, one per task, 4 h process cap; protocol §7 |
+| 409957 | 0-929 (%100) | first submission from the shared clone: failed at import (clone disturbed), cancelled, no rows |
+| 410866 | 0-929 (%100) | `correlated_nd@1` pilot from the private copy `inference/autofit_inference_b5c`: 930 runs, one per task, 4 h process cap; protocol §7 |
 
 Login-node dry run first: pins at their commits and imported, TSV lines and leaves resolve,
 a numpy LBFGS row on `corr_gaussian_d20` was written at the pin under `correlated_nd@1`
