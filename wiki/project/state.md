@@ -11,7 +11,29 @@ answer fastest, and how reliably, from a cold start and across seeds, on toy lik
 where the truth is known. The first benchmark is `gaussian_x3_blend` +
 `gaussian_x3_separated`.
 
-## Now: scored wave 2 complete and judged under `gaussian_x3@2` (B5b, B5b-2)
+## Now: a second family, `correlated_nd`, pre-registered; its pilot on RAL (B5c)
+
+**Protocol first (B5c, 2026-10-15, autofit_inference#14).** `correlated_nd@1`
+(`wiki/project/protocol_correlated_nd.md`) was first committed in **`9ec37795f404`**
+(`9ec37795f404200e72f4ffdacce3d89ff694b3d5`) before the generator, the references, the
+harness and any `correlated_nd` row, and amended in place by A1 (review round 1, commit
+`2d81df8`; completed by the round-2 cap-stub commit) **before any row or submission**. The
+family: correlated Gaussians at D = 20, 50, 100 (condition number 10³) and a D = 20 hybrid
+Rosenbrock banana, with exact posteriors and ln Z. Eight exact references (4 datasets × 2
+backends) are complete and passed the §6 agreement test (backend `Fitness` identity
+≤ 6e-14 nat, 200 000 exact draws, truncation, control verdicts accepted).
+
+**Pilot on RAL.** Job **409957** (`submit_correlated_nd_pilot`, array `0-929%100`,
+`--partition=ral`, excluding `euclid-ral-compute-[1-4]`, no GPU resources, 2 CPUs / 8 GB,
+4 h process cap per run), submitted 2026-10-15 ~22:40 UTC against the private pin PyAutoFit
+`df6d218f10cd` / PyAutoNerves `7f3055b7f3d1`: 930 runs (10 seeds × realisation 1 × 93
+planned cells), 110 deferred with reasons. Delivered to the RAL clone by tar/scp of
+168 files from `d44d5c7`, sha256-verified (the clone's git HEAD stays `f0b3eef`). The
+catalogue's `correlated_nd@1` section groups the family by task and dataset, apart from
+`gaussian_x3`; nothing is ranked across families. **Next (B5c-2):** pull `results/` only,
+judge under `@1`, calibrate and freeze `correlated_nd@2`, then the scored wave.
+
+## Before: scored wave 2 complete and judged under `gaussian_x3@2` (B5b, B5b-2)
 
 **Judged (B5b and B5b-2, 2026-10-15).** All 12,750 pulled wave-2 rows are admitted by
 `_wave2.admit`: 11,750 from the scored arrays, the 20-run probe and the 980-run
@@ -128,6 +150,17 @@ on RAL. B2 brought the harness and datasets; B3's pilot flips the Cortex row to
 `active` and starts the `fit` instance in PyAutoInsight (`inference-summary@1`).
 
 ## Runs
+
+**`correlated_nd` pilot (B5c), submitted 2026-10-15 ~22:40 UTC** on RAL `--partition=ral`:
+
+| job | array (throttle) | what |
+|---|---|---|
+| 409957 | 0-929 (%100) | `correlated_nd@1` pilot: 930 runs, one per task, 4 h process cap; protocol §7 |
+
+Login-node dry run first: pins at their commits and imported, TSV lines and leaves resolve,
+a numpy LBFGS row on `corr_gaussian_d20` was written at the pin under `correlated_nd@1`
+(stopped by the dry run's 900 s `timeout` on the slow login node, so its `Terminated` row
+also exercised the SIGTERM path), and `sbatch --test-only` accepted the script.
 
 **Scored wave 2, submitted 2026-10-14 17:19 BST** on RAL `--partition=ral` (excluding the
 four 252-CPU nodes), 2 CPUs and 6 GB per task, from branch `feature/search-ext-b5a-wave2`
