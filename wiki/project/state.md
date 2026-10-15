@@ -25,8 +25,9 @@ where the truth is known. The first benchmark is `gaussian_x3_blend` +
 - **deferred:** 250 (blend warm NUTS).
 
 Every one of the 20 references, for 2 datasets × 2 backends × 5 realisations, is
-`complete`. Each consists of the Nautilus runs only: on every one, DynestyStatic's ln Z
-disagrees with Nautilus by 1.3–7.3 nat (§6, recorded as a limitation). The JAX blend
+`complete`. Each consists of the Nautilus runs only: on every one the six runs' ln Z
+spread (DynestyStatic against Nautilus) is 0.49–7.3 nat, above the §6 0.2 nat (recorded
+as a limitation). The JAX blend
 realisation-1 reference was rebuilt on the laptop from Nautilus seeds 0 and 2 (pilot) and
 seed 1 (RAL).
 
@@ -223,7 +224,8 @@ only within one task and one dataset (`catalogue/search_catalogue.json`, `gaussi
     disagreement inside every reference.
   - Because DynestyStatic is cheap, its wall per right answer (62–190 s) is the lowest
     despite the low success rate. The ordering follows §8 strictly, so read the success
-    rate beside it.
+    rate beside it. That sort key is the catalogue's, not a §8 rule; the README marks legs
+    whose bootstrap intervals overlap as tied.
 - **Point/MAP.**
   - MultiStartProdigy is the only search that succeeds: 152/250 on the blend (18 s per
     right answer) and 250/250 on the separated control (9 s).
@@ -236,7 +238,10 @@ only within one task and one dataset (`catalogue/search_catalogue.json`, `gaussi
   - Warm BlackJAXNUTS on the separated control is 250/250 (237 s).
   - Zeus numpy on the separated control is 198/250 (216 s).
   - Emcee, cold NUTS, SMC, and Zeus numpy on the blend are 0/250. Emcee does not mix in
-    2000 steps (its medians sit many σ from the reference), and cold NUTS fails at trace time on the blend.
+    2000 steps (its medians sit many σ from the reference), and cold NUTS fails at trace
+    time on the blend. On the separated control, cold NUTS and SMC complete but fail the
+    §4(b) posterior checks (medians, σ ratio, ppc) on all 250; so does Emcee (498 of 500
+    on (b)1).
 - **numpy vs JAX.** The two backends gave identical acceptance counts for every Dynesty
   and Nautilus leg (same seeds, data and algorithm). Only the walls differ.
 

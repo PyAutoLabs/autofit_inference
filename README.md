@@ -70,6 +70,8 @@ leg's counts, censoring and bootstrap intervals, is the `gaussian_x3@2` section 
 <!-- BEGIN auto-table:wave2 -->
 `gaussian_x3@2` at PyAutoFit `df6d218f10cd`: 11770 admitted rows of 11770 pulled (0 refused), 13000 expected runs. Protocol §7: an attempt that hit the timeout, crashed or wrote a non-finite answer is a failed attempt; in a closed leg a missing run is a failed attempt censored at the timeout; an operational kill (Terminated below the timeout) is not an attempt (rerun it).
 
+**Order (#):** by expected wall per right answer, then success rate, among closed legs with at least one right answer. This is the catalogue's sort key, not a protocol rule (§8 defines the numbers, not an order). A cheap search with a low success rate can lead, so read the success rate beside it; `=n` marks a leg whose bootstrap interval overlaps the one above it. Zero-success and open legs are listed without a position.
+
 **point/MAP** — `gaussian_x3_blend`
 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
@@ -113,7 +115,7 @@ leg's counts, censoring and bootstrap intervals, is the `gaussian_x3@2` section 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 198 | 79% [74%, 84%] | 216 [201, 233] | 175.9 | 15775 | closed |
-| 2 | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 237 [233, 241] | 225.3 | 11502 | closed |
+| =2 | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 237 [233, 241] | 225.3 | 11502 | closed |
 | — | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 4085) | 58.3 | 1987 | closed |
 | — | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 250 | 0 | 0% [0%, 2%] | unbounded (≥ 5137) | 83.7 | 14000 | closed |
 | — | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 5 | 4 | 80% [38%, 96%] | 134 [82, 296] | 116.3 | 1168 | open |
@@ -125,15 +127,15 @@ leg's counts, censoring and bootstrap intervals, is the `gaussian_x3@2` section 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 250 | 36 | 14% [11%, 19%] | 170 [128, 237] | 24.2 | 2048 | closed |
-| 2 | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 36 | 14% [11%, 19%] | 190 [144, 266] | 27.0 | 1946 | closed |
-| 3 | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 247 [242, 251] | 247.1 | 10627 | closed |
-| 4 | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 253 [248, 259] | 252.9 | 10414 | closed |
+| =2 | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 36 | 14% [11%, 19%] | 190 [144, 266] | 27.0 | 1946 | closed |
+| =3 | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 247 [242, 251] | 247.1 | 10627 | closed |
+| =4 | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 253 [248, 259] | 252.9 | 10414 | closed |
 | 5 | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 299 [297, 302] | 297.7 | 11613 | closed |
-| 6 | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 306 [301, 312] | 300.1 | 11130 | closed |
-| 7 | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 250 | 59 | 24% [19%, 29%] | 346 [281, 444] | 80.2 | 7558 | closed |
-| 8 | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 59 | 24% [19%, 29%] | 378 [307, 484] | 87.4 | 8224 | closed |
+| =6 | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 306 [301, 312] | 300.1 | 11130 | closed |
+| =7 | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 250 | 59 | 24% [19%, 29%] | 346 [281, 444] | 80.2 | 7558 | closed |
+| =8 | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 59 | 24% [19%, 29%] | 378 [307, 484] | 87.4 | 8224 | closed |
 | 9 | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 513 [508, 518] | 504.3 | 15933 | closed |
-| 10 | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 522 [514, 531] | 507.9 | 19654 | closed |
+| =10 | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 522 [514, 531] | 507.9 | 19654 | closed |
 | — | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 5 | 3 | 60% [23%, 88%] | 40 [24, 121] | 24.2 | 600 | open |
 
 **evidence** — `gaussian_x3_separated`
@@ -141,13 +143,13 @@ leg's counts, censoring and bootstrap intervals, is the `gaussian_x3@2` section 
 | # | Search | Settings | Config | Attempted | Accepted | Success rate (Wilson 95 %) | Wall per right answer (s, bootstrap 95 %) | Median attempt wall (s) | Timeout (s) | State |
 |---|---|---|---|---|---|---|---|---|---|---|
 | 1 | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 250 | 103 | 41% [35%, 47%] | 62 [54, 72] | 25.2 | 2048 | closed |
-| 2 | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 103 | 41% [35%, 47%] | 69 [60, 81] | 28.3 | 1946 | closed |
+| =2 | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 103 | 41% [35%, 47%] | 69 [60, 81] | 28.3 | 1946 | closed |
 | 3 | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 250 | 145 | 58% [52%, 64%] | 143 [130, 160] | 83.2 | 7558 | closed |
-| 4 | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 145 | 58% [52%, 64%] | 156 [141, 175] | 90.8 | 8224 | closed |
+| =4 | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 250 | 145 | 58% [52%, 64%] | 156 [141, 175] | 90.8 | 8224 | closed |
 | 5 | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 284 [276, 292] | 293.7 | 11613 | closed |
-| 6 | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 293 [285, 301] | 298.9 | 11130 | closed |
+| =6 | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 293 [285, 301] | 298.9 | 11130 | closed |
 | 7 | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 339 [332, 347] | 324.2 | 10414 | closed |
-| 8 | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 344 [336, 352] | 332.1 | 10627 | closed |
+| =8 | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 344 [336, 352] | 332.1 | 10627 | closed |
 | 9 | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 250 | 250 | 100% [98%, 100%] | 393 [387, 399] | 395.3 | 19654 | closed |
 | 10 | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 250 | 250 | 100% [98%, 100%] | 414 [407, 422] | 420.6 | 15933 | closed |
 | — | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 5 | 5 | 100% [57%, 100%] | 29 [29, 29] | 29.3 | 600 | open |
