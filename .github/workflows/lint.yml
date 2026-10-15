@@ -33,7 +33,8 @@ jobs:
 
       - name: Install lint tools
         run: |
-          pip install ruff numpy pytest pyyaml
+          # scipy: the correlated_nd exact-reference tests (normal CDFs of the banana).
+          pip install ruff numpy scipy pytest pyyaml
           # lychee is a Rust binary; fetch the prebuilt release. The tarball
           # nests everything under lychee-x86_64-unknown-linux-gnu/, so strip
           # that leading directory and extract just the binary.
@@ -75,6 +76,9 @@ jobs:
 
       - name: wave-2 accounting --check
         run: python scripts/misc/searches/judge_wave2.py --check
+
+      - name: correlated_nd pilot plan --check
+        run: python scripts/misc/tooling/plan_correlated_nd.py --check
 
       - name: WALL-BASIS gate
         run: python scripts/misc/wall/check_submits.py --check
