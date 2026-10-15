@@ -2384,5 +2384,3364 @@
         }
       }
     }
+  },
+  "gaussian_x3@2": {
+    "protocol_id": "gaussian_x3@2",
+    "campaign_task": "gaussian_x3_search_wave2",
+    "wave": "wave 2 (scored, protocol \u00a79): ranks within a task and a dataset",
+    "ranking": "within one task and one dataset, never across: closed legs whose every attempt is judged and that found the right answer at least once, by expected wall per right answer (ascending), then success rate; a leg with zero successes (unbounded wall per right answer) or still open is listed, never positioned",
+    "pyautofit_pin": "df6d218f10cd75a7f0d79bb03dca5c131fd29d33",
+    "pyautonerves_pin": "7f3055b7f3d1967f372bdb41ee732135bca0e68d",
+    "pyautofit_commits_pulled": [
+      "df6d218f10cd75a7f0d79bb03dca5c131fd29d33"
+    ],
+    "accounting": "results/accounting/gaussian_x3_wave2.json",
+    "censoring": "protocol \u00a77: an attempt that hit the timeout, crashed or wrote a non-finite answer is a failed attempt; in a closed leg a missing run is a failed attempt censored at the timeout; an operational kill (Terminated below the timeout) is not an attempt (rerun it)",
+    "limitations": [
+      "Pilot-derived timeouts are 10 x laptop medians and RAL ran 4-7 x faster than the laptop (B5a dry run): censoring is lenient on RAL for those cells",
+      "Probe-first cells (Zeus on JAX, NSS 50-step) are open until their remaining runs (submitted in B5b) are pulled in B5b-2; they are not ranked yet"
+    ],
+    "coverage": {
+      "expected_runs": 13000,
+      "pulled_rows": 11770,
+      "admitted_rows": 11770,
+      "refused_rows": 0
+    },
+    "tasks": {
+      "point_map": {
+        "label": "point/MAP",
+        "judged_by": "protocol \u00a74(a): max_log_posterior >= ref MAP - 1 nat",
+        "legs": [
+          {
+            "id": "gaussian_x3_blend/lbfgs/default/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "lbfgs",
+            "settings": "default",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {
+              "non-finite result": 210
+            },
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 2.6134000248275697,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 213.57505456371283,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/lbfgs/default/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "lbfgs",
+            "settings": "default",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {
+              "non-finite result": 210
+            },
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 2.9971668750513345,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 236.2622562479663,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/bfgs/default/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "bfgs",
+            "settings": "default",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {
+              "non-finite result": 250
+            },
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 2.5865060029318556,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 174.67430047699142,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/bfgs/default/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "bfgs",
+            "settings": "default",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {
+              "non-finite result": 250
+            },
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 2.7577347174519673,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 170.95104216156628,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/multi_start_adam/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "multi_start_adam",
+            "settings": "starts_48_steps_300",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 812.2308200000043,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 12.306990559096448,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 832.6396460480678,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/multi_start_prodigy/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "multi_start_prodigy",
+            "settings": "starts_48_steps_300",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 713.7825315000191,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 152,
+              "rejected": 98
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 28
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 33
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 33
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 26
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 32
+              }
+            },
+            "median_attempt_wall_s": 11.40185655595269,
+            "success_rate": 0.608,
+            "success_rate_wilson_95": [
+              0.5462866446092448,
+              0.6664445626997392
+            ],
+            "wall_per_success": {
+              "value_s": 18.186880515810213,
+              "unbounded": false,
+              "n": 250,
+              "successes": 152
+            },
+            "wall_per_success_bootstrap_95": [
+              16.535688051223545,
+              20.191549810372223
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/multi_start_adabelief/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "multi_start_adabelief",
+            "settings": "starts_48_steps_300",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 761.0168359999807,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 11.4043044479331,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 794.1596688717545,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/multi_start_lion/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "multi_start_lion",
+            "settings": "starts_48_steps_300",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 8.32118551642634,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 534.6310860576591,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/lbfgs/default/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "lbfgs",
+            "settings": "default",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 7.0764647430041805,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 462.4001266592408,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/lbfgs/default/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "lbfgs",
+            "settings": "default",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 4.889566058525816,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 352.0610290009275,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/bfgs/default/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "bfgs",
+            "settings": "default",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 6.676178528927267,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 437.0380500341259,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/bfgs/default/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "bfgs",
+            "settings": "default",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 4.59767377760727,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 321.80458032598773,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/multi_start_adam/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "multi_start_adam",
+            "settings": "starts_48_steps_300",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 812.2308200000043,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 10.793452857993543,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 697.4677851792121,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/multi_start_prodigy/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "multi_start_prodigy",
+            "settings": "starts_48_steps_300",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 713.7825315000191,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 8.755899491487071,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 8.783960263108835,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              8.747258053104392,
+              8.820660593387672
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/multi_start_adabelief/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "multi_start_adabelief",
+            "settings": "starts_48_steps_300",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 761.0168359999807,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 10.636566351517104,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 703.4274416172718,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/multi_start_lion/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "multi_start_lion",
+            "settings": "starts_48_steps_300",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 5.8702289265347645,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 388.8646525128312,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          }
+        ],
+        "ranking": {
+          "gaussian_x3_blend": [
+            {
+              "position": 1,
+              "id": "gaussian_x3_blend/multi_start_prodigy/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 0.608,
+              "wall_per_success_s": 18.186880515810213
+            }
+          ],
+          "gaussian_x3_separated": [
+            {
+              "position": 1,
+              "id": "gaussian_x3_separated/multi_start_prodigy/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 1.0,
+              "wall_per_success_s": 8.783960263108835
+            }
+          ]
+        }
+      },
+      "posterior": {
+        "label": "posterior",
+        "judged_by": "protocol \u00a74(b): relabelled medians, sigma-ratio band, ppc chi2, mode coverage",
+        "legs": [
+          {
+            "id": "gaussian_x3_blend/emcee/walkers_50_steps_2000/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "emcee",
+            "settings": "walkers_50_steps_2000",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 1987.2722005000105,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 65.29972040862776,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 4062.939426102897,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/emcee/walkers_50_steps_2000/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "emcee",
+            "settings": "walkers_50_steps_2000",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 13999.74675599995,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 79.25890575302765,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 4895.550136865894,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/zeus/walkers_50_steps_2000/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "zeus",
+            "settings": "walkers_50_steps_2000",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 15774.509614000017,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 173.1493234304944,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 11232.800390795019,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/zeus/walkers_50_steps_2000/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "zeus",
+            "settings": "walkers_50_steps_2000",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 1168.2097229652572,
+            "timeout_source": "probe",
+            "expected": 250,
+            "state": "open",
+            "attempted": 5,
+            "acceptance": {
+              "rejected": 5
+            },
+            "convergence": {
+              "not_converged": 5
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 5,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 0,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 117.02820981503464,
+            "reason": "probe-first cell: its timeout comes from the 5-run probe (results/calibration/gaussian_x3_wave2_probe.json); the other runs were submitted after the probe (B5b) and are pulled by B5b-2",
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              0.0,
+              0.43448246478317476
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 270.84455774882997,
+              "n": 5,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/blackjax_nuts/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "blackjax_nuts",
+            "settings": "warmup_200_samples_500",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 1660.1127349999842,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_converged": 250
+            },
+            "failures": {
+              "TracerBoolConversionError": 250
+            },
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 6.205242054304108,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 417.7398537848384,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_blend/blackjax_nuts_warm/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "blackjax_nuts_warm",
+            "settings": "warmup_200_samples_500",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "deferred",
+            "timeout_s": 11501.58048399997,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "deferred",
+            "reason": "deferred: BlackJAXNUTS on the asserted blend still fails deterministically at trace time at the wave-2 pin df6d218f1 (TracerBoolConversionError in the NUTS log_l: the ordered-centre assertion is evaluated as a Python bool; reproduced 2026-10-14 on the cold leg), so every warm attempt would spend its Nautilus provider first and then fail; the cold leg runs and records the failure"
+          },
+          {
+            "id": "gaussian_x3_blend/smc/default/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "smc",
+            "settings": "default",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 3223.6062730000413,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 30.03505468450021,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 1921.4256036454287,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/emcee/walkers_50_steps_2000/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "emcee",
+            "settings": "walkers_50_steps_2000",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 1987.2722005000105,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 58.31799701054115,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 4084.932170500246,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/emcee/walkers_50_steps_2000/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "emcee",
+            "settings": "walkers_50_steps_2000",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 13999.74675599995,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 83.7406392985722,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 5136.769240613535,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/zeus/walkers_50_steps_2000/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "zeus",
+            "settings": "walkers_50_steps_2000",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 15774.509614000017,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 198,
+              "rejected": 52
+            },
+            "convergence": {
+              "not_converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 41
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 38
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 38
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 38
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 43
+              }
+            },
+            "median_attempt_wall_s": 175.937452902901,
+            "success_rate": 0.792,
+            "success_rate_wilson_95": [
+              0.7374559719572936,
+              0.8377061811373668
+            ],
+            "wall_per_success": {
+              "value_s": 216.1230351824003,
+              "unbounded": false,
+              "n": 250,
+              "successes": 198
+            },
+            "wall_per_success_bootstrap_95": [
+              201.41127370942147,
+              233.46487562252256
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/zeus/walkers_50_steps_2000/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "zeus",
+            "settings": "walkers_50_steps_2000",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 1168.2097229652572,
+            "timeout_source": "probe",
+            "expected": 250,
+            "state": "open",
+            "attempted": 5,
+            "acceptance": {
+              "accepted": 4,
+              "rejected": 1
+            },
+            "convergence": {
+              "not_converged": 5
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 5,
+                "accepted": 4
+              },
+              "data_seed2": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 0,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 116.29119950602762,
+            "reason": "probe-first cell: its timeout comes from the 5-run probe (results/calibration/gaussian_x3_wave2_probe.json); the other runs were submitted after the probe (B5b) and are pulled by B5b-2",
+            "success_rate": 0.8,
+            "success_rate_wilson_95": [
+              0.37553462976252533,
+              0.9637758913675698
+            ],
+            "wall_per_success": {
+              "value_s": 134.07857889967272,
+              "unbounded": false,
+              "n": 5,
+              "successes": 4
+            },
+            "wall_per_success_bootstrap_95": [
+              81.55777657027356,
+              295.9866394539131
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/blackjax_nuts/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "blackjax_nuts",
+            "settings": "warmup_200_samples_500",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 1660.1127349999842,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 17.41512057289947,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 1489.6646518585653,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          },
+          {
+            "id": "gaussian_x3_separated/blackjax_nuts_warm/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "blackjax_nuts_warm",
+            "settings": "warmup_200_samples_500",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 11501.58048399997,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 21,
+              "not_converged": 229
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 225.27226153598167,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 237.2500943317348,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              233.32131253075227,
+              241.37702118305305
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/smc/default/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "smc",
+            "settings": "default",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 3223.6062730000413,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "rejected": 250
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 18.48855601460673,
+            "success_rate": 0.0,
+            "success_rate_wilson_95": [
+              8.673617379884035e-19,
+              0.015133299495444574
+            ],
+            "wall_per_success": {
+              "value_s": null,
+              "unbounded": true,
+              "lower_bound_s": 1309.6246569594132,
+              "n": 250,
+              "successes": 0
+            },
+            "wall_per_success_bootstrap_95": null
+          }
+        ],
+        "ranking": {
+          "gaussian_x3_blend": [],
+          "gaussian_x3_separated": [
+            {
+              "position": 1,
+              "id": "gaussian_x3_separated/zeus/walkers_50_steps_2000/ral_numpy_fp64",
+              "success_rate": 0.792,
+              "wall_per_success_s": 216.1230351824003
+            },
+            {
+              "position": 2,
+              "id": "gaussian_x3_separated/blackjax_nuts_warm/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 1.0,
+              "wall_per_success_s": 237.2500943317348
+            }
+          ]
+        }
+      },
+      "evidence": {
+        "label": "evidence",
+        "judged_by": "protocol \u00a74(b) and \u00a74(c): posterior accuracy and ln Z within 1 nat",
+        "legs": [
+          {
+            "id": "gaussian_x3_blend/nautilus/n_live_100/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "nautilus",
+            "settings": "n_live_100",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 10627.478020999988,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 247.14518693613354,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 246.7375610315092,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              242.36437101578525,
+              251.13307447335404
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/nautilus/n_live_100/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "nautilus",
+            "settings": "n_live_100",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 10413.98597700003,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 252.9304160659667,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 253.3833134968942,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              248.37532371180598,
+              258.87506110349295
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/nautilus/n_live_200/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "nautilus",
+            "settings": "n_live_200",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 11130.054554000017,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 300.13986333296634,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 306.2194874075884,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              300.72797763586044,
+              312.26142653128784
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/nautilus/n_live_200/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "nautilus",
+            "settings": "n_live_200",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 11612.52372050003,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 297.6750189724844,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 299.11378568347544,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              296.70746545047126,
+              301.57063657261057
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/nautilus/n_live_400/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "nautilus",
+            "settings": "n_live_400",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 19653.54977799998,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 507.92743068397976,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 522.3210158454161,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              514.0563823795486,
+              531.4363811415499
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/nautilus/n_live_400/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "nautilus",
+            "settings": "n_live_400",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 15932.795949500032,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 504.2839925378794,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 512.7896193046477,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              507.51628401533884,
+              518.2525525909606
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "dynesty_static",
+            "settings": "nlive_200",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 2048.272085999961,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 36,
+              "rejected": 214
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 6
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 10
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 5
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 10
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 5
+              }
+            },
+            "median_attempt_wall_s": 24.225067248102278,
+            "success_rate": 0.144,
+            "success_rate_wilson_95": [
+              0.10586256867804505,
+              0.19291234056271145
+            ],
+            "wall_per_success": {
+              "value_s": 169.75056690310723,
+              "unbounded": false,
+              "n": 250,
+              "successes": 36
+            },
+            "wall_per_success_bootstrap_95": [
+              128.38911570598214,
+              237.2702227158275
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "dynesty_static",
+            "settings": "nlive_200",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 1946.4107794999836,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 36,
+              "rejected": 214
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 6
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 10
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 5
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 10
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 5
+              }
+            },
+            "median_attempt_wall_s": 27.01257702987641,
+            "success_rate": 0.144,
+            "success_rate_wilson_95": [
+              0.10586256867804505,
+              0.19291234056271145
+            ],
+            "wall_per_success": {
+              "value_s": 189.96922116407788,
+              "unbounded": false,
+              "n": 250,
+              "successes": 36
+            },
+            "wall_per_success_bootstrap_95": [
+              143.6907563966134,
+              265.7096355460101
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_numpy_fp64",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "dynesty_dynamic",
+            "settings": "default",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 7558.221333000001,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 59,
+              "rejected": 191
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 19
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 7
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 9
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 15
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 9
+              }
+            },
+            "median_attempt_wall_s": 80.15709131909534,
+            "success_rate": 0.236,
+            "success_rate_wilson_95": [
+              0.18760668102989272,
+              0.29238370110370193
+            ],
+            "wall_per_success": {
+              "value_s": 346.2438899292019,
+              "unbounded": false,
+              "n": 250,
+              "successes": 59
+            },
+            "wall_per_success_bootstrap_95": [
+              281.30396090915826,
+              443.98019012148774
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "dynesty_dynamic",
+            "settings": "default",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 8223.97217849999,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 59,
+              "rejected": 191
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 19
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 7
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 9
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 15
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 9
+              }
+            },
+            "median_attempt_wall_s": 87.36577749892604,
+            "success_rate": 0.236,
+            "success_rate_wilson_95": [
+              0.18760668102989272,
+              0.29238370110370193
+            ],
+            "wall_per_success": {
+              "value_s": 377.86891402962414,
+              "unbounded": false,
+              "n": 250,
+              "successes": 59
+            },
+            "wall_per_success_bootstrap_95": [
+              307.1507877576203,
+              484.2247657502202
+            ]
+          },
+          {
+            "id": "gaussian_x3_blend/nss/n_live_200_mcmc_steps_50/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_blend",
+            "sampler": "nss",
+            "settings": "n_live_200_mcmc_steps_50",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "probe",
+            "expected": 250,
+            "state": "open",
+            "attempted": 5,
+            "acceptance": {
+              "accepted": 3,
+              "rejected": 2
+            },
+            "convergence": {
+              "not_assessed": 5
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 5,
+                "accepted": 3
+              },
+              "data_seed2": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 0,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 24.222511960193515,
+            "reason": "probe-first cell: its timeout comes from the 5-run probe (results/calibration/gaussian_x3_wave2_probe.json); the other runs were submitted after the probe (B5b) and are pulled by B5b-2",
+            "success_rate": 0.6,
+            "success_rate_wilson_95": [
+              0.2307242812760128,
+              0.882379225767352
+            ],
+            "wall_per_success": {
+              "value_s": 40.21318908330674,
+              "unbounded": false,
+              "n": 5,
+              "successes": 3
+            },
+            "wall_per_success_bootstrap_95": [
+              24.002197711123152,
+              121.26814594422467
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/nautilus/n_live_100/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "nautilus",
+            "settings": "n_live_100",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 10627.478020999988,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 332.14346681989264,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 343.9877946057329,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              335.67403335875923,
+              352.26178304810634
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/nautilus/n_live_100/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "nautilus",
+            "settings": "n_live_100",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 10413.98597700003,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 324.16332601208705,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 339.40876380859595,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              331.69395386237653,
+              347.1911178106936
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/nautilus/n_live_200/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "nautilus",
+            "settings": "n_live_200",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 11130.054554000017,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 298.936417790479,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 292.72174896404147,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              284.6989025845975,
+              300.5831952601504
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/nautilus/n_live_200/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "nautilus",
+            "settings": "n_live_200",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 11612.52372050003,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 293.6807647999376,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 283.97422055414694,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              276.0163511924967,
+              292.1137448618412
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/nautilus/n_live_400/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "nautilus",
+            "settings": "n_live_400",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 19653.54977799998,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 395.259701163508,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 393.12912271437233,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              387.17703748344167,
+              399.1466868688865
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/nautilus/n_live_400/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "nautilus",
+            "settings": "n_live_400",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 15932.795949500032,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 250
+            },
+            "convergence": {
+              "converged": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 50
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 50
+              }
+            },
+            "median_attempt_wall_s": 420.6246443304699,
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.9848667005045553,
+              0.9999999999999998
+            ],
+            "wall_per_success": {
+              "value_s": 414.18986580075045,
+              "unbounded": false,
+              "n": 250,
+              "successes": 250
+            },
+            "wall_per_success_bootstrap_95": [
+              406.7559189871438,
+              421.7717032359056
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "dynesty_static",
+            "settings": "nlive_200",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 2048.272085999961,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 103,
+              "rejected": 147
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 19
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 20
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 30
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 17
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 17
+              }
+            },
+            "median_attempt_wall_s": 25.18381632096134,
+            "success_rate": 0.412,
+            "success_rate_wilson_95": [
+              0.35276848978585706,
+              0.47389497092534105
+            ],
+            "wall_per_success": {
+              "value_s": 62.085115535017465,
+              "unbounded": false,
+              "n": 250,
+              "successes": 103
+            },
+            "wall_per_success_bootstrap_95": [
+              54.003552018032806,
+              72.45726729264292
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "dynesty_static",
+            "settings": "nlive_200",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 1946.4107794999836,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 103,
+              "rejected": 147
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 19
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 20
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 30
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 17
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 17
+              }
+            },
+            "median_attempt_wall_s": 28.279593930463307,
+            "success_rate": 0.412,
+            "success_rate_wilson_95": [
+              0.35276848978585706,
+              0.47389497092534105
+            ],
+            "wall_per_success": {
+              "value_s": 69.20609173787649,
+              "unbounded": false,
+              "n": 250,
+              "successes": 103
+            },
+            "wall_per_success_bootstrap_95": [
+              60.09847820372156,
+              80.84869915228442
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/dynesty_dynamic/default/ral_numpy_fp64",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "dynesty_dynamic",
+            "settings": "default",
+            "backend": "numpy",
+            "config_id": "ral_numpy_fp64",
+            "cell_status": "planned",
+            "timeout_s": 7558.221333000001,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 145,
+              "rejected": 105
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 30
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 25
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 30
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 28
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 32
+              }
+            },
+            "median_attempt_wall_s": 83.18266379600391,
+            "success_rate": 0.58,
+            "success_rate_wilson_95": [
+              0.5180609451155799,
+              0.639517726965149
+            ],
+            "wall_per_success": {
+              "value_s": 142.98407974934912,
+              "unbounded": false,
+              "n": 250,
+              "successes": 145
+            },
+            "wall_per_success_bootstrap_95": [
+              129.56996968061867,
+              160.13868616190342
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "dynesty_dynamic",
+            "settings": "default",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 8223.97217849999,
+            "timeout_source": "pilot",
+            "expected": 250,
+            "state": "closed",
+            "attempted": 250,
+            "acceptance": {
+              "accepted": 145,
+              "rejected": 105
+            },
+            "convergence": {
+              "not_assessed": 250
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 50,
+                "accepted": 30
+              },
+              "data_seed2": {
+                "attempted": 50,
+                "accepted": 25
+              },
+              "data_seed3": {
+                "attempted": 50,
+                "accepted": 30
+              },
+              "data_seed4": {
+                "attempted": 50,
+                "accepted": 28
+              },
+              "data_seed5": {
+                "attempted": 50,
+                "accepted": 32
+              }
+            },
+            "median_attempt_wall_s": 90.8368948145071,
+            "success_rate": 0.58,
+            "success_rate_wilson_95": [
+              0.5180609451155799,
+              0.639517726965149
+            ],
+            "wall_per_success": {
+              "value_s": 156.06114361735607,
+              "unbounded": false,
+              "n": 250,
+              "successes": 145
+            },
+            "wall_per_success_bootstrap_95": [
+              141.39101878097716,
+              174.7678926724994
+            ]
+          },
+          {
+            "id": "gaussian_x3_separated/nss/n_live_200_mcmc_steps_50/ral_jax_cpu_fp64_cache_warm",
+            "dataset": "gaussian_x3_separated",
+            "sampler": "nss",
+            "settings": "n_live_200_mcmc_steps_50",
+            "backend": "jax_cpu",
+            "config_id": "ral_jax_cpu_fp64_cache_warm",
+            "cell_status": "planned",
+            "timeout_s": 600.0,
+            "timeout_source": "probe",
+            "expected": 250,
+            "state": "open",
+            "attempted": 5,
+            "acceptance": {
+              "accepted": 5
+            },
+            "convergence": {
+              "not_assessed": 5
+            },
+            "failures": {},
+            "censored_at_timeout": 0,
+            "missing_censored": 0,
+            "operational_kills": 0,
+            "by_realisation": {
+              "data_seed1": {
+                "attempted": 5,
+                "accepted": 5
+              },
+              "data_seed2": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed3": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed4": {
+                "attempted": 0,
+                "accepted": 0
+              },
+              "data_seed5": {
+                "attempted": 0,
+                "accepted": 0
+              }
+            },
+            "median_attempt_wall_s": 29.291544389910996,
+            "reason": "probe-first cell: its timeout comes from the 5-run probe (results/calibration/gaussian_x3_wave2_probe.json); the other runs were submitted after the probe (B5b) and are pulled by B5b-2",
+            "success_rate": 1.0,
+            "success_rate_wilson_95": [
+              0.5655175352168251,
+              1.0
+            ],
+            "wall_per_success": {
+              "value_s": 29.18692007744685,
+              "unbounded": false,
+              "n": 5,
+              "successes": 5
+            },
+            "wall_per_success_bootstrap_95": [
+              29.035165599314496,
+              29.303995360434055
+            ]
+          }
+        ],
+        "ranking": {
+          "gaussian_x3_blend": [
+            {
+              "position": 1,
+              "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_numpy_fp64",
+              "success_rate": 0.144,
+              "wall_per_success_s": 169.75056690310723
+            },
+            {
+              "position": 2,
+              "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 0.144,
+              "wall_per_success_s": 189.96922116407788
+            },
+            {
+              "position": 3,
+              "id": "gaussian_x3_blend/nautilus/n_live_100/ral_numpy_fp64",
+              "success_rate": 1.0,
+              "wall_per_success_s": 246.7375610315092
+            },
+            {
+              "position": 4,
+              "id": "gaussian_x3_blend/nautilus/n_live_100/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 1.0,
+              "wall_per_success_s": 253.3833134968942
+            },
+            {
+              "position": 5,
+              "id": "gaussian_x3_blend/nautilus/n_live_200/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 1.0,
+              "wall_per_success_s": 299.11378568347544
+            },
+            {
+              "position": 6,
+              "id": "gaussian_x3_blend/nautilus/n_live_200/ral_numpy_fp64",
+              "success_rate": 1.0,
+              "wall_per_success_s": 306.2194874075884
+            },
+            {
+              "position": 7,
+              "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_numpy_fp64",
+              "success_rate": 0.236,
+              "wall_per_success_s": 346.2438899292019
+            },
+            {
+              "position": 8,
+              "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 0.236,
+              "wall_per_success_s": 377.86891402962414
+            },
+            {
+              "position": 9,
+              "id": "gaussian_x3_blend/nautilus/n_live_400/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 1.0,
+              "wall_per_success_s": 512.7896193046477
+            },
+            {
+              "position": 10,
+              "id": "gaussian_x3_blend/nautilus/n_live_400/ral_numpy_fp64",
+              "success_rate": 1.0,
+              "wall_per_success_s": 522.3210158454161
+            }
+          ],
+          "gaussian_x3_separated": [
+            {
+              "position": 1,
+              "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_numpy_fp64",
+              "success_rate": 0.412,
+              "wall_per_success_s": 62.085115535017465
+            },
+            {
+              "position": 2,
+              "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 0.412,
+              "wall_per_success_s": 69.20609173787649
+            },
+            {
+              "position": 3,
+              "id": "gaussian_x3_separated/dynesty_dynamic/default/ral_numpy_fp64",
+              "success_rate": 0.58,
+              "wall_per_success_s": 142.98407974934912
+            },
+            {
+              "position": 4,
+              "id": "gaussian_x3_separated/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 0.58,
+              "wall_per_success_s": 156.06114361735607
+            },
+            {
+              "position": 5,
+              "id": "gaussian_x3_separated/nautilus/n_live_200/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 1.0,
+              "wall_per_success_s": 283.97422055414694
+            },
+            {
+              "position": 6,
+              "id": "gaussian_x3_separated/nautilus/n_live_200/ral_numpy_fp64",
+              "success_rate": 1.0,
+              "wall_per_success_s": 292.72174896404147
+            },
+            {
+              "position": 7,
+              "id": "gaussian_x3_separated/nautilus/n_live_100/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 1.0,
+              "wall_per_success_s": 339.40876380859595
+            },
+            {
+              "position": 8,
+              "id": "gaussian_x3_separated/nautilus/n_live_100/ral_numpy_fp64",
+              "success_rate": 1.0,
+              "wall_per_success_s": 343.9877946057329
+            },
+            {
+              "position": 9,
+              "id": "gaussian_x3_separated/nautilus/n_live_400/ral_numpy_fp64",
+              "success_rate": 1.0,
+              "wall_per_success_s": 393.12912271437233
+            },
+            {
+              "position": 10,
+              "id": "gaussian_x3_separated/nautilus/n_live_400/ral_jax_cpu_fp64_cache_warm",
+              "success_rate": 1.0,
+              "wall_per_success_s": 414.18986580075045
+            }
+          ]
+        }
+      }
+    }
   }
 }
