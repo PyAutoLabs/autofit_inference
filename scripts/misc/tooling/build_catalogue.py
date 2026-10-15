@@ -290,7 +290,9 @@ def wave2_leg(cell, rows: dict, refs: dict, offsets) -> dict:
     # cell by cell (protocol §9 says "once the wave closes"); its provider cost, if any,
     # is unknown and not added.
     closed = cell.status == "planned" and (
-        cell.timeout_source == "pilot" or len(rows) == len(wave2.DATA_SEEDS) * len(wave2.SEEDS)
+        cell.timeout_source == "pilot"
+        or sum(not wave2.operational_kill(r, cell) for r in rows.values())
+        == len(wave2.DATA_SEEDS) * len(wave2.SEEDS)
     )
     leg = {
         "id": "/".join(cell.key),

@@ -223,7 +223,7 @@ only within one task and one dataset (`catalogue/search_catalogue.json`, `gaussi
     the Nautilus-only reference by more than 1 nat, matching the DynestyStatic–Nautilus
     disagreement inside every reference.
   - Because DynestyStatic is cheap, its wall per right answer (62–190 s) is the lowest
-    despite the low success rate. The ordering follows §8 strictly, so read the success
+    despite the low success rate. Read the success
     rate beside it. That sort key is the catalogue's, not a §8 rule; the README marks legs
     whose bootstrap intervals overlap as tied.
 - **Point/MAP.**
