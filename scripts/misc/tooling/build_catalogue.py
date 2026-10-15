@@ -242,7 +242,10 @@ def scan_wave2_rows(root: Path) -> list[tuple[str, dict]]:
 def bootstrap_wall_per_success_v2(walls: list[float], successes: list[bool]) -> list | None:
     """:func:`bootstrap_wall_per_success` for the scored wave (same rule: 10 000
     resamples, seed 0, an unbounded resample kept as infinity), drawn with
-    ``random.choices`` so 250-attempt legs stay fast."""
+    ``random.choices`` so 250-attempt legs stay fast. It resamples a leg's attempts
+    (search seed × data realisation, the five realisations pooled), where §8 says "over
+    seeds": with five realisations per seed a seed-only resample would ignore the
+    realisation spread the scored wave was designed to include."""
     if not walls or not any(successes):
         return None
     rng = random.Random(0)
@@ -261,7 +264,14 @@ def bootstrap_wall_per_success_v2(walls: list[float], successes: list[bool]) -> 
 def censored_attempt(row: dict, cell) -> tuple[float | None, bool]:
     """``(cost, over_timeout)`` of one admitted attempt under §7: a run whose search.fit
     wall passed the cell's timeout hit it — a failed attempt whose consumer wall is set
-    to the timeout (any warm-start provider's cost is kept on top)."""
+    to the timeout (any warm-start provider's cost is kept on top).
+
+    The comparison is on the consumer's ``total_wall_s``, as frozen with ``@2``
+    (``_wave2.RUN_OVERHEAD_S``: "censoring at judging time compares ``total_wall_s`` with
+    the timeout itself"), although a warm-start timeout was derived from the median
+    *attempt* wall (provider included): the frozen rule is applied as written, and the
+    difference is recorded here (B5b review; no scored row is near it — warm NUTS ~330 s
+    against 11 502 s)."""
     cost = protocol.attempt_wall_s(row)
     wall = row.get("total_wall_s")
     if cell.timeout_s is None or wall is None or float(wall) <= cell.timeout_s:
@@ -273,7 +283,15 @@ def censored_attempt(row: dict, cell) -> tuple[float | None, bool]:
 def wave2_leg(cell, rows: dict, refs: dict, offsets) -> dict:
     """One scored-wave cell over its 5 realisations × 50 seeds (``rows``: ``(data_seed,
     seed) -> admitted row``)."""
-    closed = cell.status == "planned" and cell.timeout_source == "pilot"
+    # A pilot-timeout cell ran whole in the B5a scored arrays (all completed): closed. A
+    # probe-sourced cell closes once every expected run has an admitted row (B5b-2 pulls
+    # its remainder); until then it is open and never positioned. A missing run of a
+    # closed cell is censored at the timeout per cell, i.e. the wave is treated as closed
+    # cell by cell (protocol §9 says "once the wave closes"); its provider cost, if any,
+    # is unknown and not added.
+    closed = cell.status == "planned" and (
+        cell.timeout_source == "pilot" or len(rows) == len(wave2.DATA_SEEDS) * len(wave2.SEEDS)
+    )
     leg = {
         "id": "/".join(cell.key),
         "dataset": cell.dataset,
@@ -409,15 +427,30 @@ def wave2_section(root: Path, refs: dict, offsets) -> dict:
                 and leg.get("success_rate") is not None
                 and (leg.get("wall_per_success") or {}).get("value_s") is not None
             ]
-            ordering[dataset] = [
-                {
-                    "position": i + 1,
-                    "id": leg["id"],
-                    "success_rate": leg["success_rate"],
-                    "wall_per_success_s": leg["wall_per_success"]["value_s"],
-                }
-                for i, leg in enumerate(sorted(legs, key=_ordering))
-            ]
+            ordered, previous = [], None
+            for i, leg in enumerate(sorted(legs, key=_ordering)):
+                ci = leg.get("wall_per_success_bootstrap_95") or [None, None]
+                tied = bool(
+                    previous
+                    and previous[1] is not None
+                    and ci[0] is not None
+                    and ci[0] <= previous[1]
+                )
+                ordered.append(
+                    {
+                        "position": i + 1,
+                        "id": leg["id"],
+                        "success_rate": leg["success_rate"],
+                        "success_rate_wilson_95": leg["success_rate_wilson_95"],
+                        "wall_per_success_s": leg["wall_per_success"]["value_s"],
+                        "wall_per_success_bootstrap_95": ci,
+                        # The bootstrap 95 % interval overlaps the previous entry's: the
+                        # two are not distinguished by this ordering.
+                        "tied_with_previous": tied,
+                    }
+                )
+                previous = ci
+            ordering[dataset] = ordered
         group["ranking"] = ordering
     commits = sorted({row.get("pyautofit_commit") or "unknown" for _, row in pulled})
     return {
@@ -428,7 +461,11 @@ def wave2_section(root: Path, refs: dict, offsets) -> dict:
             "within one task and one dataset, never across: closed legs whose every attempt "
             "is judged and that found the right answer at least once, by expected wall per "
             "right answer (ascending), then success rate; a leg with zero successes "
-            "(unbounded wall per right answer) or still open is listed, never positioned"
+            "(unbounded wall per right answer) or still open is listed, never positioned. "
+            "This sort key is the catalogue's (B5b), not a protocol rule: §8 defines the "
+            "headline numbers, not an order. A cheap search with a low success rate can "
+            "lead on wall per right answer, so read the success rate beside it; entries "
+            "whose bootstrap intervals overlap the previous one are marked tied"
         ),
         "pyautofit_pin": wave2.PYAUTOFIT_PIN,
         "pyautonerves_pin": wave2.PYAUTONERVES_PIN,

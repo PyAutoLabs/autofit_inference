@@ -264,6 +264,13 @@ def render_wave2() -> str:
         f"({cov['refused_rows']} refused), {cov['expected_runs']} expected runs. "
         f"{section['censoring'][0].upper()}{section['censoring'][1:]}.",
         "",
+        "**Order (#):** by expected wall per right answer, then success rate, among closed "
+        "legs with at least one right answer. This is the catalogue's sort key, not a "
+        "protocol rule (§8 defines the numbers, not an order). A cheap search with a low "
+        "success rate can lead, so read the success rate beside it; `=n` marks a leg whose "
+        "bootstrap interval overlaps the one above it. Zero-success and open legs are "
+        "listed without a position.",
+        "",
     ]
     for task, group in section["tasks"].items():
         by_id = {leg["id"]: leg for leg in group["legs"]}
@@ -282,9 +289,12 @@ def render_wave2() -> str:
                 "wall (s) | Timeout (s) | State |",
                 "|---|---|---|---|---|---|---|---|---|---|---|",
             ]
+            ties = {e["id"]: e.get("tied_with_previous") for e in ordered}
             for position, leg in [(i + 1, leg) for i, leg in enumerate(legs)] + [
                 (None, leg) for leg in rest
             ]:
+                if position is not None and ties.get(leg["id"]):
+                    position = f"={position}"
                 acc = leg.get("acceptance") or {}
                 rate = leg.get("success_rate")
                 if rate is None:

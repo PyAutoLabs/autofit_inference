@@ -110,8 +110,6 @@ DIAGNOSTICS = (
     "rhat_max",
     "ess_bulk_min",
 )
-#: Diagnostics a scored-wave record leaves in its row (``evidence_paths``): the per-
-#: parameter blocks are ~60 % of a record, and 11 770 records must stay one file.
 #: Whether the committed summary carries the scored-wave records (see the module
 #: docstring: withheld on size until a human chooses the form, autofit_inference#10).
 WAVE2_RECORDS = False
@@ -122,6 +120,8 @@ WAVE2_WITHHELD_REASON = (
     "--wave2-records; the scored results are in catalogue/search_catalogue.json "
     "(gaussian_x3@2 section)"
 )
+#: Diagnostics a scored-wave record leaves in its row (``evidence_paths``): the per-
+#: parameter blocks are ~60 % of a record.
 WAVE2_ROW_ONLY_DIAGNOSTICS = ("posterior", "posterior_relabelled", "truths", "truth_delta_sigma")
 CONFIG = (
     "config_name",

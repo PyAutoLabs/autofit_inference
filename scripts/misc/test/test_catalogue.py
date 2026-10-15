@@ -189,3 +189,38 @@ def test_wave2_censoring_rules():
     leg = catalogue.wave2_leg(cell, {}, {}, None)
     assert leg["attempted"] == 250 and leg["missing_censored"] == 250
     assert leg["success_rate"] == 0.0 and leg["wall_per_success"]["unbounded"] is True
+
+
+def test_wave2_leg_excludes_operational_kills_and_censors_warm_starts():
+    from searches import _wave2 as wave2
+
+    cell = next(
+        c
+        for c in wave2.cells()
+        if c.sampler == "lbfgs" and c.backend == "numpy" and c.dataset == "gaussian_x3_blend"
+    )
+    kill = {
+        "status": "failed: Terminated: signal SIGTERM",
+        "completed": False,
+        "total_wall_s": 5.0,
+    }
+    leg = catalogue.wave2_leg(cell, {(1, 0): kill}, {}, None)
+    # the killed run is not an attempt; in a closed leg it is censored as a missing run
+    assert leg["operational_kills"] == 1 and leg["missing_censored"] == 250
+    warm = {
+        "warm_start": {"provider": "nautilus"},
+        "provider_wall_s": 40.0,
+        "total_wall_s": cell.timeout_s + 1.0,
+    }
+    assert catalogue.censored_attempt(warm, cell) == (cell.timeout_s + 40.0, True)
+
+
+def test_probe_sourced_leg_closes_only_when_every_run_has_a_row():
+    from searches import _wave2 as wave2
+
+    cell = next(c for c in wave2.cells() if c.timeout_source == "probe")
+    row = {"status": "complete", "completed": True, "total_wall_s": 1.0}
+    some = {(1, s): row for s in wave2.PROBE_SEEDS}
+    assert catalogue.wave2_leg(cell, some, {}, None)["state"] == "open"
+    every = {(d, s): row for d in wave2.DATA_SEEDS for s in wave2.SEEDS}
+    assert catalogue.wave2_leg(cell, every, {}, None)["state"] == "closed"
