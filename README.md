@@ -18,6 +18,10 @@ of the
   closed (250 blend warm-NUTS runs deferred). They are judged under the frozen `@2`
   thresholds and ranked within one task and one dataset among the legs that clear a
   reliability floor (see "Scored wave 2" below).
+- **A second family, `correlated_nd` (B5c).** High-D correlated Gaussians and a
+  Rosenbrock banana with exact references, under its own pre-registered protocol
+  `correlated_nd@1`; its 820-run pilot runs on RAL and ranks nothing (see "The second
+  family" below).
 - **The wave-1 pilot** (223 rows, below) ranks nothing. It calibrated the protocol and
   ran on PyAutoFit main before phase A2.
 - **Summary.** The repo reports to
@@ -46,6 +50,31 @@ reference, posterior searches on relabelled marginals, a predictive check and mo
 coverage, evidence searches on `ln Z` within one backend under the `ln 3!` convention.
 Wave 1 is a pilot that ranks nothing; its PLACEHOLDER thresholds are calibrated and then
 frozen before the scored wave 2.
+
+## The second family: `correlated_nd` (B5c)
+
+High-dimensional, ill-conditioned targets with **exact** posteriors and evidences, so no
+reference search is run: correlated Gaussians at D = 20, 50 and 100 with condition number
+10³ (a seeded Haar-random rotation of log-spaced eigenvalues), and a D = 20 hybrid
+Rosenbrock banana (Pagani et al. 2022). Datasets come from
+`scripts/misc/simulators/correlated_nd.py`; the exact references
+(`scripts/misc/reference/exact_correlated_nd.py`) pass a per-backend agreement test before
+any row is judged. Rows are judged by their own pre-registered protocol,
+[`wiki/project/protocol_correlated_nd.md`](wiki/project/protocol_correlated_nd.md)
+(`correlated_nd@1`), and catalogued by task and dataset **apart from `gaussian_x3`;
+nothing is ranked across families.** The pilot (820 runs: 10 seeds × every non-deferred
+cell of the gaussian_x3 wave-2 menu × the four datasets) runs on RAL `--partition=ral`.
+
+<!-- BEGIN auto-table:correlated_nd -->
+| Dataset | D | Exact ln Z | H (nat) | Exact references | Planned cells | Deferred cells | Pilot rows (failed) |
+|---|---|---|---|---|---|---|---|
+| `corr_gaussian_d20` | 20 | -93.020 | 53.1 | `jax_cpu` complete, `numpy` complete | 26 | 0 | 0 (0) |
+| `corr_gaussian_d50` | 50 | -233.019 | 133.3 | `jax_cpu` complete, `numpy` complete | 19 | 7 | 0 (0) |
+| `corr_gaussian_d100` | 100 | -467.088 | 267.6 | `jax_cpu` complete, `numpy` complete | 14 | 12 | 0 (0) |
+| `rosenbrock_d20` | 20 | -140.946 | 133.3 | `jax_cpu` complete, `numpy` complete | 23 | 3 | 0 (0) |
+
+Pilot: 1040 expected runs — 0 rows, 0 failed, 820 not yet pulled, 220 deferred with reasons (`catalogue/search_catalogue.json`, section `correlated_nd@1`). Wave 1 (pilot): ranks nothing (protocol correlated_nd §9). Cross-family ranking: none: this family is catalogued apart from gaussian_x3 and no leg is ever ranked or compared across families (protocol correlated_nd §9).
+<!-- END auto-table:correlated_nd -->
 
 ## Running
 
