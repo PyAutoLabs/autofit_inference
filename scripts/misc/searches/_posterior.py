@@ -163,19 +163,36 @@ def summarise_samples(
     keys,
     log_likelihood=None,
     log_posterior=None,
+    relabel: bool = True,
 ) -> dict:
-    """Every protocol statistic for one set of weighted samples."""
+    """Every protocol statistic for one set of weighted samples.
+
+    ``relabel=False`` is for a model with no label symmetry (``correlated_nd``): the
+    relabelled posterior is the posterior itself, and there are no orderings or modes to
+    count (``None``)."""
     matrix = np.asarray(matrix, dtype=float)
     keys = list(keys)
-    out = {
-        "n_samples": int(matrix.shape[0]),
-        "ess_kish": kish_ess(weights),
-        "posterior": posterior_stats(matrix, weights, keys),
-        "posterior_relabelled": posterior_stats(relabel_matrix(matrix, keys), weights, keys),
-        "label_permutations_found": label_permutations(matrix, weights, keys),
-        "modes": mode_clusters(matrix, weights, keys),
-    }
-    out["modes_found"] = len(out["modes"])
+    posterior = posterior_stats(matrix, weights, keys)
+    if relabel:
+        out = {
+            "n_samples": int(matrix.shape[0]),
+            "ess_kish": kish_ess(weights),
+            "posterior": posterior,
+            "posterior_relabelled": posterior_stats(relabel_matrix(matrix, keys), weights, keys),
+            "label_permutations_found": label_permutations(matrix, weights, keys),
+            "modes": mode_clusters(matrix, weights, keys),
+        }
+        out["modes_found"] = len(out["modes"])
+    else:
+        out = {
+            "n_samples": int(matrix.shape[0]),
+            "ess_kish": kish_ess(weights),
+            "posterior": posterior,
+            "posterior_relabelled": posterior,
+            "label_permutations_found": None,
+            "modes": None,
+            "modes_found": None,
+        }
     if log_likelihood is not None:
         log_likelihood = np.asarray(log_likelihood, dtype=float)
         best = int(np.nanargmax(log_likelihood))

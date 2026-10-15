@@ -397,6 +397,12 @@ def build(
             finite(payload)
             if payload.get("schema_version") != 1:
                 raise ValueError("unsupported result schema_version")
+            if protocol.is_family_row(payload):
+                # correlated_nd (B5c) is exported by its own stage under its own protocol,
+                # never among the gaussian_x3 records.
+                why = f"{payload.get('protocol_id')} row: not a gaussian_x3 record"
+                excluded.append({"path": rel, "reason": why, "status": "refused"})
+                continue
             wave = protocol.wave_of(payload)
             if wave == wave2.WAVE:
                 why = wave2.admit(payload, timeouts)
