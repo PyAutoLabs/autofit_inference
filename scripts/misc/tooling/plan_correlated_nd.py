@@ -40,7 +40,12 @@ from searches import _wave2 as wave2  # noqa: E402
 BATCH = ROOT / "hpc" / "batch_cpu"
 TABLE = BATCH / "correlated_nd" / "pilot.tsv"
 SUBMIT = BATCH / "submit_correlated_nd_pilot"
-RAL_ROOT = "/mnt/ral/jnightin/inference/autofit_inference"
+#: The pilot runs from a PRIVATE copy beside the shared RAL clone, never the clone itself:
+#: on 2026-10-15 the clone was switched to an old ``main`` (stash "pre-main-switch",
+#: 19:24 UTC) and later lost ``_autofit_inference_cli.py`` and ``config/`` while the first
+#: submission (409957) started, so every task failed at import (B5c). The copy holds the
+#: delivered files (sha256-verified) and its own copy of the pin.
+RAL_ROOT = "/mnt/ral/jnightin/inference/autofit_inference_b5c"
 
 #: Seconds added to a task's ``--time`` beyond its run's limit and kill grace.
 TASK_MARGIN_S = 600.0

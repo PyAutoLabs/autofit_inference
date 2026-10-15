@@ -95,7 +95,10 @@ pulled `results/` as a parallel per-directory `tar` on the login node instead.
 `python scripts/misc/tooling/plan_correlated_nd.py --write` (lint runs `--check`): one array
 task per run (930: every non-deferred cell × seeds 0–9 × realisation 1), each run under the
 pilot's 4 h operational cap, `--partition=ral` only, the same exclusions and private pin as
-wave 2, 2 CPUs and 8 GB per task, throttled to `%100`. Protocol
+wave 2, 2 CPUs and 8 GB per task, throttled to `%100`. It runs from the private copy
+`/mnt/ral/jnightin/inference/autofit_inference_b5c` (the delivered files plus its own copy
+of `.pyauto_pin/`), never the shared clone, which another session switched branches on
+mid-submission (B5c: RAL 409957 failed at import and was cancelled). Protocol
 `wiki/project/protocol_correlated_nd.md` §7.
 
 ### There is no `push`
