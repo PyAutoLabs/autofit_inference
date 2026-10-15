@@ -6,6 +6,12 @@ phase B2; decisions D15 and D16 of `PyAutoMind/draft/research/autofit/search_ext
 `results/searches/`. The exporter stamps every verdict it emits with
 `protocol_id: gaussian_x3@1`.
 
+**Versions.** `gaussian_x3@1` judges the 223 wave-1 pilot rows (their verdicts are
+unchanged). `gaussian_x3@2` — this document with amendment **A2** (§11) applied — was
+frozen on 2026-10-14 before any scored run and judges every scored wave-2 row; the
+exporter stamps each verdict with the protocol of its row's wave
+(`_protocol.protocol_for`), and every `@2` verdict reason starts with `gaussian_x3@2:`.
+
 **Change rule.** Nothing in §1–§9 changes after a wave-1 row is committed except
 through a new protocol version (`gaussian_x3@2`, …) whose diff and reason are recorded
 in §11, committed before the first row judged by it. Values marked **PLACEHOLDER** are
@@ -172,6 +178,13 @@ convention (the blend's assertions; the control's disjoint priors, A1):
   revision frozen after phases **A2 and A4** (§9). Any calibration extension a human
   authorizes later is a separately identified run set, committed under its own record
   and excluded from scored results; it never changes `@2` after the first scored row.
+- **Frozen (B5a, 2026-10-14).** `gaussian_x3@2` is §11 amendment A2, with the values in
+  `_protocol.FROZEN_V2` (pinned to the record's `frozen` by a test): σ-ratio band
+  [0.5, 2.0] and ppc tolerance 10 (kept at `@1`: 17 rows < 20), §4(b)4 mode radius
+  **5.5 px** (raised from 5 to clear 10 × the largest reference centre σ, 5.32 px; ≤ half
+  the smallest truth separation, 7.5 px), nested Kish ESS 500, chain R-hat 1.01 and bulk
+  ESS 400 (kept: standard), and the timeout and censoring rules below. Freeze commit:
+  `72d6faaf1717` (72d6faaf17171af1573de0f1d2431dbf4444a947) (autofit_inference), committed before any scored wave-2 run.
 - **Why 17 rows suffice for the freeze.** The < 20 rule is pre-declared and
   conservative: below it the σ-ratio band and ppc tolerance keep their `@1` values, so
   `@2` widens nothing from thin evidence. The 3 missing rows cannot be recovered from
@@ -215,6 +228,12 @@ Per (search × settings × config), never per best seed:
   idle but unschedulable for hours. `hpc/batch_cpu/template` carries the same rule.
 - **No GPU leg.** The 100-pixel likelihood is dispatch-bound; an A100 says nothing about
   a search here. There is no `batch_gpu` template.
+- **Wave 2's identity (A2).** A scored row belongs to the wave only when its key
+  `(dataset, sampler, settings_name, config_id, data_seed, protocol_id, pyautofit_sha)`
+  names a menu cell, a realisation 1–5, `gaussian_x3@2` and the pinned PyAutoFit revision
+  (`scripts/misc/searches/_wave2.py`); any other row is refused and listed, never counted.
+  Every expected run is `row`, `failed`, `missing` or `deferred` (§7 censoring applies to
+  `failed` and, once the wave closes, to `missing`).
 
 ## 10. Reference status (bookkeeping)
 
@@ -224,6 +243,16 @@ Per (search × settings × config), never per best seed:
 | gaussian_x3_blend | jax_cpu | pending (2 of 3: seeds 0 and 2 in B3; seed 1 deferred to wave 2 at the B3 wrap-up ruling) | complete | complete | pending |
 | gaussian_x3_separated | numpy | complete (B3) | complete (B3) | complete (ln P 175.706) | Nautilus: ln Z spread 0.006 nat, medians 0.010 σ. All six: medians 0.071 σ, ln Z spread 0.49 nat (DynestyStatic) → reference = the Nautilus runs (ln Z 122.931, offset 0: disjoint priors) |
 | gaussian_x3_separated | jax_cpu | complete (B3) | complete (B3) | complete (ln P 175.706) | Nautilus: identical to numpy (same seeds, same samples to 1e-12). All six: medians 0.062 σ, ln Z spread 1.32 nat (DynestyStatic) → reference = the Nautilus runs |
+
+The table covers each dataset's committed realisation (blend `data_seed` 1, separated
+`data_seed` 2). **Wave-2 realisations (B5a, 2026-10-14):** the other four of 1–5 on each
+dataset (blend 2–5, separated 1, 3, 4, 5) are committed under `dataset/<name>/data_seed<d>/`;
+their references (3 Nautilus + 3 DynestyStatic + MAP per backend, under
+`results/reference/<dataset>/<backend>/data_seed<d>/`) and the JAX blend Nautilus seed 1
+are **scheduled** on RAL at the wave-2 pin, job ids in `wiki/project/state.md`. The new
+references are made at a later PyAutoFit revision than the B2/B3 ones; the JAX blend
+reference will pool pilot-era seeds 0 and 2 with the pinned seed 1 (a limitation it
+records). NSS's `ln 3!` offset on the blend (§3) is measured in the same submission.
 
 Constant-likelihood `ln 3!` validation (`results/reference/constant_likelihood.json`):
 Nautilus counts the excluded volume (offset `−ln 3!`; measured −1.825 on numpy and JAX at
@@ -258,3 +287,43 @@ changes; the change rule (top) still governs anything after a wave-1 row.
   assertions, `assertion_mechanism: disjoint_priors`, evidence offset `0` by
   construction. *Timing:* no `gaussian_x3_separated` reference run, reference or row
   existed when it was made (§10), so nothing is rerun and no verdict changes.
+
+- **A2 — 2026-10-14, `gaussian_x3@2`: the freeze for scored wave 2** (B5a, PyAutoMind
+  `search_ext_b5a_freeze_and_scored_wave2.md`). Committed before any scored wave-2 run
+  (freeze commit `72d6faaf1717` (72d6faaf17171af1573de0f1d2431dbf4444a947)); judges only rows of wave 2; wave-1 verdicts stay
+  `@1`. Changes:
+  - *§4(b)2, §4(b)3, §5 — the PLACEHOLDERs are frozen* from
+    `results/calibration/gaussian_x3_wave1.json`: σ-ratio band [0.5, 2.0], ppc tolerance
+    10, Kish ESS 500, R-hat 1.01, bulk ESS 400 — all unchanged in value (17 calibration
+    rows < 20 keep the band and tolerance; the ESS/R-hat bars are standard and are not
+    loosened because no pilot chain row met the bulk-ESS bar at pilot settings).
+  - *§4(b)4 — the mode-coverage radius is 5.5 px* (was 5): the pre-declared bounds are
+    ≥ 10 × the largest reference centre σ (5.32 px) and ≤ half the smallest truth centre
+    separation (7.5 px). The §3 clustering radius that writes `modes` onto rows and
+    references stays 5 px, so rows of every wave and every reference (including the
+    pilot-era ones) are clustered by one rule; only the coverage test widens.
+  - *§7 — timeouts and censoring.* Per (search × settings × backend):
+    `max(600 s, 10 × the median pilot total wall)` (the record's `timeouts`; a run's
+    process limit adds 120 s for imports and the admission bar, the censoring test uses
+    `total_wall_s`). A cell with no pilot wall (Zeus on JAX, every pilot attempt stopped at
+    the wall cap; NSS's new entry) is **probe-first**: five runs on realisation 1, seeds
+    0–4, under a 12 h cap; its timeout is the same rule over the probe's median, set before
+    the rest of the cell is submitted. Censoring as the record states: a run that hit the
+    timeout, crashed, wrote a non-finite answer or left no row is an attempted failure
+    with `total_wall_s` set to the timeout when it ran past it; never dropped.
+  - *§1, §9 — what wave 2 runs.* NSS is no longer deferred (phase A3b merged) and runs a
+    wave-2 settings entry `n_live_200_mcmc_steps_50` (50 slice-MCMC steps ≈ 5 × ndim: at the
+    default 5 the A3b witness lost the mode on seed 1 and ln Z by ~27 nat on seed 2; at 50
+    seeds 0–2 recovered every centre inside the reference spread; the pilot's `n_live_200`
+    entry stays as the pilot's deferred cell). Every search receives the A4 search-level
+    `seed` (PyAutoFit#1686), so the 50 seeds are 50 distinct attempts for Dynesty, Emcee,
+    Zeus and the optimisers too. 50 seeds × realisations 1–5 × every non-deferred leg ×
+    both datasets on `ral_{numpy,jax_cpu}_fp64`, against a private PyAutoFit checkout pinned
+    at `df6d218f10cd` (the A4 merge, newest `main` at submission; no release contains it) —
+    never the shared RAL mirror. BlackJAXNUTS warm-started on the blend stays **deferred**:
+    the cold leg still fails at trace time at the pin (TracerBoolConversionError on the
+    asserted blend), so each warm attempt would spend its Nautilus provider and fail; the
+    cold leg runs and records the failure.
+  *Why:* §7's freeze gate (B3c) — freeze from the calibration that exists, before any
+  scored run, never restarting the pilot. *Timing:* no wave-2 row existed when it was
+  committed; the arrays were submitted afterwards (job ids in `state.md`).

@@ -59,6 +59,29 @@ cp hpc/sync.conf.example hpc/sync.conf   # then edit; sync.conf is gitignored
 the repo root); `output/` is gitignored and a pulled result row is committed by a human
 from here — a job on RAL never commits.
 
+### Scored wave 2 (B5a)
+
+The wave-2 submits and their task tables are **generated**
+(`python scripts/misc/tooling/plan_wave2.py --write`; lint runs `--check`):
+
+| submit | array | what |
+|---|---|---|
+| `submit_wave2_reference_<dataset>` | one task per reference run | per new realisation and backend: 3 Nautilus `n_live=2000` + 3 DynestyStatic `nlive=1000` (blend also: JAX Nautilus seed 1 on realisation 1, NSS `ln 3!`) |
+| `submit_wave2_reference_build_<dataset>` | one per (backend, new realisation) | MAP reference, then `build_reference.py` |
+| `submit_wave2_scored_<dataset>_<backend>` | one per (cell, realisation, seed block) | the scored runs, each under its frozen `@2` timeout |
+| `submit_wave2_probe` | one per probe run | the probe-first cells (Zeus JAX, NSS), realisation 1, seeds 0–4 |
+
+Order: on the login node `git fetch && git checkout <branch>` and build the private pin
+(`.pyauto_pin/PyAutoFit` at `_wave2.PYAUTOFIT_PIN`, `.pyauto_pin/PyAutoNerves` at
+`PYAUTONERVES_PIN`, plus `.pyauto_pin/site` with the wheels of `_wave2.PIN_SITE_PACKAGES`
+unpacked into it — the shared venv lacks `zeus`; never `HPCPullPyAuto`, never modify the
+shared venv); submit the two reference arrays and the probe;
+then each build with `--dependency=afterany:<its reference array>`; then the four scored
+arrays with `--dependency=afterany:<both builds>` (`hpc/sync submit --cpu <name>
+--dependency=…` passes options to `sbatch`). Every submit runs on `--partition=ral` with
+2 CPUs per task, excludes the four 252-CPU nodes (whole-node jobs of other campaigns fit
+only there) and throttles each scored array to `%60` (240 tasks, 480 CPUs in all).
+
 ### There is no `push`
 
 The RAL copy is a **git clone** at `/mnt/ral/jnightin/autofit_inference`. Code goes to RAL

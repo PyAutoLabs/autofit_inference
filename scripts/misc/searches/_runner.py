@@ -162,13 +162,21 @@ SAMPLERS: dict[str, SamplerSpec] = {
         cls="NSS",
         task="evidence",
         family="nested",
-        settings={"n_live_200": {"n_live": 200}},
+        settings={
+            # The pilot's entry (sampler defaults: 5 slice-MCMC steps); deferred in wave 1.
+            "n_live_200": {"n_live": 200},
+            # Wave 2's entry: 50 steps ≈ 5 × ndim for the 10 free parameters. At the
+            # default 5 the A3b witness (PyAutoFit#1681) lost the mode on seed 1 and ln Z
+            # by ~27 nat on seed 2; at 50, seeds 0–2 recovered every centre with ln Z
+            # inside the reference spread (searches/_wave2.py SETTINGS).
+            "n_live_200_mcmc_steps_50": {"n_live": 200, "num_mcmc_steps": 50},
+        },
         default="n_live_200",
         seed_kwarg="seed",
         jax_native=True,
         numpy_supported=False,
-        status="deferred",
-        note="NSS on the blend is deferred until phase A3b (NSS onto Fitness)",
+        note="NSS was deferred in the wave-1 pilot until phase A3b (NSS onto Fitness, "
+        "merged); wave 2 runs its n_live_200_mcmc_steps_50 entry",
     ),
     "emcee": SamplerSpec(
         cls="Emcee",
@@ -474,18 +482,52 @@ def nested_termination(sampler: str, search, internal) -> dict:
     return {"observable": False, "met": None, "reason": TERMINATION_NOT_EXPOSED}
 
 
+#: From phase A4 (PyAutoFit#1686) every search takes the search-level ``seed`` (stream 0
+#: seeds the initializer, streams 1+ the backend: Emcee's RandomState, Dynesty's rstate).
+#: Wave 2 passes it to every search, so its 50 seeds are 50 distinct attempts; wave 1
+#: kept each spec's own ``seed_kwarg`` (``None`` where PyAutoFit then exposed no seed).
+SEARCH_LEVEL_SEED = "seed"
+
+
+def seed_kwarg_for(spec: SamplerSpec, wave: int = 1) -> str | None:
+    return SEARCH_LEVEL_SEED if wave >= 2 else spec.seed_kwarg
+
+
 def build_search(
-    af, spec: SamplerSpec, settings: dict, *, path_prefix, name, seed: int, extra_kwargs=None
+    af,
+    spec: SamplerSpec,
+    settings: dict,
+    *,
+    path_prefix,
+    name,
+    seed: int,
+    extra_kwargs=None,
+    wave: int = 1,
 ):
     kwargs = dict(settings)
     kwargs.update(extra_kwargs or {})
-    if spec.seed_kwarg is not None:
-        kwargs[spec.seed_kwarg] = seed
+    seed_kwarg = seed_kwarg_for(spec, wave)
+    if seed_kwarg is not None:
+        kwargs[seed_kwarg] = seed
     return getattr(af, spec.cls)(path_prefix=path_prefix, name=name, **kwargs)
 
 
+def wave_refusal(wave: int, revisions: dict, pin: str) -> str | None:
+    """Why a run may not be written as a wave-``wave`` row, or ``None``. A scored row must
+    come from the pinned PyAutoFit revision (searches/_wave2.py ``PYAUTOFIT_PIN``)."""
+    if wave < 2:
+        return None
+    sha = revisions.get("autofit")
+    if sha != pin:
+        return (
+            f"wave {wave} is pinned to PyAutoFit {pin}, but autofit resolves to {sha!r} "
+            "(PYTHONPATH-prefix the private pin checkout, never the shared mirror)"
+        )
+    return None
+
+
 def run_warm_provider(
-    af, spec, settings, warm_from, model, analysis, path_prefix, name, seed, record=None
+    af, spec, settings, warm_from, model, analysis, path_prefix, name, seed, record=None, wave=1
 ):
     """Run the warm-start provider (a short search on the same model and Analysis), then
     build the consumer search started from it.
@@ -522,6 +564,7 @@ def run_warm_provider(
         path_prefix=str(Path(path_prefix) / f"provider_{provider_name}"),
         name=provider_name,
         seed=seed,
+        wave=wave,
     )
     start = time.perf_counter()
     try:
@@ -534,7 +577,14 @@ def run_warm_provider(
     if spec.cls == "BlackJAXNUTS":
         extra["inverse_mass_matrix"] = provider_result
     consumer = build_search(
-        af, spec, settings, path_prefix=str(path_prefix), name=name, seed=seed, extra_kwargs=extra
+        af,
+        spec,
+        settings,
+        path_prefix=str(path_prefix),
+        name=name,
+        seed=seed,
+        extra_kwargs=extra,
+        wave=wave,
     )
     return consumer, record
 
@@ -707,7 +757,27 @@ def run_search(
         )
         return 2
     settings = spec.settings[settings_name]
+    wave = cli.wave
+    if wave >= 2:
+        from searches import _wave2 as wave2
+
+        if (dataset_class, sampler) in wave2.DEFERRED:
+            print(f"ERROR: {wave2.DEFERRED[(dataset_class, sampler)]}", file=sys.stderr)
+            return 2
+        allowed = wave2.SETTINGS.get(sampler, tuple(spec.settings))
+        if settings_name not in allowed:
+            print(
+                f"ERROR: wave {wave} runs {sampler} only with {allowed}, not {settings_name!r}",
+                file=sys.stderr,
+            )
+            return 2
     env = set_backend_env(cli.backend, cli.precision, cli.cores, cli.compile_cache)
+    if wave >= 2:
+        # After the backend env: library_revisions imports autofit.
+        refusal = wave_refusal(wave, library_revisions(), wave2.PYAUTOFIT_PIN)
+        if refusal:
+            print(f"ERROR: {refusal}", file=sys.stderr)
+            return 2
 
     # --- imports: everything below here sees the backend environment above ---
     import autofit as af
@@ -740,7 +810,10 @@ def run_search(
     output_root.mkdir(parents=True, exist_ok=True)
     af.conf.instance.push(new_path=root / "config", output_path=output_root)
 
-    reference = protocol.load_json(protocol.reference_file(root, dataset_class, cli.backend))
+    # The reference of this realisation only (REFERENCE_IDENTITY includes data_seed).
+    reference = protocol.load_json(
+        protocol.reference_file(root, dataset_class, cli.backend, data_seed)
+    )
     offsets = protocol.load_json(protocol.offsets_file(root))
     target_log_l = None
     if reference and reference.get("max_log_likelihood") is not None:
@@ -761,7 +834,7 @@ def run_search(
     )
     search_name = sampler
     search = build_search(
-        af, spec, settings, path_prefix=str(path_prefix), name=search_name, seed=seed
+        af, spec, settings, path_prefix=str(path_prefix), name=search_name, seed=seed, wave=wave
     )
     search_root = with_test_mode_segment(output_root) / path_prefix
 
@@ -843,6 +916,7 @@ def run_search(
                 search_name,
                 seed,
                 record=timing["provider"],
+                wave=wave,
             )
         tracker.t0 = time.time()
         fit_start = time.perf_counter()
@@ -939,10 +1013,11 @@ def run_search(
         ess = summary.get("ess_kish")
         row = {
             "schema_version": SCHEMA_VERSION,
-            "protocol_id": protocol.PROTOCOL_ID,
+            "protocol_id": protocol.PROTOCOL_IDS[wave],
+            "wave": wave,
             "run_id": rid,
             "target": f"{dataset_class}/data_seed{data_seed}/seed{seed}",
-            "pilot": True,
+            "pilot": wave == 1,
             "sampler": sampler,
             "sampler_class": spec.cls,
             "task": spec.task,
@@ -961,7 +1036,7 @@ def run_search(
             "dataset_class": dataset_class,
             "data_seed": data_seed,
             "seed": seed,
-            "seed_effective": spec.seed_kwarg is not None,
+            "seed_effective": seed_kwarg_for(spec, wave) is not None,
             "version": af.__version__,
             "library_revisions": (revisions := library_revisions()),
             "pyautofit_commit": revisions.get("autofit"),

@@ -1,4 +1,5 @@
-"""Protocol ``gaussian_x3@1`` verdicts — standard library only.
+"""Protocol ``gaussian_x3`` verdicts (``@1`` for the wave-1 pilot, ``@2`` for scored wave 2) —
+standard library only.
 
 Implements §4 (acceptance) and §5 (convergence) of
 ``wiki/project/protocol_gaussian_x3.md`` as pure functions of a result row, the
@@ -7,8 +8,13 @@ backend, data seed, assertion mechanism), and the measured ``ln 3!`` offsets. Im
 (to emit ``scientific.convergence`` / ``scientific.acceptance``), so it must never import
 numpy or autofit.
 
-Every threshold lives in :data:`THRESHOLDS`, with the protocol's PLACEHOLDER marking
-carried in :data:`PLACEHOLDERS`. Changing one is a protocol version bump (§ change rule).
+Every threshold lives in :data:`THRESHOLDS` (``@1``, with its PLACEHOLDER marking carried in
+:data:`PLACEHOLDERS`) and :data:`THRESHOLDS_V2` (``@1`` with :data:`FROZEN_V2` applied: the
+calibrated values frozen from ``results/calibration/gaussian_x3_wave1.json`` before any
+scored run, protocol §7 and §11 A2). Changing one is a protocol version bump (§ change
+rule). A row is judged by the protocol of the wave it belongs to (:func:`protocol_for`):
+the 223 pilot rows stay ``@1`` with their verdicts byte-identical; scored wave-2 rows are
+``@2``, and every ``@2`` verdict string starts with the id.
 """
 
 from __future__ import annotations
@@ -17,7 +23,17 @@ import json
 import math
 from pathlib import Path
 
-PROTOCOL_ID = "gaussian_x3@1"
+#: The protocol that judges each wave (§9): wave 1 is the pilot, wave 2 the scored wave.
+PROTOCOL_IDS = {1: "gaussian_x3@1", 2: "gaussian_x3@2"}
+
+#: The wave-1 (pilot) id. Kept under this name for the wave-1 consumers (the calibration
+#: record, the pilot catalogue and summary), whose output must not move; resolve a row's
+#: id with :func:`protocol_for`, never with this constant.
+PROTOCOL_ID = PROTOCOL_IDS[1]
+
+#: The protocol new artefacts (reference runs, scored rows) are made under from the
+#: ``@2`` freeze commit on. §6 (references) is unchanged by ``@2``.
+CURRENT_PROTOCOL_ID = PROTOCOL_IDS[2]
 
 LN_3_FACTORIAL = math.log(6.0)
 
@@ -51,6 +67,62 @@ PLACEHOLDERS = (
     "chain_max_rhat",
     "chain_min_ess",
 )
+
+#: ``gaussian_x3@2`` — the six PLACEHOLDERs frozen from the calibration record
+#: ``results/calibration/gaussian_x3_wave1.json`` (``frozen``; 17 calibration rows, so the
+#: σ-ratio band and ppc tolerance keep their ``@1`` values by the pre-declared < 20 rule;
+#: the mode radius moves 5.0 → 5.5 px to clear 10 × the largest reference centre σ,
+#: 5.32 px). Copied by hand, a human-readable diff (``calibrate_pilot.py`` docstring); a
+#: test pins it to the record. ``mode_radius_px`` here is the §4(b)4 coverage radius; the
+#: §3 clustering radius that writes ``modes`` onto rows and references stays
+#: ``_posterior.MODE_RADIUS_PX`` (5 px) so every row and reference is clustered alike
+#: (protocol §11 A2).
+FROZEN_V2 = {
+    "sigma_ratio_band": (0.5, 2.0),
+    "ppc_chi2_tolerance": 10.0,
+    "mode_radius_px": 5.5,
+    "nested_min_ess": 500.0,
+    "chain_max_rhat": 1.01,
+    "chain_min_ess": 400.0,
+}
+
+#: The ``@2`` timeout and censoring rules (protocol §7, §11 A2): per (search × settings ×
+#: backend), ``max(600 s, 10 × the median pilot total wall)`` from the calibration record's
+#: ``timeouts``; a cell with no pilot wall (``probe_first``) takes the same rule over its
+#: first five wave-2 runs (data realisation 1, seeds 0–4) before the rest of it is
+#: submitted. An expected run that hit the timeout, crashed, wrote a non-finite answer or
+#: left no row is an attempted failure censored at the timeout; never dropped.
+TIMEOUT_RULE_V2 = (
+    "max(600 s, 10 x median pilot total wall); probe-first cells: same rule over a 5-run probe"
+)
+
+THRESHOLDS_V2 = {**THRESHOLDS, **FROZEN_V2}
+
+THRESHOLDS_BY_PROTOCOL = {PROTOCOL_IDS[1]: THRESHOLDS, PROTOCOL_IDS[2]: THRESHOLDS_V2}
+
+#: What is still a PLACEHOLDER under each protocol: nothing, once frozen.
+PLACEHOLDERS_BY_PROTOCOL = {PROTOCOL_IDS[1]: PLACEHOLDERS, PROTOCOL_IDS[2]: ()}
+
+
+def wave_of(row: dict) -> int:
+    """The wave a row belongs to: its ``wave`` field, else 1 (every row written before
+    the ``@2`` freeze is a wave-1 pilot row and carries ``pilot: true``)."""
+    wave = row.get("wave")
+    if isinstance(wave, int) and not isinstance(wave, bool):
+        return wave
+    return 1
+
+
+def protocol_for(row: dict) -> str | None:
+    """The protocol id that judges ``row`` — the one of its wave, never a later one (the
+    change rule: a verdict stays under the protocol in force when its wave was declared).
+    ``None`` for a wave with no protocol, or a row stamped with another wave's id."""
+    pid = PROTOCOL_IDS.get(wave_of(row))
+    stamped = row.get("protocol_id")
+    if pid is None or (stamped is not None and stamped != pid):
+        return None
+    return pid
+
 
 TASKS = ("point_map", "posterior", "evidence")
 
@@ -93,8 +165,24 @@ def load_json(path: Path):
         return None
 
 
-def reference_file(root: Path, dataset: str, backend: str) -> Path:
-    return Path(root) / "results" / "reference" / dataset / backend / "reference.json"
+#: Each dataset's committed default realisation (``simulators/gaussian_x3.py``
+#: ``DATASETS``; a test pins the two together). Its reference stays at the B2/B3 path;
+#: every other realisation's lives under ``data_seed<d>/`` beside it.
+DEFAULT_DATA_SEED = {"gaussian_x3_blend": 1, "gaussian_x3_separated": 2}
+
+
+def reference_dir(root: Path, dataset: str, backend: str, data_seed: int | None = None) -> Path:
+    """``results/reference/<dataset>/<backend>/`` for the dataset's default realisation,
+    ``…/<backend>/data_seed<d>/`` for any other (scored wave 2, protocol §9: five
+    realisations, each judged only against its own reference — :data:`REFERENCE_IDENTITY`)."""
+    base = Path(root) / "results" / "reference" / dataset / backend
+    if data_seed is None or data_seed == DEFAULT_DATA_SEED.get(dataset):
+        return base
+    return base / f"data_seed{int(data_seed)}"
+
+
+def reference_file(root: Path, dataset: str, backend: str, data_seed: int | None = None) -> Path:
+    return reference_dir(root, dataset, backend, data_seed) / "reference.json"
 
 
 def offsets_file(root: Path) -> Path:
@@ -124,23 +212,25 @@ def normalised_log_evidence(log_evidence, offset):
 # ---------------------------------------------------------------------------
 
 
-def criterion_map(row: dict, reference: dict) -> tuple[bool | None, str]:
+def criterion_map(row: dict, reference: dict, t: dict = THRESHOLDS) -> tuple[bool | None, str]:
     got = _num(row.get("max_log_posterior"))
     ref = _num((reference.get("map") or {}).get("log_posterior"))
     if got is None or ref is None:
         return None, "(a) max_log_posterior or ref MAP missing"
-    ok = got >= ref - THRESHOLDS["map_tolerance_nat"]
+    ok = got >= ref - t["map_tolerance_nat"]
     return ok, f"(a) max_log_posterior {got:.3f} vs ref MAP {ref:.3f}"
 
 
-def criteria_posterior(row: dict, reference: dict) -> list[tuple[bool | None, str]]:
+def criteria_posterior(
+    row: dict, reference: dict, t: dict = THRESHOLDS
+) -> list[tuple[bool | None, str]]:
     out: list[tuple[bool | None, str]] = []
     run = row.get("posterior_relabelled") or {}
     ref = reference.get("posterior_relabelled") or {}
     if not ref or not run:
         return [(None, "(b) relabelled posterior missing on row or reference")]
     worst_median, worst_key = 0.0, None
-    lo, hi = THRESHOLDS["sigma_ratio_band"]
+    lo, hi = t["sigma_ratio_band"]
     ratio_fail = []
     for key, ref_stats in ref.items():
         run_stats = run.get(key) or {}
@@ -156,7 +246,7 @@ def criteria_posterior(row: dict, reference: dict) -> list[tuple[bool | None, st
             ratio_fail.append(f"{key} {ratio:.2f}")
     out.append(
         (
-            worst_median <= THRESHOLDS["median_tolerance_sigma"],
+            worst_median <= t["median_tolerance_sigma"],
             f"(b)1 worst |median-ref|/ref_sigma {worst_median:.2f} ({worst_key})",
         )
     )
@@ -172,24 +262,24 @@ def criteria_posterior(row: dict, reference: dict) -> list[tuple[bool | None, st
     else:
         out.append(
             (
-                g_chi2 - r_chi2 <= THRESHOLDS["ppc_chi2_tolerance"],
+                g_chi2 - r_chi2 <= t["ppc_chi2_tolerance"],
                 f"(b)3 ppc_chi2 {g_chi2:.1f} vs ref {r_chi2:.1f}",
             )
         )
-    out.append(criterion_modes(row, reference))
+    out.append(criterion_modes(row, reference, t))
     return out
 
 
-def criterion_modes(row: dict, reference: dict) -> tuple[bool | None, str]:
+def criterion_modes(row: dict, reference: dict, t: dict = THRESHOLDS) -> tuple[bool | None, str]:
     ref_modes = [
         m
         for m in reference.get("modes") or []
-        if (_num(m.get("weight")) or 0.0) >= THRESHOLDS["mode_coverage_min_weight"]
+        if (_num(m.get("weight")) or 0.0) >= t["mode_coverage_min_weight"]
     ]
     run_modes = row.get("modes")
     if run_modes is None:
         return None, "(b)4 run modes missing"
-    radius = THRESHOLDS["mode_radius_px"]
+    radius = t["mode_radius_px"]
     missed = 0
     for ref_mode in ref_modes:
         centres = ref_mode.get("centres") or []
@@ -217,7 +307,9 @@ def run_evidence_offset(run: dict, offsets: dict | None) -> float | None:
     return evidence_offset(offsets, run.get("sampler", ""), run.get("backend", ""))
 
 
-def criterion_evidence(row: dict, reference: dict, offsets: dict | None) -> tuple[bool | None, str]:
+def criterion_evidence(
+    row: dict, reference: dict, offsets: dict | None, t: dict = THRESHOLDS
+) -> tuple[bool | None, str]:
     offset = run_evidence_offset(row, offsets)
     got = normalised_log_evidence(row.get("log_evidence"), offset)
     ref = _num(reference.get("log_evidence_normalised"))
@@ -225,11 +317,13 @@ def criterion_evidence(row: dict, reference: dict, offsets: dict | None) -> tupl
         return None, f"(c) no validated ln 3! offset for {row.get('sampler')}/{row.get('backend')}"
     if got is None or ref is None:
         return None, "(c) log evidence missing on row or reference"
-    ok = abs(got - ref) <= THRESHOLDS["evidence_tolerance_nat"]
+    ok = abs(got - ref) <= t["evidence_tolerance_nat"]
     return ok, f"(c) ln Z_norm {got:.3f} vs ref {ref:.3f}"
 
 
-def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -> dict:
+def acceptance(
+    row: dict, reference: dict | None, offsets: dict | None = None, t: dict = THRESHOLDS
+) -> dict:
     """``{"acceptance", "reason", "criteria", "reference_limitations", "map_diagnostic"}`` —
     ``accepted`` / ``rejected`` / ``not_assessed`` per protocol §4.
 
@@ -257,14 +351,14 @@ def acceptance(row: dict, reference: dict | None, offsets: dict | None = None) -
     if row.get("status") != "complete" or row.get("completed") is not True:
         return _judged("rejected", f"not completed: {row.get('status')}", [], limitations)
     # §4(a) on every row: the criterion for point/MAP, a diagnostic for the others.
-    map_ok, map_text = criterion_map(row, reference)
+    map_ok, map_text = criterion_map(row, reference, t)
     map_diagnostic = {"ok": map_ok, "detail": map_text, "criterion": task == "point_map"}
     if task == "point_map":
-        criteria = [criterion_map(row, reference)]
+        criteria = [criterion_map(row, reference, t)]
     else:
-        criteria = criteria_posterior(row, reference)
+        criteria = criteria_posterior(row, reference, t)
         if task == "evidence":
-            criteria.append(criterion_evidence(row, reference, offsets))
+            criteria.append(criterion_evidence(row, reference, offsets, t))
     failed = [text for ok, text in criteria if ok is False]
     unknown = [text for ok, text in criteria if ok is None]
     if failed:
@@ -294,7 +388,7 @@ def _judged(verdict: str, reason: str, criteria, limitations=(), map_diagnostic=
 # ---------------------------------------------------------------------------
 
 
-def convergence(row: dict) -> dict:
+def convergence(row: dict, t: dict = THRESHOLDS) -> dict:
     task = row.get("task")
     family = row.get("family")
     if task == "point_map":
@@ -305,7 +399,7 @@ def convergence(row: dict) -> dict:
         ess = _num(row.get("ess_kish"))
         if ess is None:
             return {"convergence": "not_assessed", "reason": "no ESS recorded"}
-        ess_text = f"Kish ESS {ess:.0f} vs {THRESHOLDS['nested_min_ess']:.0f}"
+        ess_text = f"Kish ESS {ess:.0f} vs {t['nested_min_ess']:.0f}"
         termination = row.get("termination") or {}
         met = termination.get("met")
         if met is None:
@@ -317,7 +411,7 @@ def convergence(row: dict) -> dict:
                 "reason": f"own termination criterion not met ({_termination_text(termination)}); "
                 f"{ess_text}",
             }
-        ok = ess >= THRESHOLDS["nested_min_ess"]
+        ok = ess >= t["nested_min_ess"]
         return {
             "convergence": "converged" if ok else "not_converged",
             "reason": f"terminated ({_termination_text(termination)}); {ess_text}",
@@ -332,7 +426,7 @@ def convergence(row: dict) -> dict:
     rhat, ess = _num(row.get("rhat_max")), _num(row.get("ess_bulk_min"))
     if rhat is None or ess is None:
         return {"convergence": "not_assessed", "reason": "no chain diagnostics recorded"}
-    ok = rhat <= THRESHOLDS["chain_max_rhat"] and ess >= THRESHOLDS["chain_min_ess"]
+    ok = rhat <= t["chain_max_rhat"] and ess >= t["chain_min_ess"]
     return {
         "convergence": "converged" if ok else "not_converged",
         "reason": f"R-hat {rhat:.3f}, bulk ESS {ess:.0f}",
@@ -346,19 +440,38 @@ def _termination_text(termination: dict) -> str:
 
 
 def verdict(row: dict, reference: dict | None, offsets: dict | None = None) -> dict:
-    """The producer-asserted ``scientific`` block for one row."""
-    acc = acceptance(row, reference, offsets)
-    conv = convergence(row)
+    """The producer-asserted ``scientific`` block for one row, under the protocol of the
+    row's wave (:func:`protocol_for`). ``@1`` verdicts are byte-identical to the pilot's;
+    every ``@2`` reason starts with ``gaussian_x3@2:``. A row whose stamped id disagrees
+    with its wave is ``not_assessed``, never judged under the wrong thresholds."""
+    pid = protocol_for(row)
+    if pid is None:
+        why = f"no protocol for wave {row.get('wave')!r} with stamped id {row.get('protocol_id')!r}"
+        return {
+            "protocol_id": row.get("protocol_id"),
+            "acceptance": "not_assessed",
+            "acceptance_reason": why,
+            "convergence": "not_assessed",
+            "convergence_reason": why,
+            "criteria": [],
+            "reference_limitations": [],
+            "map_diagnostic": None,
+            "placeholders": [],
+        }
+    t = THRESHOLDS_BY_PROTOCOL[pid]
+    acc = acceptance(row, reference, offsets, t)
+    conv = convergence(row, t)
+    prefix = "" if pid == PROTOCOL_IDS[1] else f"{pid}: "
     return {
-        "protocol_id": PROTOCOL_ID,
+        "protocol_id": pid,
         "acceptance": acc["acceptance"],
-        "acceptance_reason": acc["reason"],
+        "acceptance_reason": prefix + acc["reason"],
         "convergence": conv["convergence"],
-        "convergence_reason": conv["reason"],
+        "convergence_reason": prefix + conv["reason"],
         "criteria": acc["criteria"],
         "reference_limitations": acc["reference_limitations"],
         "map_diagnostic": acc["map_diagnostic"],
-        "placeholders": list(PLACEHOLDERS),
+        "placeholders": list(PLACEHOLDERS_BY_PROTOCOL[pid]),
     }
 
 

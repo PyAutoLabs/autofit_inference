@@ -3,20 +3,22 @@
 ``protocol_gaussian_x3.md`` §Reference pre-registers, **per backend** (numpy and JAX),
 three long ``Nautilus`` (``n_live=2000``) and three long ``DynestyStatic``
 (``nlive=1000``) runs, seeds 0–2. This script runs one of them and writes
-``results/reference/<dataset>/<backend>/<sampler>_seed<n>.json``: the evidence, the
+``results/reference/<dataset>/<backend>/[data_seed<d>/]<sampler>_seed<n>.json`` (the
+``data_seed<d>/`` level for every realisation but the dataset's committed default, scored
+wave 2 — ``_protocol.reference_dir``): the evidence, the
 labelled and relabelled marginals, the modes, the maximum log likelihood and maximum
 log posterior samples (never interchanged), the posterior-predictive χ² and the
 provenance. ``build_reference.py`` combines the six into ``reference.json``.
 
-DynestyStatic takes no seed through PyAutoFit (``DynestyStatic`` has no ``seed``
-argument and does not forward ``rstate``), so its ``--seed`` only labels the run and
-seeds NumPy's global generator; the row says ``seed_effective: false``. The
-search-level seed is phase A4 of the search-extensibility epic.
+Before phase A4 DynestyStatic took no seed through PyAutoFit, so the B2/B3 runs' ``--seed``
+only labelled the run (``seed_effective: false``). From A4 (PyAutoFit#1686) the
+search-level ``seed`` drives Dynesty's ``rstate``, and a run made against a revision that
+has it passes it (``seed_effective: true``).
 
 Usage::
 
     python scripts/misc/reference/run_reference.py --sampler nautilus --seed 0 \
-        --config-name local_numpy_fp64
+        --config-name local_numpy_fp64 [--data-seed 3]
 """
 
 from __future__ import annotations
@@ -51,8 +53,32 @@ REFERENCE_SETTINGS = {
 PPC_DRAWS = 500
 
 
-def reference_path(root: Path, dataset: str, backend: str, sampler: str, seed: int) -> Path:
-    return root / "results" / "reference" / dataset / backend / f"{sampler}_seed{seed}.json"
+def reference_path(
+    root: Path, dataset: str, backend: str, sampler: str, seed: int, data_seed: int | None = None
+) -> Path:
+    from searches import _protocol as protocol
+
+    return protocol.reference_dir(root, dataset, backend, data_seed) / f"{sampler}_seed{seed}.json"
+
+
+def output_prefix(dataset: str, config_name: str, data_seed: int | None = None) -> Path:
+    """``reference/<dataset>/<config>[/data_seed<d>]``: PyAutoFit's identifier hashes the
+    model and search, not the data, so each realisation needs its own prefix."""
+    from searches import _protocol as protocol
+
+    base = Path("reference") / dataset / config_name
+    if data_seed is None or data_seed == protocol.DEFAULT_DATA_SEED.get(dataset):
+        return base
+    return base / f"data_seed{int(data_seed)}"
+
+
+def dynesty_takes_seed(af) -> bool:
+    """Whether this PyAutoFit forwards a search-level seed to Dynesty (phase A4)."""
+    import inspect
+
+    from autofit.non_linear.search.abstract_search import NonLinearSearch
+
+    return "seed" in inspect.signature(NonLinearSearch.__init__).parameters
 
 
 def main(argv=None) -> int:
@@ -61,6 +87,9 @@ def main(argv=None) -> int:
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--config-name", default="local_numpy_fp64")
     parser.add_argument("--dataset", choices=DATASETS, default="gaussian_x3_blend")
+    parser.add_argument(
+        "--data-seed", type=int, default=None, help="data realisation (default: committed)"
+    )
     args = parser.parse_args(argv)
 
     where, backend, precision = validate_cli(args.config_name, None, None)
@@ -71,9 +100,10 @@ def main(argv=None) -> int:
     from autonerves.test_mode import is_test_mode
     from models import gaussian_x3 as gx3
     from searches import _posterior as post
+    from searches import _protocol as protocol
 
     np.random.seed(args.seed)
-    dataset_dir = auto_simulate_if_missing(args.dataset)
+    dataset_dir = auto_simulate_if_missing(args.dataset, args.data_seed)
     data, noise_map, truth_record = gx3.load_dataset(dataset_dir)
     model = gx3.build_model(dataset=args.dataset)
     keys = gx3.parameter_keys(model)
@@ -82,7 +112,8 @@ def main(argv=None) -> int:
 
     output_root = (_ROOT / "output").resolve()
     af.conf.instance.push(new_path=_ROOT / "config", output_path=output_root)
-    path_prefix = Path("reference") / args.dataset / args.config_name
+    data_seed = truth_record.get("data_seed")
+    path_prefix = output_prefix(args.dataset, args.config_name, data_seed)
     name = f"{args.sampler}_seed{args.seed}"
     settings = REFERENCE_SETTINGS[args.sampler]
     if args.sampler == "nautilus":
@@ -95,13 +126,15 @@ def main(argv=None) -> int:
         )
         seed_effective = True
     else:
+        seeded = dynesty_takes_seed(af)
         search = af.DynestyStatic(
             path_prefix=path_prefix,
             name=name,
             nlive=1000,
             number_of_cores=1,
+            **({"seed": args.seed} if seeded else {}),
         )
-        seed_effective = False
+        seed_effective = seeded
 
     print(f"reference {args.sampler} seed {args.seed} {args.config_name} {args.dataset} env={env}")
     start = time.perf_counter()
@@ -131,9 +164,9 @@ def main(argv=None) -> int:
     payload = {
         "schema_version": 1,
         "kind": "reference_run",
-        "protocol_id": "gaussian_x3@1",
+        "protocol_id": protocol.CURRENT_PROTOCOL_ID,
         "dataset": args.dataset,
-        "data_seed": truth_record.get("data_seed"),
+        "data_seed": data_seed,
         "model": gx3.MODEL_ID,
         "model_description": gx3.model_description(args.dataset),
         "priors": gx3.priors_record(args.dataset),
@@ -162,7 +195,7 @@ def main(argv=None) -> int:
         "test_mode": bool(is_test_mode()),
         "output_path": str(Path(search.paths.output_path).resolve().relative_to(output_root)),
     }
-    out = reference_path(_ROOT, args.dataset, backend, args.sampler, args.seed)
+    out = reference_path(_ROOT, args.dataset, backend, args.sampler, args.seed, data_seed)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2) + "\n")
     print(

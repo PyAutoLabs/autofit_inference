@@ -92,6 +92,12 @@ CELL_REASONS: dict[tuple, str] = {
 }
 
 
+#: Settings the pilot's menu ran, where the registry has grown since: the wave-2 NSS entry
+#: (``n_live_200_mcmc_steps_50``) is not a pilot cell, so the pilot's manifest, catalogue
+#: and summary stay as published.
+SETTINGS = {"nss": ("n_live_200",)}
+
+
 def missing_reason(cell: Cell) -> str:
     """Why an expected run of ``cell`` has no row."""
     if cell.status == "deferred":
@@ -135,7 +141,7 @@ def cells() -> list[Cell]:
     for dataset in DATASETS:
         for name, spec in SAMPLERS.items():
             deferred = DEFERRED.get(name) or (spec.note if spec.status == "deferred" else None)
-            for settings in spec.settings:
+            for settings in SETTINGS.get(name, tuple(spec.settings)):
                 for backend in backends(spec):
                     config_name = CONFIG_BY_BACKEND[backend]
                     config_id = config_segment(

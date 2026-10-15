@@ -43,14 +43,25 @@ SETTINGS = {
     "dynesty_static": {"nlive": 500},
     # B3: the pilot runs DynestyDynamic as an evidence search, so its offset is measured too.
     "dynesty_dynamic": {"nlive_init": 500},
+    # B5a: wave 2 runs NSS as an evidence search on the blend (JAX only), with the wave-2
+    # entry's 50 slice-MCMC steps (searches/_wave2.py SETTINGS).
+    "nss": {"n_live": 500, "num_mcmc_steps": 50, "seed": 0},
 }
 CLASSES = {
     "nautilus": "Nautilus",
     "dynesty_static": "DynestyStatic",
     "dynesty_dynamic": "DynestyDynamic",
+    "nss": "NSS",
 }
+#: JAX-only samplers: skipped on a numpy leg (PyAutoFit refuses a numpy Analysis).
+JAX_ONLY = ("nss",)
 #: The live-point keyword ``--live`` overrides, per sampler.
-LIVE_KWARG = {"nautilus": "n_live", "dynesty_static": "nlive", "dynesty_dynamic": "nlive_init"}
+LIVE_KWARG = {
+    "nautilus": "n_live",
+    "dynesty_static": "nlive",
+    "dynesty_dynamic": "nlive_init",
+    "nss": "n_live",
+}
 WINDOW_NAT = 0.1
 
 
@@ -97,6 +108,9 @@ def main(argv=None) -> int:
     offsets = record.setdefault("offsets", {})
     analysis = gx3.AnalysisConstant(use_jax=backend == "jax_cpu")
     for sampler in args.samplers:
+        if sampler in JAX_ONLY and backend != "jax_cpu":
+            print(f"  {sampler}: JAX-only, skipped on {backend}")
+            continue
         settings = dict(SETTINGS[sampler])
         if args.live is not None:
             settings[LIVE_KWARG[sampler]] = args.live

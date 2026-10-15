@@ -96,7 +96,13 @@ def scan_rows(root: Path) -> list[tuple[str, dict]]:
             payload = json.loads(path.read_text())
         except (OSError, ValueError):
             continue
-        if isinstance(payload, dict) and payload.get("schema_version") == 1:
+        # The pilot catalogue (and the calibration built on it) reads wave-1 rows only;
+        # scored wave-2 rows are catalogued under gaussian_x3@2 by their own stage (B5b).
+        if (
+            isinstance(payload, dict)
+            and payload.get("schema_version") == 1
+            and protocol.wave_of(payload) == 1
+        ):
             rows.append((path.relative_to(root).as_posix(), payload))
     return rows
 
