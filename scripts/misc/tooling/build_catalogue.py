@@ -17,12 +17,21 @@ exactly one status:
 - ``unsupported`` — registered in PyAutoFit but not benchmarked by this harness, with
   the reason (``Drawer`` is a sanity floor that answers no task, protocol §1).
 
-**Nothing is ranked.** Tasks are separate groups; within a task the searches keep the
+**The wave-1 section ranks nothing.** Tasks are separate groups; within a task the searches keep the
 manifest's order and each leg reports its own counts (attempts, verdicts, convergence,
 the Wilson interval of its success rate, its walls). There is no rank, score or best
 field, and no number is ever compared across tasks (``test_catalogue.py`` pins this).
 Wave 1 is a pilot (protocol §9): its numbers calibrate the protocol, they do not order
 the searches.
+
+**The ``gaussian_x3@2`` section (B5b)** sits beside it and is scored (protocol §8, §9):
+every expected run of the wave (``searches/_wave2.py``) is an attempt — an admitted row
+judged under ``@2`` against its own realisation's reference, or, for a missing run of a
+closed cell, a failed attempt censored at the cell's timeout — and each (dataset × search
+× settings × leg) reports its success rate (Wilson 95 %) and expected wall per right
+answer (bootstrap 95 %). Within one task and one dataset (never across either) the
+fully-judged closed legs with at least one right answer are listed in ``ranking`` by expected
+wall per right answer, then success rate; zero-success and open legs are not positioned. Only rows at the wave's PyAutoFit pin are read; pilot rows never enter it.
 
     python scripts/misc/tooling/build_catalogue.py                     # write the catalogue
     python scripts/misc/tooling/build_catalogue.py --check             # verify the committed one
@@ -49,6 +58,7 @@ for _path in (str(ROOT / "scripts" / "misc"), str(ROOT / "scripts" / "misc" / "t
 import export_inference_summary as exporter  # noqa: E402
 from searches import _pilot as pilot  # noqa: E402
 from searches import _protocol as protocol  # noqa: E402
+from searches import _wave2 as wave2  # noqa: E402
 from searches._runner import SAMPLERS  # noqa: E402
 
 CATALOGUE_PATH = ROOT / "catalogue" / "search_catalogue.json"
@@ -208,6 +218,283 @@ def leg_summary(cell: pilot.Cell, rows: list[dict], refs: dict, offsets) -> dict
     return leg
 
 
+# ---------------------------------------------------------------------------
+# gaussian_x3@2 (scored wave 2, B5b)
+# ---------------------------------------------------------------------------
+
+
+def scan_wave2_rows(root: Path) -> list[tuple[str, dict]]:
+    rows = []
+    for path in sorted((root / "results" / "searches").rglob("*.json")):
+        try:
+            payload = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if (
+            isinstance(payload, dict)
+            and payload.get("schema_version") == 1
+            and protocol.wave_of(payload) == wave2.WAVE
+        ):
+            rows.append((path.relative_to(root).as_posix(), payload))
+    return rows
+
+
+def bootstrap_wall_per_success_v2(walls: list[float], successes: list[bool]) -> list | None:
+    """:func:`bootstrap_wall_per_success` for the scored wave (same rule: 10 000
+    resamples, seed 0, an unbounded resample kept as infinity), drawn with
+    ``random.choices`` so 250-attempt legs stay fast. It resamples a leg's attempts
+    (search seed × data realisation, the five realisations pooled), where §8 says "over
+    seeds": with five realisations per seed a seed-only resample would ignore the
+    realisation spread the scored wave was designed to include."""
+    if not walls or not any(successes):
+        return None
+    rng = random.Random(0)
+    n = len(walls)
+    pairs = list(zip(walls, successes))
+    values = []
+    for _ in range(BOOTSTRAP_RESAMPLES):
+        draw = rng.choices(pairs, k=n)
+        k = sum(s for _, s in draw)
+        values.append(sum(w for w, _ in draw) / k if k else math.inf)
+    values.sort()
+    ends = [values[int(0.025 * (len(values) - 1))], values[int(0.975 * (len(values) - 1))]]
+    return [None if math.isinf(v) else v for v in ends]
+
+
+def censored_attempt(row: dict, cell) -> tuple[float | None, bool]:
+    """``(cost, over_timeout)`` of one admitted attempt under §7: a run whose search.fit
+    wall passed the cell's timeout hit it — a failed attempt whose consumer wall is set
+    to the timeout (any warm-start provider's cost is kept on top).
+
+    The comparison is on the consumer's ``total_wall_s``, as frozen with ``@2``
+    (``_wave2.RUN_OVERHEAD_S``: "censoring at judging time compares ``total_wall_s`` with
+    the timeout itself"), although a warm-start timeout was derived from the median
+    *attempt* wall (provider included): the frozen rule is applied as written, and the
+    difference is recorded here (B5b review; no scored row is near it — warm NUTS ~330 s
+    against 11 502 s)."""
+    cost = protocol.attempt_wall_s(row)
+    wall = row.get("total_wall_s")
+    if cell.timeout_s is None or wall is None or float(wall) <= cell.timeout_s:
+        return cost, False
+    provider = float(row.get("provider_wall_s") or 0.0) if row.get("warm_start") else 0.0
+    return cell.timeout_s + provider, True
+
+
+def wave2_leg(cell, rows: dict, refs: dict, offsets) -> dict:
+    """One scored-wave cell over its 5 realisations × 50 seeds (``rows``: ``(data_seed,
+    seed) -> admitted row``)."""
+    # A pilot-timeout cell ran whole in the B5a scored arrays (all completed): closed. A
+    # probe-sourced cell closes once every expected run has an admitted row (B5b-2 pulls
+    # its remainder); until then it is open and never positioned. A missing run of a
+    # closed cell is censored at the timeout per cell, i.e. the wave is treated as closed
+    # cell by cell (protocol §9 says "once the wave closes"); its provider cost, if any,
+    # is unknown and not added.
+    closed = cell.status == "planned" and (
+        cell.timeout_source == "pilot"
+        or sum(not wave2.operational_kill(r, cell) for r in rows.values())
+        == len(wave2.DATA_SEEDS) * len(wave2.SEEDS)
+    )
+    leg = {
+        "id": "/".join(cell.key),
+        "dataset": cell.dataset,
+        "sampler": cell.sampler,
+        "settings": cell.settings,
+        "backend": cell.backend,
+        "config_id": cell.config_id,
+        "cell_status": cell.status,
+        "timeout_s": cell.timeout_s,
+        "timeout_source": cell.timeout_source,
+        "expected": len(wave2.DATA_SEEDS) * len(wave2.SEEDS),
+    }
+    if cell.status == "deferred":
+        leg.update({"state": "deferred", "reason": cell.reason})
+        return leg
+    acceptance, convergence, failures = Counter(), Counter(), Counter()
+    walls, successes, unknown = [], [], 0
+    censored = missing = op_kills = 0
+    by_realisation = {}
+    for data_seed in wave2.DATA_SEEDS:
+        accepted_here = attempts_here = 0
+        for seed in wave2.SEEDS:
+            row = rows.get((data_seed, seed))
+            if row is not None and wave2.operational_kill(row, cell):
+                op_kills += 1
+                row = None
+            if row is None:
+                if not closed:
+                    continue
+                # A closed cell's missing run is a failed attempt censored at its timeout.
+                missing += 1
+                attempts_here += 1
+                acceptance["rejected"] += 1
+                failures["no row (censored at the timeout)"] += 1
+                walls.append(cell.timeout_s)
+                successes.append(False)
+                continue
+            attempts_here += 1
+            verdict = protocol.verdict(row, exporter.select_reference(refs, row), offsets)
+            cost, over = censored_attempt(row, cell)
+            ok = verdict["acceptance"] == "accepted" and not over
+            if over:
+                censored += 1
+                failures["hit the timeout"] += 1
+                acceptance["rejected"] += 1
+            else:
+                acceptance[verdict["acceptance"]] += 1
+                if not usable(row):
+                    failures[failure_kind(row)] += 1
+            convergence[verdict["convergence"]] += 1
+            accepted_here += ok
+            if cost is None:
+                unknown += 1
+            else:
+                walls.append(cost)
+            successes.append(ok)
+        by_realisation[f"data_seed{data_seed}"] = {
+            "attempted": attempts_here,
+            "accepted": accepted_here,
+        }
+    attempted = len(successes)
+    k = sum(successes)
+    leg.update(
+        {
+            "state": "closed" if closed else "open",
+            "attempted": attempted,
+            "acceptance": dict(sorted(acceptance.items())),
+            "convergence": dict(sorted(convergence.items())),
+            "failures": dict(sorted(failures.items())),
+            "censored_at_timeout": censored,
+            "missing_censored": missing,
+            "operational_kills": op_kills,
+            "by_realisation": by_realisation,
+            "median_attempt_wall_s": statistics.median(walls) if walls and not unknown else None,
+        }
+    )
+    if not closed:
+        leg["reason"] = cell.reason or "open: the cell's remaining runs are not judged yet"
+    if unknown:
+        leg["wall_cost_unknown"] = unknown
+    judged = acceptance.get("accepted", 0) + acceptance.get("rejected", 0)
+    if attempted and judged == attempted:
+        lo, hi = protocol.wilson_interval(k, attempted)
+        leg["success_rate"] = k / attempted
+        leg["success_rate_wilson_95"] = [lo, hi]
+        if unknown:
+            leg["wall_per_success"] = None
+            leg["wall_per_success_bootstrap_95"] = None
+        else:
+            leg["wall_per_success"] = protocol.wall_per_success(walls, successes)
+            leg["wall_per_success_bootstrap_95"] = bootstrap_wall_per_success_v2(walls, successes)
+    else:
+        leg["success_rate"] = None
+        leg["success_rate_reason"] = (
+            f"{attempted - judged} of {attempted} attempts not assessable (no complete "
+            "reference of the row's identity, or no validated ln 3! offset)"
+            if attempted
+            else "no attempt"
+        )
+    return leg
+
+
+def _ordering(leg: dict) -> tuple:
+    return (leg["wall_per_success"]["value_s"], -leg["success_rate"], leg["id"])
+
+
+def wave2_section(root: Path, refs: dict, offsets) -> dict:
+    pulled = scan_wave2_rows(root)
+    timeouts = wave2.wave_timeouts()
+    admitted: dict[tuple, dict] = {}
+    refused = 0
+    for _, row in pulled:
+        if wave2.admit(row, timeouts) is not None:
+            refused += 1
+            continue
+        admitted.setdefault(wave2.manifest_key(row)[:4], {})[
+            (row.get("data_seed"), row.get("seed"))
+        ] = row
+    tasks = {
+        task: {"label": TASK_LABELS[task], "judged_by": TASK_CRITERIA[task], "legs": []}
+        for task in TASK_LABELS
+    }
+    for cell in wave2.cells(timeouts):
+        tasks[cell.task]["legs"].append(wave2_leg(cell, admitted.get(cell.key, {}), refs, offsets))
+    for group in tasks.values():
+        ordering = {}
+        for dataset in wave2.DATASETS:
+            legs = [
+                leg
+                for leg in group["legs"]
+                if leg["dataset"] == dataset
+                and leg["state"] == "closed"
+                and leg.get("success_rate") is not None
+                and (leg.get("wall_per_success") or {}).get("value_s") is not None
+            ]
+            ordered, previous = [], None
+            for i, leg in enumerate(sorted(legs, key=_ordering)):
+                ci = leg.get("wall_per_success_bootstrap_95") or [None, None]
+                tied = bool(
+                    previous
+                    and previous[1] is not None
+                    and ci[0] is not None
+                    and ci[0] <= previous[1]
+                )
+                ordered.append(
+                    {
+                        "position": i + 1,
+                        "id": leg["id"],
+                        "success_rate": leg["success_rate"],
+                        "success_rate_wilson_95": leg["success_rate_wilson_95"],
+                        "wall_per_success_s": leg["wall_per_success"]["value_s"],
+                        "wall_per_success_bootstrap_95": ci,
+                        # The bootstrap 95 % interval overlaps the previous entry's: the
+                        # two are not distinguished by this ordering.
+                        "tied_with_previous": tied,
+                    }
+                )
+                previous = ci
+            ordering[dataset] = ordered
+        group["ranking"] = ordering
+    commits = sorted({row.get("pyautofit_commit") or "unknown" for _, row in pulled})
+    return {
+        "protocol_id": wave2.PROTOCOL_ID,
+        "campaign_task": wave2.WAVE_ID,
+        "wave": "wave 2 (scored, protocol §9): ranks within a task and a dataset",
+        "ranking": (
+            "within one task and one dataset, never across: closed legs whose every attempt "
+            "is judged and that found the right answer at least once, by expected wall per "
+            "right answer (ascending), then success rate; a leg with zero successes "
+            "(unbounded wall per right answer) or still open is listed, never positioned. "
+            "This sort key is the catalogue's (B5b), not a protocol rule: §8 defines the "
+            "headline numbers, not an order. A cheap search with a low success rate can "
+            "lead on wall per right answer, so read the success rate beside it; entries "
+            "whose bootstrap intervals overlap the previous one are marked tied"
+        ),
+        "pyautofit_pin": wave2.PYAUTOFIT_PIN,
+        "pyautonerves_pin": wave2.PYAUTONERVES_PIN,
+        "pyautofit_commits_pulled": commits,
+        "accounting": "results/accounting/gaussian_x3_wave2.json",
+        "censoring": (
+            "protocol §7: an attempt that hit the timeout, crashed or wrote a non-finite "
+            "answer is a failed attempt; in a closed leg a missing run is a failed attempt "
+            "censored at the timeout; an operational kill (Terminated below the timeout) "
+            "is not an attempt (rerun it)"
+        ),
+        "limitations": [
+            "Pilot-derived timeouts are 10 x laptop medians and RAL ran 4-7 x faster than "
+            "the laptop (B5a dry run): censoring is lenient on RAL for those cells",
+            "Probe-first cells (Zeus on JAX, NSS 50-step) are open until their remaining "
+            "runs (submitted in B5b) are pulled in B5b-2; they are not ranked yet",
+        ],
+        "coverage": {
+            "expected_runs": len(wave2.expected_runs(timeouts)),
+            "pulled_rows": len(pulled),
+            "admitted_rows": len(pulled) - refused,
+            "refused_rows": refused,
+        },
+        "tasks": tasks,
+    }
+
+
 def search_status(cls: str, legs: list[dict], harness: list[str]) -> tuple[str, str]:
     if not harness:
         reason = UNSUPPORTED.get(cls, "registered in PyAutoFit but not wired into this harness")
@@ -319,6 +606,7 @@ def build(root: Path = ROOT, manifest: dict | None = None) -> dict:
             ),
         },
         "tasks": tasks,
+        wave2.PROTOCOL_ID: wave2_section(root, refs, offsets),
     }
 
 

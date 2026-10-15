@@ -26,6 +26,14 @@ What it writes
   reference exists when its rows are judged at write time.
 - ``submit_wave2_probe`` — the probe-first cells' 5-run probes (no pilot wall:
   protocol §11 A2), under :data:`_wave2.PROBE_CAP_S` per run.
+- ``submit_wave2_remainder`` (B5b, once ``results/calibration/gaussian_x3_wave2_probe.json``
+  exists) — the rest of every probe-first cell: every realisation × seed except the probe's
+  own runs, blocked on the probe median, each run under its probe-derived ``@2`` timeout
+  plus the run overhead.
+
+The scored arrays and the probe are generated from the menu as B5a submitted it (the
+probe-first cells stay out of the scored arrays and in the probe even once their timeouts
+are written), so the committed as-run files never move.
 
     python scripts/misc/tooling/plan_wave2.py            # print the plan
     python scripts/misc/tooling/plan_wave2.py --write    # write tables + submits
@@ -154,7 +162,13 @@ def table(header: tuple[str, ...], lines: list[str]) -> str:
     return "\t".join(header) + "\n" + "".join(line + "\n" for line in lines)
 
 
-def header(title: str, why: list[str], basis: list[str], sbatch: dict) -> str:
+def header(
+    title: str,
+    why: list[str],
+    basis: list[str],
+    sbatch: dict,
+    basis_source: str = "walls measured on the B2/B3 laptop",
+) -> str:
     out = [
         "#!/bin/bash -l",
         "#",
@@ -174,7 +188,7 @@ def header(title: str, why: list[str], basis: list[str], sbatch: dict) -> str:
         f"# {RAL_ROOT}/{wave2.PIN_DIR}/, PYTHONPATH-prefixed below; the",
         "# shared /mnt/ral/jnightin/PyAuto mirror provides only the venv and is never pulled.",
         "#",
-        "# WALL-BASIS: -- one row per cell this submit runs; walls measured on the B2/B3 laptop",
+        f"# WALL-BASIS: -- one row per cell this submit runs; {basis_source}",
     ]
     out += [f"#   {line}" for line in basis]
     for key, value in sbatch.items():
@@ -341,6 +355,53 @@ def probe() -> tuple[str, str, int]:
     return text, tsv, len(tasks)
 
 
+def remainder() -> tuple[str, str, int] | None:
+    tasks = wave2.remainder_tasks()
+    if not tasks:
+        return None
+    lines = [f"{t.cell.dataset}\t{t.line()}" for t in tasks]
+    cells = list(dict.fromkeys((t.cell.dataset, t.cell.sampler) for t in tasks))
+    probe_ref = wave2.PROBE_CALIBRATION.relative_to(ROOT).as_posix()
+    basis = []
+    for dataset, sampler in cells:
+        cell_tasks = [t for t in tasks if (t.cell.dataset, t.cell.sampler) == (dataset, sampler)]
+        steps = max(len(t.seeds) for t in cell_tasks)
+        median = cell_tasks[0].cell.median_pilot_wall_s
+        basis += [
+            f"cell: {dataset}/searches/{sampler}/gaussian_x3  device: ral_cpu  precision: fp64",
+            f"lanes: 1  steps: {steps}  source: measured-wall  wall: {median * steps:.0f}  "
+            f"ref: {probe_ref}  headroom: {HEADROOM:g}",
+        ]
+    runs = sum(len(t.seeds) for t in tasks)
+    time_s = max(t.budget_s for t in tasks) + TASK_MARGIN_S
+    why = [
+        f"Wave-2 probe-first remainder: {len(tasks)} array tasks, {runs} runs.",
+        "The probe-first cells (Zeus on JAX, NSS's 50-step entry; both datasets) after their",
+        "5-run probe (job 408246): every realisation x seed except the probe's own runs. Each",
+        "run is limited to its @2 timeout, max(600 s, 10 x the probe median) (protocol 11 A2,",
+        f"{probe_ref}), plus the run overhead; a run that hits it writes a failure row.",
+        "Submitted in B5b; pulled and judged in B5b-2.",
+    ]
+    text = header(
+        why[0],
+        why[1:],
+        basis,
+        sbatch("w2_remainder", len(tasks), SCORED_THROTTLE, time_s),
+        basis_source="walls are the RAL probe medians x seeds per task",
+    )
+    text += environment()
+    text += read_line("remainder.tsv", "DATASET SAMPLER SETTINGS CONFIG DATA_SEED LIMIT SEEDS")
+    text += 'for SEED in ${SEEDS//,/ }; do\n    case "$DATASET/$SAMPLER" in\n'
+    for dataset, sampler in cells:
+        text += f"        {dataset}/{sampler})\n            {search_call(dataset, sampler)}\n            ;;\n"
+    text += '        *) echo "unknown cell $DATASET/$SAMPLER" >&2; exit 1 ;;\n    esac\ndone\n'
+    text += FOOTER
+    tsv = table(
+        ("dataset", "sampler", "settings", "config", "data_seed", "limit_s", "seeds"), lines
+    )
+    return text, tsv, len(tasks)
+
+
 def new_realisations(dataset: str) -> list[int]:
     return [d for d in wave2.DATA_SEEDS if d != protocol.DEFAULT_DATA_SEED[dataset]]
 
@@ -471,6 +532,11 @@ def plan() -> dict[Path, str]:
     text, tsv, _ = probe()
     files[BATCH / "submit_wave2_probe"] = text
     files[TABLES / "probe.tsv"] = tsv
+    rest = remainder()
+    if rest is not None:
+        text, tsv, _ = rest
+        files[BATCH / "submit_wave2_remainder"] = text
+        files[TABLES / "remainder.tsv"] = tsv
     return files
 
 

@@ -8,6 +8,25 @@ parametrised (``PROJECT``). Standard library only. The one change in substance: 
 ``not_assessed``. A row with no complete reference of its identity (dataset, backend,
 data seed, assertion mechanism) stays ``not_assessed`` with that reason.
 
+Scored wave 2 (B5b) is exported in the same ``inference-summary@1`` schema: each
+record names its own protocol (``protocol_id``, also ``scientific.protocol_id``:
+``gaussian_x3@1`` for a pilot row, ``gaussian_x3@2`` for a scored row) and the top level
+lists every protocol present (``protocols``); the top-level ``protocol_id`` stays the
+pilot's. A wave-2 record carries only the row's scalar diagnostics — the posterior
+blocks (``posterior``, ``posterior_relabelled``, ``truths``, ``truth_delta_sigma``) stay
+in the committed row its ``evidence_paths`` names. Only rows admitted by
+``_wave2.admit`` (the wave's protocol and PyAutoFit pin) are records; a refused wave-2
+row is listed under ``coverage.excluded`` with why.
+
+**The committed summary withholds the wave-2 records (B5b, autofit_inference#10).** All
+11 770 of them validate against the Insight ``inference-summary@1`` contract, but the
+file is then ~84 MB (63 MB compact): above GitHub's 50 MB warning, near its 100 MB
+limit, and copied again into every Insight snapshot. Until a human chooses the form
+(``WAVE2_RECORDS``), ``dashboard/summary.json`` carries the wave-1 records plus the
+wave-2 attempt accounting (``coverage.expected_by_protocol``); ``--wave2-records`` writes
+the full export elsewhere for inspection. The scored results themselves are the
+``gaussian_x3@2`` section of ``catalogue/search_catalogue.json``.
+
 Scans ``results/searches/**/*.json`` (never ``results/reference/``, which holds the
 reference posteriors the rows are judged against). Git dates describe publication
 provenance only, never measurement freshness; ``measured_at`` comes from each row.
@@ -34,6 +53,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "scripts" / "misc"))
 from searches import _pilot as pilot  # noqa: E402
 from searches import _protocol as protocol  # noqa: E402
+from searches import _wave2 as wave2  # noqa: E402
 
 PROJECT = "autofit_inference"
 
@@ -42,6 +62,7 @@ PRODUCER_PATHS = (
     "results",
     "scripts/misc/tooling/export_inference_summary.py",
     "scripts/misc/searches/_protocol.py",
+    "scripts/misc/searches/_wave2.py",
     "wiki/project/protocol_gaussian_x3.md",
 )
 
@@ -89,6 +110,19 @@ DIAGNOSTICS = (
     "rhat_max",
     "ess_bulk_min",
 )
+#: Whether the committed summary carries the scored-wave records (see the module
+#: docstring: withheld on size until a human chooses the form, autofit_inference#10).
+WAVE2_RECORDS = False
+WAVE2_WITHHELD_REASON = (
+    "gaussian_x3@2 records withheld from the committed summary on size (11 770 records = "
+    "~84 MB, above GitHub's 50 MB warning), pending a human choice of form "
+    "(autofit_inference#10); they validate against inference-summary@1 when exported with "
+    "--wave2-records; the scored results are in catalogue/search_catalogue.json "
+    "(gaussian_x3@2 section)"
+)
+#: Diagnostics a scored-wave record leaves in its row (``evidence_paths``): the per-
+#: parameter blocks are ~60 % of a record.
+WAVE2_ROW_ONLY_DIAGNOSTICS = ("posterior", "posterior_relabelled", "truths", "truth_delta_sigma")
 CONFIG = (
     "config_name",
     "where",
@@ -161,7 +195,12 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
     status = row.get("status") or ("complete" if row.get("completed") is True else "unknown")
     raw_path = row.get("output_path")
     output_path = f"output/{raw_path}" if safe_path(raw_path) else None
-    values = {k: row[k] for k in DIAGNOSTICS if k in row and row[k] is not None}
+    scored = protocol.wave_of(row) == wave2.WAVE
+    values = {
+        k: row[k]
+        for k in DIAGNOSTICS
+        if k in row and row[k] is not None and not (scored and k in WAVE2_ROW_ONLY_DIAGNOSTICS)
+    }
     reference = select_reference(refs, row)
     verdict = protocol.verdict(row, reference, offsets)
     warm = bool(row.get("warm_start"))
@@ -237,7 +276,10 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
         "comparison": {
             "group": None,
             "declared_target": row.get("target"),
-            "note": "Declared target is not a verified comparison group; no ranking (wave 1 is a pilot)",
+            "note": "Declared target is not a verified comparison group; no ranking (wave 1 is a pilot)"
+            if not scored
+            else "Declared target is not a verified comparison group; gaussian_x3@2 legs are "
+            "ranked in catalogue/search_catalogue.json, within one task and one dataset",
         },
         "samples": {
             "availability": "unknown",
@@ -250,6 +292,9 @@ def record(row: dict, rel: str, refs: dict, offsets) -> dict:
         "archived": False,
         "unknown_reasons": {},
     }
+    if scored:
+        result["protocol_id"] = verdict["protocol_id"]
+        result["diagnostics"]["row_only"] = [k for k in WAVE2_ROW_ONLY_DIAGNOSTICS if k in row]
     for key in ("target", "model", "sampler", "backend", "precision", "seed", "measured_at"):
         if result[key] is None:
             result["unknown_reasons"][key] = "Not recorded in source result"
@@ -301,14 +346,47 @@ def expected_coverage(rows: list[dict]) -> dict:
     }
 
 
-def build(root: Path, revision: str | None, generated_at: str, rows_root: Path | None = None):
+def wave2_coverage(rows: list[dict], timeouts: dict) -> dict:
+    """The scored wave's attempt accounting (``_wave2.accounting``) in brief: the totals
+    and every leg with a non-row state, with its seeds' counts and reason."""
+    acc = wave2.accounting(rows, timeouts)
+    legs = [
+        {
+            "id": leg["id"],
+            "task": leg["task"],
+            "failed": len(leg["failed"]),
+            "missing": len(leg["missing"]),
+            "deferred": len(leg["deferred"]),
+            "reason": leg["reason"],
+        }
+        for leg in acc["legs"]
+        if leg["failed"] or leg["missing"] or leg["deferred"]
+    ]
+    return {
+        "manifest": f"scripts/misc/searches/_wave2.py ({wave2.WAVE_ID})",
+        "pyautofit_pin": wave2.PYAUTOFIT_PIN,
+        "accounting": "results/accounting/gaussian_x3_wave2.json",
+        **acc["totals"],
+        "legs_not_all_rows": legs,
+    }
+
+
+def build(
+    root: Path,
+    revision: str | None,
+    generated_at: str,
+    rows_root: Path | None = None,
+    wave2_records: bool | None = None,
+):
     timestamp = datetime.fromisoformat(generated_at.replace("Z", "+00:00"))
     if timestamp.tzinfo is None:
         raise ValueError("Generation timestamp must include timezone")
     generated_at = timestamp.astimezone(UTC).isoformat().replace("+00:00", "Z")
     rows_root = rows_root or root
+    wave2_records = WAVE2_RECORDS if wave2_records is None else wave2_records
     refs, offsets = references(root)
-    records, excluded, raw_rows = [], [], []
+    timeouts = wave2.wave_timeouts()
+    records, excluded, raw_rows, wave2_rows = [], [], [], []
     for path in sorted((rows_root / "results" / "searches").rglob("*.json")):
         rel = path.relative_to(rows_root).as_posix()
         try:
@@ -320,16 +398,26 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
             finite(payload)
             if payload.get("schema_version") != 1:
                 raise ValueError("unsupported result schema_version")
-            if protocol.wave_of(payload) != 1:
-                # This summary publishes the wave-1 pilot under gaussian_x3@1; scored
-                # wave-2 rows (gaussian_x3@2) are exported by their own stage (B5b).
+            wave = protocol.wave_of(payload)
+            if wave == wave2.WAVE:
+                why = wave2.admit(payload, timeouts)
+                if why is not None:
+                    excluded.append({"path": rel, "reason": why, "status": "refused"})
+                    continue
+                wave2_rows.append(payload)
+                if wave2_records:
+                    records.append(record(payload, rel, refs, offsets))
                 continue
+            if wave != 1:
+                raise ValueError(f"no protocol for wave {wave!r}")
             records.append(record(payload, rel, refs, offsets))
             raw_rows.append(payload)
         except (ValueError, TypeError, OSError) as exc:
             excluded.append({"path": rel, "reason": str(exc), "status": "invalid"})
     counts = Counter(str(r["execution"]["status"]).split(":", 1)[0] for r in records)
     verdicts = Counter(r["scientific"]["acceptance"] for r in records)
+    by_protocol = Counter(r["scientific"]["protocol_id"] for r in records)
+    protocols = sorted({*by_protocol, *([wave2.PROTOCOL_ID] if wave2_rows else [])})
     measured = sorted(r["measured_at"] for r in records if r["measured_at"])
     reference_status = {
         f"{ref.get('dataset')}/{ref.get('backend')}": {
@@ -350,13 +438,26 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
         "evidence_updated_at": measured[-1] if measured else None,
         "valid_until": None,
         "protocol_id": protocol.PROTOCOL_ID,
+        "protocol_id_note": "The wave-1 pilot's protocol; every record names its own "
+        "(scientific.protocol_id; a gaussian_x3@2 record also at the record's protocol_id), "
+        "and protocols lists every protocol this summary covers, in records or coverage",
+        "protocols": protocols,
         "references": reference_status,
         "records": records,
         "coverage": {
             "expected": expected_coverage(raw_rows),
+            "expected_by_protocol": {
+                protocol.PROTOCOL_ID: f"coverage.expected ({pilot.PILOT_ID})",
+                wave2.PROTOCOL_ID: {
+                    **wave2_coverage(wave2_rows, timeouts),
+                    "records": "exported" if wave2_records else "withheld",
+                    **({} if wave2_records else {"records_reason": WAVE2_WITHHELD_REASON}),
+                },
+            },
             "observed": {
                 "runs": len(records),
                 "records": len(records),
+                **{f"records_{pid}": n for pid, n in sorted(by_protocol.items())},
                 **{f"execution_{key}": value for key, value in sorted(counts.items())},
                 **{f"acceptance_{key}": value for key, value in sorted(verdicts.items())},
             },
@@ -366,7 +467,7 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
         "comparison_policy": {
             "id": "gaussian_x3-task-groups-v1",
             "ranking": "none",
-            "note": "Grouped by task (point/MAP, posterior, evidence); wave 1 is a pilot that ranks nothing; never best-seed",
+            "note": "Grouped by task (point/MAP, posterior, evidence); wave 1 is a pilot that ranks nothing; never best-seed. gaussian_x3@2 legs are ranked within one task and one dataset in catalogue/search_catalogue.json, not here",
         },
         "limitations": [
             "Verdicts are producer-asserted under protocol gaussian_x3@1, whose PLACEHOLDER thresholds are calibrated in the wave-1 pilot and then frozen",
@@ -375,6 +476,9 @@ def build(root: Path, revision: str | None, generated_at: str, rows_root: Path |
             "Completion is execution, not convergence; convergence is reported separately from acceptance",
             "A warm-start record's total_s is its whole attempt cost (provider_wall_s + consumer_total_s, combined by the producer, protocol §8); cold records' total_s is the search.fit call alone",
             "Sample archives remain in project storage; current availability unknown",
+            "gaussian_x3@2 (scored wave 2) rows are judged under the frozen @2 thresholds against their own data realisation's reference, at the pinned PyAutoFit revision; as records their posterior blocks stay in the committed row (evidence_paths)",
+            "gaussian_x3@2 timeouts are 10 x laptop pilot medians while RAL ran 4-7 x faster, so censoring is lenient on RAL; probe-first cells (Zeus on JAX, NSS 50-step) hold only their 5-run probes until B5b-2",
+            *([] if wave2_records or not wave2_rows else [WAVE2_WITHHELD_REASON]),
         ],
     }
     if revision is None:
@@ -412,17 +516,24 @@ def main(argv=None) -> int:
         help="read results/searches from here instead of the repo (CI witness)",
     )
     parser.add_argument(
+        "--wave2-records",
+        action="store_true",
+        help="export the gaussian_x3@2 records too (never to the committed summary path)",
+    )
+    parser.add_argument(
         "--require-accepted",
         action="store_true",
         help="exit 1 unless every record is accepted (and there is at least one)",
     )
     args = parser.parse_args(argv)
     revision, date = git_revision(ROOT)
-    doc = build(ROOT, revision, date, args.rows_root)
-    content = render(doc)
     target = Path(args.output)
     if not target.is_absolute():
         target = ROOT / target
+    if args.wave2_records and target.resolve() == (ROOT / "dashboard" / "summary.json").resolve():
+        parser.error("--wave2-records is withheld from dashboard/summary.json; pass --output")
+    doc = build(ROOT, revision, date, args.rows_root, wave2_records=args.wave2_records or None)
+    content = render(doc)
     if args.check:
         if not target.exists() or target.read_text() != content:
             print("inference summary is stale; regenerate", file=sys.stderr)

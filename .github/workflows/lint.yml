@@ -70,6 +70,12 @@ jobs:
       - name: wave-2 plan --check
         run: python scripts/misc/tooling/plan_wave2.py --check
 
+      - name: wave-2 probe timeouts --check
+        run: python scripts/misc/tooling/write_probe_timeouts.py --check
+
+      - name: wave-2 accounting --check
+        run: python scripts/misc/searches/judge_wave2.py --check
+
       - name: WALL-BASIS gate
         run: python scripts/misc/wall/check_submits.py --check
 

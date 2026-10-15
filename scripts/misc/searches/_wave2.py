@@ -109,6 +109,12 @@ PROBE_CAP_S = 43200.0
 
 CALIBRATION = ROOT / "results" / "calibration" / "gaussian_x3_wave1.json"
 
+#: The probe-first cells' ``@2`` timeouts (B5b): ``TIMEOUT_RULE_V2`` over each cell's 5-run
+#: probe, written by ``scripts/misc/tooling/write_probe_timeouts.py`` from the probe rows.
+#: Read after the wave-1 calibration, so it only ever fills a cell the pilot left without
+#: a timeout; it never moves a pilot-derived one.
+PROBE_CALIBRATION = ROOT / "results" / "calibration" / "gaussian_x3_wave2_probe.json"
+
 
 @dataclass(frozen=True)
 class Cell:
@@ -121,8 +127,12 @@ class Cell:
     task: str
     status: str  # planned | probe_first | deferred
     timeout_s: float | None
+    #: The median wall the timeout came from: the pilot's, or for a probe-sourced cell the
+    #: probe's (:attr:`timeout_source`).
     median_pilot_wall_s: float | None
     reason: str | None = None
+    #: ``pilot`` (wave-1 calibration), ``probe`` (the wave-2 probe, B5b) or ``None``.
+    timeout_source: str | None = None
 
     @property
     def key(self) -> tuple[str, str, str, str]:
@@ -147,9 +157,34 @@ def calibration_timeouts(path: Path = CALIBRATION) -> dict:
     return (protocol.load_json(path) or {}).get("timeouts") or {}
 
 
+def probe_timeouts(path: Path = PROBE_CALIBRATION) -> dict:
+    """The probe record's ``timeouts`` in the calibration's shape, each marked
+    ``source: probe`` (``{}`` before the probe record exists)."""
+    out = {}
+    for key, entry in ((protocol.load_json(path) or {}).get("timeouts") or {}).items():
+        out[key] = {
+            "timeout_s": entry["timeout_s"],
+            "median_pilot_wall_s": entry["median_probe_wall_s"],
+            "n": entry["n"],
+            "source": "probe",
+        }
+    return out
+
+
+def wave_timeouts(calibration: Path = CALIBRATION, probe: Path = PROBE_CALIBRATION) -> dict:
+    """Every ``@2`` timeout: the wave-1 calibration's first, then the probe record's for
+    the cells the pilot left without one (a probe entry never overrides a pilot one)."""
+    out = dict(calibration_timeouts(calibration))
+    for key, entry in probe_timeouts(probe).items():
+        out.setdefault(key, entry)
+    return out
+
+
 def cells(timeouts: dict | None = None) -> list[Cell]:
-    """Every (dataset × search × wave-2 settings × leg) cell, in registry order."""
-    timeouts = calibration_timeouts() if timeouts is None else timeouts
+    """Every (dataset × search × wave-2 settings × leg) cell, in registry order. By default
+    the timeouts are :func:`wave_timeouts` (pilot first, then the probe); pass
+    :func:`calibration_timeouts` alone for the menu as B5a submitted it."""
+    timeouts = wave_timeouts() if timeouts is None else timeouts
     out = []
     for dataset in DATASETS:
         for name, spec in SAMPLERS.items():
@@ -169,6 +204,13 @@ def cells(timeouts: dict | None = None) -> list[Cell]:
                             "probe-first: no pilot wall for this cell, so its timeout comes "
                             f"from a {len(PROBE_SEEDS)}-run probe (protocol §11 A2)"
                         )
+                    elif entry.get("source") == "probe":
+                        status = "planned"
+                        reason = (
+                            "probe-first cell: its timeout comes from the 5-run probe "
+                            "(results/calibration/gaussian_x3_wave2_probe.json); the other "
+                            "runs were submitted after the probe (B5b) and are pulled by B5b-2"
+                        )
                     else:
                         status, reason = "planned", None
                     out.append(
@@ -186,6 +228,7 @@ def cells(timeouts: dict | None = None) -> list[Cell]:
                             if entry is None
                             else float(entry["median_pilot_wall_s"]),
                             reason=reason,
+                            timeout_source=None if entry is None else entry.get("source", "pilot"),
                         )
                     )
     return out
@@ -393,6 +436,10 @@ def scored_tasks(dataset: str, backend: str, timeouts: dict | None = None) -> li
     for cell in cells(timeouts):
         if cell.dataset != dataset or cell.backend != backend or cell.status != "planned":
             continue
+        if cell.timeout_source != "pilot":
+            # A probe-sourced cell is not in the B5a scored arrays: its probe ran under
+            # probe_tasks() and the rest under remainder_tasks().
+            continue
         size = block_size(cell, timeouts)
         limit = cell.timeout_s + RUN_OVERHEAD_S
         for data_seed in DATA_SEEDS:
@@ -401,14 +448,40 @@ def scored_tasks(dataset: str, backend: str, timeouts: dict | None = None) -> li
     return out
 
 
+def probe_first(cell: Cell) -> bool:
+    """A cell that had to probe first: no pilot wall, so its timeout is (or will be) the
+    probe's."""
+    return cell.status == "probe_first" or cell.timeout_source == "probe"
+
+
 def probe_tasks(timeouts: dict | None = None) -> list[Task]:
-    """One task per probe run of every probe-first cell (both datasets)."""
+    """One task per probe run of every probe-first cell (both datasets) — the probe as
+    B5a submitted it, whether or not its timeout has since been written."""
     return [
         Task(cell, PROBE_DATA_SEED, (seed,), PROBE_CAP_S + RUN_OVERHEAD_S)
         for cell in cells(timeouts)
-        if cell.status == "probe_first"
+        if probe_first(cell)
         for seed in PROBE_SEEDS
     ]
+
+
+def remainder_tasks(timeouts: dict | None = None) -> list[Task]:
+    """The rest of every probe-first cell once its probe timeout is written (B5b): every
+    realisation × seed except the probe's own runs, blocked by :func:`block_size` on the
+    probe median, each run limited by the probe-derived timeout plus the run overhead."""
+    out = []
+    for cell in cells(timeouts):
+        if cell.status != "planned" or cell.timeout_source != "probe":
+            continue
+        size = block_size(cell, timeouts)
+        limit = cell.timeout_s + RUN_OVERHEAD_S
+        for data_seed in DATA_SEEDS:
+            seeds = tuple(
+                s for s in SEEDS if not (data_seed == PROBE_DATA_SEED and s in PROBE_SEEDS)
+            )
+            for start in range(0, len(seeds), size):
+                out.append(Task(cell, data_seed, seeds[start : start + size], limit))
+    return out
 
 
 def summary(timeouts: dict | None = None) -> dict:
@@ -419,6 +492,7 @@ def summary(timeouts: dict | None = None) -> dict:
             s: sum(1 for c in all_cells if c.status == s)
             for s in ("planned", "probe_first", "deferred")
         },
+        "probe_sourced": sum(1 for c in all_cells if c.timeout_source == "probe"),
         "expected_runs": len(all_cells) * len(DATA_SEEDS) * len(SEEDS),
     }
 

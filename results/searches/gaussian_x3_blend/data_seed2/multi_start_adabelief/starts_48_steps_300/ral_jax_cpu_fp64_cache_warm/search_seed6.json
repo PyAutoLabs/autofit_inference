@@ -1,0 +1,391 @@
+{
+  "schema_version": 1,
+  "protocol_id": "gaussian_x3@2",
+  "wave": 2,
+  "run_id": "gaussian_x3/gaussian_x3_blend/data_seed2/multi_start_adabelief/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm/seed6",
+  "target": "gaussian_x3_blend/data_seed2/seed6",
+  "pilot": false,
+  "sampler": "multi_start_adabelief",
+  "sampler_class": "MultiStartADABelief",
+  "task": "point_map",
+  "family": "optimizer",
+  "settings_name": "starts_48_steps_300",
+  "settings": {
+    "n_starts": 48,
+    "n_steps": 300
+  },
+  "model": "gaussian_x3",
+  "model_description": "3 af.ex.Gaussian + Background(level), 10 free, ordered-centre assertions",
+  "priors": {
+    "centre": "U(0, 100)",
+    "normalization": "LogUniform(0.01, 100)",
+    "sigma": "U(0.5, 30)",
+    "background.level": "U(-1, 1)",
+    "assertions": "g0.centre < g1.centre < g2.centre"
+  },
+  "assertion_mechanism": "xp_where_penalty",
+  "config_name": "ral_jax_cpu_fp64",
+  "where": "ral",
+  "backend": "jax_cpu",
+  "precision": "fp64",
+  "dataset": "gaussian_x3_blend",
+  "dataset_class": "gaussian_x3_blend",
+  "data_seed": 2,
+  "seed": 6,
+  "seed_effective": true,
+  "version": "2026.8.17.1",
+  "library_revisions": {
+    "autonerves": "7f3055b7f3d1967f372bdb41ee732135bca0e68d",
+    "autofit": "df6d218f10cd75a7f0d79bb03dca5c131fd29d33"
+  },
+  "pyautofit_commit": "df6d218f10cd75a7f0d79bb03dca5c131fd29d33",
+  "device": {
+    "xla_flags": "--xla_disable_hlo_passes=constant_folding --xla_gpu_autotune_level=0 --xla_gpu_enable_triton_gemm=false",
+    "omp_num_threads": null,
+    "nproc": "1",
+    "cpu_count": 236,
+    "backend": "cpu",
+    "device": "cpu:0",
+    "jax_version": "0.10.2",
+    "x64": true
+  },
+  "host": "euclid-ral-compute-10-4",
+  "slurm_job_id": "409787",
+  "slurm_array_job_id": "408365",
+  "slurm_array_task_id": "336",
+  "cores": 1,
+  "use_jax": true,
+  "test_mode": false,
+  "measured_at": "2026-10-14T18:56:31Z",
+  "status": "complete",
+  "completed": true,
+  "resumed": false,
+  "output_path": "searches/gaussian_x3_blend/data_seed2/multi_start_adabelief/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm/seed_6/multi_start_adabelief/7c2a93908f9584164c951e6b491b08ff",
+  "free_parameters": 10,
+  "wall_s": 7.498793601989746,
+  "total_wall_s": 10.899647034006193,
+  "compile_s": 0.27307463996112347,
+  "compile_cache": "warm",
+  "config_id": "ral_jax_cpu_fp64_cache_warm",
+  "likelihood_evals": null,
+  "log_evidence": null,
+  "log_evidence_err": null,
+  "log_evidence_err_note": "no sampler-agnostic log Z error is recorded; compare seeds instead",
+  "max_log_likelihood": -11654.41564485551,
+  "max_log_likelihood_vector": [
+    25.03020402182416,
+    17.176247613538944,
+    2.1744815333381187,
+    46.2342933280149,
+    21.161173555325416,
+    4.777836680781777,
+    48.615740902349245,
+    11.528135790243441,
+    5.236447191873961,
+    0.7331160474672838
+  ],
+  "max_log_posterior": -11662.756131036507,
+  "max_log_posterior_vector": [
+    25.03020402182416,
+    17.176247613538944,
+    2.1744815333381187,
+    46.2342933280149,
+    21.161173555325416,
+    4.777836680781777,
+    48.615740902349245,
+    11.528135790243441,
+    5.236447191873961,
+    0.7331160474672838
+  ],
+  "posterior": {
+    "g0.centre": {
+      "median": 25.03020402182416,
+      "sigma": 0.001572385466499071,
+      "lower_1": 25.027155135578493,
+      "upper_1": 25.03029990651149,
+      "lower_2": 25.025944548392715,
+      "upper_2": 25.030337978372636,
+      "mean": 25.03020402182416
+    },
+    "g0.normalization": {
+      "median": 17.176247613538944,
+      "sigma": 0.24013102610486925,
+      "lower_1": 16.717831961829695,
+      "upper_1": 17.198094014039434,
+      "lower_2": 16.535813982474554,
+      "upper_2": 17.206768320120513,
+      "mean": 17.176247613538944
+    },
+    "g0.sigma": {
+      "median": 2.1744815333381187,
+      "sigma": 0.07421049657719214,
+      "lower_1": 2.0275971205210905,
+      "upper_1": 2.176018113675475,
+      "lower_2": 1.969275368373153,
+      "upper_2": 2.176628226456484,
+      "mean": 2.1744815333381187
+    },
+    "g1.centre": {
+      "median": 46.2342933280149,
+      "sigma": 0.006865472180521692,
+      "lower_1": 46.226357141845675,
+      "upper_1": 46.24008808620672,
+      "lower_2": 46.223206009102014,
+      "upper_2": 46.242388946077,
+      "mean": 46.2342933280149
+    },
+    "g1.normalization": {
+      "median": 21.161173555325416,
+      "sigma": 0.12202054637502435,
+      "lower_1": 20.94916923455357,
+      "upper_1": 21.193210327303618,
+      "lower_2": 20.864991048364747,
+      "upper_2": 21.205930810294966,
+      "mean": 21.161173555325416
+    },
+    "g1.sigma": {
+      "median": 4.777836680781777,
+      "sigma": 0.0069282270577000205,
+      "lower_1": 4.775011123250311,
+      "upper_1": 4.7888675773657114,
+      "lower_2": 4.7738892107010535,
+      "upper_2": 4.793247492185802,
+      "mean": 4.777836680781777
+    },
+    "g2.centre": {
+      "median": 48.615740902349245,
+      "sigma": 0.03934212759851974,
+      "lower_1": 48.57643354240597,
+      "upper_1": 48.65511779760301,
+      "lower_2": 48.56082620831085,
+      "upper_2": 48.670752741306714,
+      "mean": 48.615740902349245
+    },
+    "g2.normalization": {
+      "median": 11.528135790243441,
+      "sigma": 0.2439022570118965,
+      "lower_1": 11.060763586803052,
+      "upper_1": 11.548568100826845,
+      "lower_2": 10.875189329554662,
+      "upper_2": 11.55668093002908,
+      "mean": 11.528135790243441
+    },
+    "g2.sigma": {
+      "median": 5.236447191873961,
+      "sigma": 0.06785822264962604,
+      "lower_1": 5.112990098704017,
+      "upper_1": 5.248706544003269,
+      "lower_2": 5.063970370533599,
+      "upper_2": 5.253574227936966,
+      "mean": 5.236447191873961
+    },
+    "background.level": {
+      "median": 0.7331160474672838,
+      "sigma": 0.009544706693125737,
+      "lower_1": 0.7323419738728395,
+      "upper_1": 0.751431387259091,
+      "lower_2": 0.7320346211221043,
+      "upper_2": 0.7587036545293673,
+      "mean": 0.7331160474672838
+    }
+  },
+  "posterior_relabelled": {
+    "g0.centre": {
+      "median": 25.03020402182416,
+      "sigma": 0.001572385466499071,
+      "lower_1": 25.027155135578493,
+      "upper_1": 25.03029990651149,
+      "lower_2": 25.025944548392715,
+      "upper_2": 25.030337978372636,
+      "mean": 25.03020402182416
+    },
+    "g0.normalization": {
+      "median": 17.176247613538944,
+      "sigma": 0.4840134412508519,
+      "lower_1": 16.23006713153773,
+      "upper_1": 17.198094014039434,
+      "lower_2": 15.854377822507837,
+      "upper_2": 17.206768320120513,
+      "mean": 17.176247613538944
+    },
+    "g0.sigma": {
+      "median": 2.1744815333381187,
+      "sigma": 0.012699630642283521,
+      "lower_1": 2.1506188523909078,
+      "upper_1": 2.176018113675475,
+      "lower_2": 2.1411439643677506,
+      "upper_2": 2.176628226456484,
+      "mean": 2.1744815333381187
+    },
+    "g1.centre": {
+      "median": 46.2342933280149,
+      "sigma": 0.028788183857901828,
+      "lower_1": 46.226357141845675,
+      "upper_1": 46.28393350956148,
+      "lower_2": 46.223206009102014,
+      "upper_2": 46.30364358164615,
+      "mean": 46.2342933280149
+    },
+    "g1.normalization": {
+      "median": 21.161173555325416,
+      "sigma": 0.9481259035705332,
+      "lower_1": 19.29695852016255,
+      "upper_1": 21.193210327303618,
+      "lower_2": 18.556755491494943,
+      "upper_2": 21.205930810294966,
+      "mean": 21.161173555325416
+    },
+    "g1.sigma": {
+      "median": 4.777836680781777,
+      "sigma": 0.0069282270577000205,
+      "lower_1": 4.775011123250311,
+      "upper_1": 4.7888675773657114,
+      "lower_2": 4.7738892107010535,
+      "upper_2": 4.793247492185802,
+      "mean": 4.777836680781777
+    },
+    "g2.centre": {
+      "median": 48.615740902349245,
+      "sigma": 0.14874962021637828,
+      "lower_1": 48.357618557170255,
+      "upper_1": 48.65511779760301,
+      "lower_2": 48.255128802466835,
+      "upper_2": 48.670752741306714,
+      "mean": 48.615740902349245
+    },
+    "g2.normalization": {
+      "median": 11.528135790243441,
+      "sigma": 0.2439022570118965,
+      "lower_1": 11.060763586803052,
+      "upper_1": 11.548568100826845,
+      "lower_2": 10.875189329554662,
+      "upper_2": 11.55668093002908,
+      "mean": 11.528135790243441
+    },
+    "g2.sigma": {
+      "median": 5.236447191873961,
+      "sigma": 0.06785822264962604,
+      "lower_1": 5.112990098704017,
+      "upper_1": 5.248706544003269,
+      "lower_2": 5.063970370533599,
+      "upper_2": 5.253574227936966,
+      "mean": 5.236447191873961
+    },
+    "background.level": {
+      "median": 0.7331160474672838,
+      "sigma": 0.009544706693125737,
+      "lower_1": 0.7323419738728395,
+      "upper_1": 0.751431387259091,
+      "lower_2": 0.7320346211221043,
+      "upper_2": 0.7587036545293673,
+      "mean": 0.7331160474672838
+    }
+  },
+  "modes": [
+    {
+      "centres": [
+        25.03020402182416,
+        46.2342933280149,
+        48.615740902349245
+      ],
+      "weight": 1.0
+    }
+  ],
+  "modes_found": 1,
+  "label_permutations_found": 1,
+  "n_samples": 49,
+  "ess_kish": 1.0,
+  "ess_per_s": 0.13335478385945412,
+  "termination": null,
+  "rhat_max": null,
+  "ess_bulk_min": null,
+  "chain_diagnostics": null,
+  "ppc_chi2": 23768.818748043726,
+  "truths": {
+    "g0.centre": 25.0,
+    "g0.normalization": 30.0,
+    "g0.sigma": 3.0,
+    "g1.centre": 45.0,
+    "g1.normalization": 50.0,
+    "g1.sigma": 6.0,
+    "g2.centre": 60.0,
+    "g2.normalization": 40.0,
+    "g2.sigma": 10.0,
+    "background.level": 0.02
+  },
+  "truth_delta_sigma": {
+    "g0.centre": 19.209044135603076,
+    "g0.normalization": -26.494620383517056,
+    "g0.sigma": -65.00334457864554,
+    "g1.centre": 42.8749980932232,
+    "g1.normalization": -30.416663373578213,
+    "g1.sigma": -176.40347365058025,
+    "g2.centre": -76.5330296715425,
+    "g2.normalization": -116.73473037343737,
+    "g2.sigma": -70.19860854183881,
+    "background.level": 74.7132489656159
+  },
+  "log_likelihood_at_truth": 184.73885604169607,
+  "target_log_likelihood": 186.60017401081393,
+  "evals_to_target": null,
+  "time_to_target_s": null,
+  "time_to_target_basis": "estimated",
+  "evals_to_target_basis": "estimated",
+  "evals_to_target_note": "estimated: the index of the first sample reaching the target in the search's posterior sample order (Nautilus: posterior()), not an evaluation history, so it is not an observed evaluation count",
+  "per_call_s": 1.5868456102907658e-05,
+  "per_call_basis": "jit_single",
+  "per_call_single_s": 1.5868456102907658e-05,
+  "likelihood_s": null,
+  "overhead_s": null,
+  "likelihood_share": null,
+  "likelihood_share_basis": "estimated",
+  "timing": {
+    "vector": [
+      25.0,
+      30.0,
+      3.0,
+      45.0,
+      50.0,
+      6.0,
+      60.0,
+      40.0,
+      10.0,
+      0.02
+    ],
+    "vector_source": "truth (satisfies the assertions; never the prior medians)",
+    "compile_s": 0.27307463996112347,
+    "single": {
+      "median_s": 1.5868456102907658e-05,
+      "p16_s": 1.4614081010222435e-05,
+      "p84_s": 2.567586489021778e-05,
+      "min_s": 1.3916054740548134e-05,
+      "n": 200,
+      "warmup": 10
+    }
+  },
+  "warm_start": null,
+  "provider_wall_s": null,
+  "provider_completed": null,
+  "scientific": {
+    "protocol_id": "gaussian_x3@2",
+    "acceptance": "rejected",
+    "acceptance_reason": "gaussian_x3@2: failed: (a) max_log_posterior -11662.756 vs ref MAP 176.854 [reference limitations: the six runs disagree (ln Z spread 7.321660530234439, worst median 0.11 sigma at dynesty_static_seed0:g2.centre); the reference is the nautilus runs only]",
+    "convergence": "not_assessed",
+    "convergence_reason": "gaussian_x3@2: point/MAP: (a) is the test",
+    "criteria": [
+      {
+        "ok": false,
+        "detail": "(a) max_log_posterior -11662.756 vs ref MAP 176.854"
+      }
+    ],
+    "reference_limitations": [
+      "the six runs disagree (ln Z spread 7.321660530234439, worst median 0.11 sigma at dynesty_static_seed0:g2.centre); the reference is the nautilus runs only"
+    ],
+    "map_diagnostic": {
+      "ok": false,
+      "detail": "(a) max_log_posterior -11662.756 vs ref MAP 176.854",
+      "criterion": true
+    },
+    "placeholders": []
+  }
+}
