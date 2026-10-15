@@ -2389,7 +2389,7 @@
     "protocol_id": "gaussian_x3@2",
     "campaign_task": "gaussian_x3_search_wave2",
     "wave": "wave 2 (scored, protocol \u00a79): ranks within a task and a dataset",
-    "ranking": "within one task and one dataset, never across: closed legs whose every attempt is judged and that found the right answer at least once, by expected wall per right answer (ascending), then success rate; a leg with zero successes (unbounded wall per right answer) or still open is listed, never positioned",
+    "ranking": "within one task and one dataset, never across: closed legs whose every attempt is judged and that found the right answer at least once, by expected wall per right answer (ascending), then success rate; a leg with zero successes (unbounded wall per right answer) or still open is listed, never positioned. This sort key is the catalogue's (B5b), not a protocol rule: \u00a78 defines the headline numbers, not an order. A cheap search with a low success rate can lead on wall per right answer, so read the success rate beside it; entries whose bootstrap intervals overlap the previous one are marked tied",
     "pyautofit_pin": "df6d218f10cd75a7f0d79bb03dca5c131fd29d33",
     "pyautonerves_pin": "7f3055b7f3d1967f372bdb41ee732135bca0e68d",
     "pyautofit_commits_pulled": [
@@ -3392,7 +3392,16 @@
               "position": 1,
               "id": "gaussian_x3_blend/multi_start_prodigy/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 0.608,
-              "wall_per_success_s": 18.186880515810213
+              "success_rate_wilson_95": [
+                0.5462866446092448,
+                0.6664445626997392
+              ],
+              "wall_per_success_s": 18.186880515810213,
+              "wall_per_success_bootstrap_95": [
+                16.535688051223545,
+                20.191549810372223
+              ],
+              "tied_with_previous": false
             }
           ],
           "gaussian_x3_separated": [
@@ -3400,7 +3409,16 @@
               "position": 1,
               "id": "gaussian_x3_separated/multi_start_prodigy/starts_48_steps_300/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 1.0,
-              "wall_per_success_s": 8.783960263108835
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 8.783960263108835,
+              "wall_per_success_bootstrap_95": [
+                8.747258053104392,
+                8.820660593387672
+              ],
+              "tied_with_previous": false
             }
           ]
         }
@@ -4224,13 +4242,31 @@
               "position": 1,
               "id": "gaussian_x3_separated/zeus/walkers_50_steps_2000/ral_numpy_fp64",
               "success_rate": 0.792,
-              "wall_per_success_s": 216.1230351824003
+              "success_rate_wilson_95": [
+                0.7374559719572936,
+                0.8377061811373668
+              ],
+              "wall_per_success_s": 216.1230351824003,
+              "wall_per_success_bootstrap_95": [
+                201.41127370942147,
+                233.46487562252256
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 2,
               "id": "gaussian_x3_separated/blackjax_nuts_warm/warmup_200_samples_500/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 1.0,
-              "wall_per_success_s": 237.2500943317348
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 237.2500943317348,
+              "wall_per_success_bootstrap_95": [
+                233.32131253075227,
+                241.37702118305305
+              ],
+              "tied_with_previous": true
             }
           ]
         }
@@ -5621,61 +5657,151 @@
               "position": 1,
               "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_numpy_fp64",
               "success_rate": 0.144,
-              "wall_per_success_s": 169.75056690310723
+              "success_rate_wilson_95": [
+                0.10586256867804505,
+                0.19291234056271145
+              ],
+              "wall_per_success_s": 169.75056690310723,
+              "wall_per_success_bootstrap_95": [
+                128.38911570598214,
+                237.2702227158275
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 2,
               "id": "gaussian_x3_blend/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 0.144,
-              "wall_per_success_s": 189.96922116407788
+              "success_rate_wilson_95": [
+                0.10586256867804505,
+                0.19291234056271145
+              ],
+              "wall_per_success_s": 189.96922116407788,
+              "wall_per_success_bootstrap_95": [
+                143.6907563966134,
+                265.7096355460101
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 3,
               "id": "gaussian_x3_blend/nautilus/n_live_100/ral_numpy_fp64",
               "success_rate": 1.0,
-              "wall_per_success_s": 246.7375610315092
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 246.7375610315092,
+              "wall_per_success_bootstrap_95": [
+                242.36437101578525,
+                251.13307447335404
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 4,
               "id": "gaussian_x3_blend/nautilus/n_live_100/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 1.0,
-              "wall_per_success_s": 253.3833134968942
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 253.3833134968942,
+              "wall_per_success_bootstrap_95": [
+                248.37532371180598,
+                258.87506110349295
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 5,
               "id": "gaussian_x3_blend/nautilus/n_live_200/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 1.0,
-              "wall_per_success_s": 299.11378568347544
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 299.11378568347544,
+              "wall_per_success_bootstrap_95": [
+                296.70746545047126,
+                301.57063657261057
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 6,
               "id": "gaussian_x3_blend/nautilus/n_live_200/ral_numpy_fp64",
               "success_rate": 1.0,
-              "wall_per_success_s": 306.2194874075884
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 306.2194874075884,
+              "wall_per_success_bootstrap_95": [
+                300.72797763586044,
+                312.26142653128784
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 7,
               "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_numpy_fp64",
               "success_rate": 0.236,
-              "wall_per_success_s": 346.2438899292019
+              "success_rate_wilson_95": [
+                0.18760668102989272,
+                0.29238370110370193
+              ],
+              "wall_per_success_s": 346.2438899292019,
+              "wall_per_success_bootstrap_95": [
+                281.30396090915826,
+                443.98019012148774
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 8,
               "id": "gaussian_x3_blend/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 0.236,
-              "wall_per_success_s": 377.86891402962414
+              "success_rate_wilson_95": [
+                0.18760668102989272,
+                0.29238370110370193
+              ],
+              "wall_per_success_s": 377.86891402962414,
+              "wall_per_success_bootstrap_95": [
+                307.1507877576203,
+                484.2247657502202
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 9,
               "id": "gaussian_x3_blend/nautilus/n_live_400/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 1.0,
-              "wall_per_success_s": 512.7896193046477
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 512.7896193046477,
+              "wall_per_success_bootstrap_95": [
+                507.51628401533884,
+                518.2525525909606
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 10,
               "id": "gaussian_x3_blend/nautilus/n_live_400/ral_numpy_fp64",
               "success_rate": 1.0,
-              "wall_per_success_s": 522.3210158454161
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 522.3210158454161,
+              "wall_per_success_bootstrap_95": [
+                514.0563823795486,
+                531.4363811415499
+              ],
+              "tied_with_previous": true
             }
           ],
           "gaussian_x3_separated": [
@@ -5683,61 +5809,151 @@
               "position": 1,
               "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_numpy_fp64",
               "success_rate": 0.412,
-              "wall_per_success_s": 62.085115535017465
+              "success_rate_wilson_95": [
+                0.35276848978585706,
+                0.47389497092534105
+              ],
+              "wall_per_success_s": 62.085115535017465,
+              "wall_per_success_bootstrap_95": [
+                54.003552018032806,
+                72.45726729264292
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 2,
               "id": "gaussian_x3_separated/dynesty_static/nlive_200/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 0.412,
-              "wall_per_success_s": 69.20609173787649
+              "success_rate_wilson_95": [
+                0.35276848978585706,
+                0.47389497092534105
+              ],
+              "wall_per_success_s": 69.20609173787649,
+              "wall_per_success_bootstrap_95": [
+                60.09847820372156,
+                80.84869915228442
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 3,
               "id": "gaussian_x3_separated/dynesty_dynamic/default/ral_numpy_fp64",
               "success_rate": 0.58,
-              "wall_per_success_s": 142.98407974934912
+              "success_rate_wilson_95": [
+                0.5180609451155799,
+                0.639517726965149
+              ],
+              "wall_per_success_s": 142.98407974934912,
+              "wall_per_success_bootstrap_95": [
+                129.56996968061867,
+                160.13868616190342
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 4,
               "id": "gaussian_x3_separated/dynesty_dynamic/default/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 0.58,
-              "wall_per_success_s": 156.06114361735607
+              "success_rate_wilson_95": [
+                0.5180609451155799,
+                0.639517726965149
+              ],
+              "wall_per_success_s": 156.06114361735607,
+              "wall_per_success_bootstrap_95": [
+                141.39101878097716,
+                174.7678926724994
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 5,
               "id": "gaussian_x3_separated/nautilus/n_live_200/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 1.0,
-              "wall_per_success_s": 283.97422055414694
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 283.97422055414694,
+              "wall_per_success_bootstrap_95": [
+                276.0163511924967,
+                292.1137448618412
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 6,
               "id": "gaussian_x3_separated/nautilus/n_live_200/ral_numpy_fp64",
               "success_rate": 1.0,
-              "wall_per_success_s": 292.72174896404147
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 292.72174896404147,
+              "wall_per_success_bootstrap_95": [
+                284.6989025845975,
+                300.5831952601504
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 7,
               "id": "gaussian_x3_separated/nautilus/n_live_100/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 1.0,
-              "wall_per_success_s": 339.40876380859595
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 339.40876380859595,
+              "wall_per_success_bootstrap_95": [
+                331.69395386237653,
+                347.1911178106936
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 8,
               "id": "gaussian_x3_separated/nautilus/n_live_100/ral_numpy_fp64",
               "success_rate": 1.0,
-              "wall_per_success_s": 343.9877946057329
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 343.9877946057329,
+              "wall_per_success_bootstrap_95": [
+                335.67403335875923,
+                352.26178304810634
+              ],
+              "tied_with_previous": true
             },
             {
               "position": 9,
               "id": "gaussian_x3_separated/nautilus/n_live_400/ral_numpy_fp64",
               "success_rate": 1.0,
-              "wall_per_success_s": 393.12912271437233
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 393.12912271437233,
+              "wall_per_success_bootstrap_95": [
+                387.17703748344167,
+                399.1466868688865
+              ],
+              "tied_with_previous": false
             },
             {
               "position": 10,
               "id": "gaussian_x3_separated/nautilus/n_live_400/ral_jax_cpu_fp64_cache_warm",
               "success_rate": 1.0,
-              "wall_per_success_s": 414.18986580075045
+              "success_rate_wilson_95": [
+                0.9848667005045553,
+                0.9999999999999998
+              ],
+              "wall_per_success_s": 414.18986580075045,
+              "wall_per_success_bootstrap_95": [
+                406.7559189871438,
+                421.7717032359056
+              ],
+              "tied_with_previous": false
             }
           ]
         }
