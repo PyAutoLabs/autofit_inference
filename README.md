@@ -69,11 +69,11 @@ cell of the gaussian_x3 wave-2 menu × the four datasets) runs on RAL `--partiti
 | Dataset | D | Exact ln Z | H (nat) | Exact references | Planned cells | Deferred cells | Pilot rows (failed) |
 |---|---|---|---|---|---|---|---|
 | `corr_gaussian_d20` | 20 | -93.020 | 53.1 | `jax_cpu` complete, `numpy` complete | 26 | 0 | 0 (0) |
-| `corr_gaussian_d50` | 50 | -233.019 | 133.3 | `jax_cpu` complete, `numpy` complete | 19 | 7 | 0 (0) |
-| `corr_gaussian_d100` | 100 | -467.088 | 267.6 | `jax_cpu` complete, `numpy` complete | 14 | 12 | 0 (0) |
-| `rosenbrock_d20` | 20 | -140.946 | 133.3 | `jax_cpu` complete, `numpy` complete | 23 | 3 | 0 (0) |
+| `corr_gaussian_d50` | 50 | -233.019 | 133.3 | `jax_cpu` complete, `numpy` complete | 22 | 4 | 0 (0) |
+| `corr_gaussian_d100` | 100 | -467.088 | 267.6 | `jax_cpu` complete, `numpy` complete | 19 | 7 | 0 (0) |
+| `rosenbrock_d20` | 20 | -140.946 | 133.3 | `jax_cpu` complete, `numpy` complete | 26 | 0 | 0 (0) |
 
-Pilot: 1040 expected runs — 0 rows, 0 failed, 820 not yet pulled, 220 deferred with reasons (`catalogue/search_catalogue.json`, section `correlated_nd@1`). Wave 1 (pilot): ranks nothing (protocol correlated_nd §9). Cross-family ranking: none: this family is catalogued apart from gaussian_x3 and no leg is ever ranked or compared across families (protocol correlated_nd §9).
+Pilot: 1040 expected runs — 0 rows, 0 failed, 930 not yet pulled, 110 deferred with reasons (`catalogue/search_catalogue.json`, section `correlated_nd@1`). Wave 1 (pilot): ranks nothing (protocol correlated_nd §9). Cross-family ranking: none: this family is catalogued apart from gaussian_x3 and no leg is ever ranked or compared across families (protocol correlated_nd §9).
 <!-- END auto-table:correlated_nd -->
 
 ## Running
