@@ -70,7 +70,7 @@ PYAUTOFIT_PIN = "df6d218f10cd75a7f0d79bb03dca5c131fd29d33"
 PYAUTONERVES_PIN = "7f3055b7f3d1967f372bdb41ee732135bca0e68d"
 
 #: Where the private pinned checkouts live, relative to the RAL project root
-#: (``/mnt/ral/jnightin/autofit_inference/.pyauto_pin/{PyAutoFit,PyAutoNerves}``,
+#: (``/mnt/ral/jnightin/inference/autofit_inference/.pyauto_pin/{PyAutoFit,PyAutoNerves}``,
 #: gitignored), PYTHONPATH-prefixed by every wave-2 submit.
 PIN_DIR = ".pyauto_pin"
 

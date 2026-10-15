@@ -15,7 +15,7 @@
 # rule of 2026-09-30; PyAutoMind/policy/hpc_ral.md). The --exclude keeps these small
 # tasks off the four 252-CPU nodes, the only ones a whole-node job of another campaign
 # fits on. The PyAuto libraries come from the PRIVATE pin under
-# /mnt/ral/jnightin/autofit_inference/.pyauto_pin/, PYTHONPATH-prefixed below; the
+# /mnt/ral/jnightin/inference/autofit_inference/.pyauto_pin/, PYTHONPATH-prefixed below; the
 # shared /mnt/ral/jnightin/PyAuto mirror provides only the venv and is never pulled.
 #
 # WALL-BASIS: -- one row per cell this submit runs; walls measured on the B2/B3 laptop
@@ -46,7 +46,7 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=james.w.nightingale@durham.ac.uk
 
-export AP_ROOT=/mnt/ral/jnightin/autofit_inference
+export AP_ROOT=/mnt/ral/jnightin/inference/autofit_inference
 source $AP_ROOT/activate.sh
 
 # The private pin: PyAutoFit df6d218f10cd75a7f0d79bb03dca5c131fd29d33, PyAutoNerves

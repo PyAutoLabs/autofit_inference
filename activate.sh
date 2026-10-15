@@ -17,7 +17,7 @@
 #
 # Usage (inside a SLURM submit or interactive shell):
 #
-#     source /mnt/ral/jnightin/autofit_inference/activate.sh
+#     source /mnt/ral/jnightin/inference/autofit_inference/activate.sh
 
 # --- SLURM exit-code guard ------------------------------------------------
 # Inside a batch job, abort on the first failing command so the job's exit
