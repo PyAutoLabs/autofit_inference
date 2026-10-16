@@ -45,6 +45,14 @@ and it changes only through a new version committed before the first row it judg
 The thresholds live once, in `scripts/misc/searches/_protocol.py`; PLACEHOLDER values are
 calibrated in the wave-1 pilot and then frozen. Wave 1 ranks nothing.
 
+The second family, `correlated_nd` (B5c: correlated Gaussians at D = 20/50/100 and a D = 20
+Rosenbrock banana, exact references), has its own pre-registered protocol
+[`wiki/project/protocol_correlated_nd.md`](wiki/project/protocol_correlated_nd.md)
+(`correlated_nd@1`, `_protocol.THRESHOLDS_CND1`), its own manifest
+(`searches/_correlated_nd.py`) and its own catalogue section. Its rows are never mixed into
+`gaussian_x3` catalogues, calibration or summary records, and nothing is ranked across
+families.
+
 ## Import model and leaves
 
 `ruff.toml` is the root sentinel: every script walks up to it and puts the root and
@@ -79,16 +87,21 @@ _autofit_inference_cli.py  flags, the {local,ral}_{numpy,jax_cpu}_{fp64,fp32} gr
 config/general.yaml        PyAutoConf overrides (outputs kept)
 dataset/<name>/            committed data/noise_map/model/truth JSON (seeded)
 scripts/<dataset>/searches/<sampler>/gaussian_x3.py   the leaves
-scripts/misc/models/       the gaussian_x3 model, priors and Analysis
+scripts/<dataset>/searches/<sampler>/correlated_nd.py the second family's leaves (B5c)
+scripts/misc/models/       the gaussian_x3 and correlated_nd models, priors and Analysis;
+                           correlated_nd_exact.py (every exact posterior quantity)
 scripts/misc/searches/     _runner.py (run_search + registry), _posterior.py, _protocol.py,
                            _metrics.py (MLTracker), _pilot.py (wave-1 manifest),
                            _wave2.py (scored wave-2 manifest, identity, accounting, pin),
-                           judge_wave2.py (@2 admit/accounting CLI -> results/accounting/)
-scripts/misc/reference/    reference-posterior, MAP and constant-likelihood runs + combiner
-scripts/misc/simulators/   the seeded dataset simulator
+                           judge_wave2.py (@2 admit/accounting CLI -> results/accounting/),
+                           _correlated_nd.py (the correlated_nd pilot manifest, deferrals)
+scripts/misc/reference/    reference-posterior, MAP and constant-likelihood runs + combiner;
+                           exact_correlated_nd.py (the exact references + §6 self-test)
+scripts/misc/simulators/   the seeded dataset simulators (gaussian_x3, correlated_nd)
 scripts/misc/tooling/      build_readme.py, export_inference_summary.py, build_catalogue.py
                            (wave-1 pilot + gaussian_x3@2 sections), plan_wave2.py,
-                           write_probe_timeouts.py (probe-first @2 timeouts)
+                           write_probe_timeouts.py (probe-first @2 timeouts),
+                           plan_correlated_nd.py (the correlated_nd pilot submit)
 scripts/misc/wall/         the WALL-BASIS submit gate + rates from the pilot walls
 scripts/misc/test/         unit tests + the exporter fixture
 results/reference/         reference posteriors per dataset and backend

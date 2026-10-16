@@ -15,6 +15,15 @@ scored run, protocol §7 and §11 A2). Changing one is a protocol version bump (
 rule). A row is judged by the protocol of the wave it belongs to (:func:`protocol_for`):
 the 223 pilot rows stay ``@1`` with their verdicts byte-identical; scored wave-2 rows are
 ``@2``, and every ``@2`` verdict string starts with the id.
+
+**The second family (B5c).** Rows of the ``correlated_nd`` model (``row["model"]``) are
+judged by their own protocol, ``correlated_nd@1`` (``wiki/project/protocol_correlated_nd.md``;
+:data:`FAMILY_PROTOCOL_IDS`, :data:`THRESHOLDS_CND1`) against an **exact** reference (no
+reference search): §4(a) and §4(c) as above with no evidence offset (no assertions), and
+§4(b) replaces the posterior-predictive and mode criteria with a whitened-coordinate
+check (§4(b)3 of that protocol, read from the row's ``whitened`` block). Every
+``correlated_nd@1`` verdict string starts with the id. Nothing here ranks or compares
+across families.
 """
 
 from __future__ import annotations
@@ -98,10 +107,64 @@ TIMEOUT_RULE_V2 = (
 
 THRESHOLDS_V2 = {**THRESHOLDS, **FROZEN_V2}
 
-THRESHOLDS_BY_PROTOCOL = {PROTOCOL_IDS[1]: THRESHOLDS, PROTOCOL_IDS[2]: THRESHOLDS_V2}
+#: The second family's protocol per wave (B5c): only its pilot (wave 1) is declared; the
+#: scored wave waits for ``correlated_nd@2``, frozen from the pilot (protocol §7).
+FAMILY_PROTOCOL_IDS = {"correlated_nd": {1: "correlated_nd@1"}}
+CND_PROTOCOL_ID = FAMILY_PROTOCOL_IDS["correlated_nd"][1]
+
+#: ``correlated_nd@1`` (protocol ``wiki/project/protocol_correlated_nd.md`` §4, §5). The
+#: values are gaussian_x3@2's frozen ones where the criterion is the same; the
+#: PLACEHOLDERs (:data:`PLACEHOLDERS_CND1`) are calibrated on the pilot and frozen as
+#: ``correlated_nd@2`` before any scored row.
+THRESHOLDS_CND1 = {
+    # §4(a)
+    "map_tolerance_nat": 1.0,
+    # §4(b)1, §4(b)2 — every parameter's marginal
+    "median_tolerance_sigma": 1.0,
+    "sigma_ratio_band": (0.5, 2.0),  # PLACEHOLDER
+    # §4(b)3 — every exact-whitened coordinate (unit-normal units)
+    "whitened_median_tolerance": 1.0,
+    "whitened_sigma_ratio_band": (0.5, 2.0),  # PLACEHOLDER
+    # §4(c)
+    "evidence_tolerance_nat": 1.0,
+    # §5 — PLACEHOLDERS
+    "nested_min_ess": 500.0,
+    "chain_max_rhat": 1.01,
+    "chain_min_ess": 400.0,
+}
+
+PLACEHOLDERS_CND1 = (
+    "sigma_ratio_band",
+    "whitened_sigma_ratio_band",
+    "nested_min_ess",
+    "chain_max_rhat",
+    "chain_min_ess",
+)
+
+THRESHOLDS_BY_PROTOCOL = {
+    PROTOCOL_IDS[1]: THRESHOLDS,
+    PROTOCOL_IDS[2]: THRESHOLDS_V2,
+    CND_PROTOCOL_ID: THRESHOLDS_CND1,
+}
 
 #: What is still a PLACEHOLDER under each protocol: nothing, once frozen.
-PLACEHOLDERS_BY_PROTOCOL = {PROTOCOL_IDS[1]: PLACEHOLDERS, PROTOCOL_IDS[2]: ()}
+PLACEHOLDERS_BY_PROTOCOL = {
+    PROTOCOL_IDS[1]: PLACEHOLDERS,
+    PROTOCOL_IDS[2]: (),
+    CND_PROTOCOL_ID: PLACEHOLDERS_CND1,
+}
+
+
+def is_family_row(row: dict) -> bool:
+    """A row (or reference) of a family other than gaussian_x3 (judged by its own protocol)."""
+    return row.get("model") in FAMILY_PROTOCOL_IDS
+
+
+def protocol_id_for(model_type: str, wave: int) -> str | None:
+    """The protocol a new row of ``model_type`` in ``wave`` is stamped with."""
+    if model_type in FAMILY_PROTOCOL_IDS:
+        return FAMILY_PROTOCOL_IDS[model_type].get(wave)
+    return PROTOCOL_IDS[wave]
 
 
 def wave_of(row: dict) -> int:
@@ -117,7 +180,10 @@ def protocol_for(row: dict) -> str | None:
     """The protocol id that judges ``row`` — the one of its wave, never a later one (the
     change rule: a verdict stays under the protocol in force when its wave was declared).
     ``None`` for a wave with no protocol, or a row stamped with another wave's id."""
-    pid = PROTOCOL_IDS.get(wave_of(row))
+    if is_family_row(row):
+        pid = FAMILY_PROTOCOL_IDS[row["model"]].get(wave_of(row))
+    else:
+        pid = PROTOCOL_IDS.get(wave_of(row))
     stamped = row.get("protocol_id")
     if pid is None or (stamped is not None and stamped != pid):
         return None
@@ -170,13 +236,23 @@ def load_json(path: Path):
 #: every other realisation's lives under ``data_seed<d>/`` beside it.
 DEFAULT_DATA_SEED = {"gaussian_x3_blend": 1, "gaussian_x3_separated": 2}
 
+#: The ``correlated_nd`` datasets' committed default realisation
+#: (``simulators/correlated_nd.py`` ``DEFAULT_DATA_SEED``; a test pins them together).
+FAMILY_DEFAULT_DATA_SEED = {
+    "corr_gaussian_d20": 1,
+    "corr_gaussian_d50": 1,
+    "corr_gaussian_d100": 1,
+    "rosenbrock_d20": 1,
+}
+
 
 def reference_dir(root: Path, dataset: str, backend: str, data_seed: int | None = None) -> Path:
     """``results/reference/<dataset>/<backend>/`` for the dataset's default realisation,
     ``…/<backend>/data_seed<d>/`` for any other (scored wave 2, protocol §9: five
     realisations, each judged only against its own reference — :data:`REFERENCE_IDENTITY`)."""
     base = Path(root) / "results" / "reference" / dataset / backend
-    if data_seed is None or data_seed == DEFAULT_DATA_SEED.get(dataset):
+    default = DEFAULT_DATA_SEED.get(dataset, FAMILY_DEFAULT_DATA_SEED.get(dataset))
+    if data_seed is None or data_seed == default:
         return base
     return base / f"data_seed{int(data_seed)}"
 
@@ -224,6 +300,29 @@ def criterion_map(row: dict, reference: dict, t: dict = THRESHOLDS) -> tuple[boo
 def criteria_posterior(
     row: dict, reference: dict, t: dict = THRESHOLDS
 ) -> list[tuple[bool | None, str]]:
+    out = criteria_marginals(row, reference, t)
+    if len(out) == 1:
+        return out
+    g_chi2, r_chi2 = _num(row.get("ppc_chi2")), _num(reference.get("ppc_chi2"))
+    if g_chi2 is None or r_chi2 is None:
+        out.append((None, "(b)3 ppc_chi2 missing"))
+    else:
+        out.append(
+            (
+                g_chi2 - r_chi2 <= t["ppc_chi2_tolerance"],
+                f"(b)3 ppc_chi2 {g_chi2:.1f} vs ref {r_chi2:.1f}",
+            )
+        )
+    out.append(criterion_modes(row, reference, t))
+    return out
+
+
+def criteria_marginals(
+    row: dict, reference: dict, t: dict = THRESHOLDS
+) -> list[tuple[bool | None, str]]:
+    """§4(b)1 and §4(b)2 (shared by both families): every parameter's relabelled median
+    within ``median_tolerance_sigma`` reference sigma, and its sigma ratio in the band. A
+    single ``None`` entry when the statistics are missing."""
     out: list[tuple[bool | None, str]] = []
     run = row.get("posterior_relabelled") or {}
     ref = reference.get("posterior_relabelled") or {}
@@ -256,18 +355,26 @@ def criteria_posterior(
             "(b)2 sigma ratio in band" if not ratio_fail else f"(b)2 sigma ratio {ratio_fail}",
         )
     )
-    g_chi2, r_chi2 = _num(row.get("ppc_chi2")), _num(reference.get("ppc_chi2"))
-    if g_chi2 is None or r_chi2 is None:
-        out.append((None, "(b)3 ppc_chi2 missing"))
-    else:
-        out.append(
-            (
-                g_chi2 - r_chi2 <= t["ppc_chi2_tolerance"],
-                f"(b)3 ppc_chi2 {g_chi2:.1f} vs ref {r_chi2:.1f}",
-            )
-        )
-    out.append(criterion_modes(row, reference, t))
     return out
+
+
+def criterion_whitened(row: dict, t: dict = THRESHOLDS_CND1) -> tuple[bool | None, str]:
+    """``correlated_nd`` §4(b)3: in the exact whitening map's coordinates (each ``N(0, 1)``
+    under the true posterior) every coordinate's ``|median|`` is within
+    ``whitened_median_tolerance`` unit sigma and its sigma ratio lies in the band. Read from
+    the row's ``whitened`` block (the runner computes it from the samples)."""
+    stats = row.get("whitened") or {}
+    worst = _num(stats.get("worst_median"))
+    lo_ratio, hi_ratio = _num(stats.get("sigma_ratio_min")), _num(stats.get("sigma_ratio_max"))
+    if None in (worst, lo_ratio, hi_ratio):
+        return None, "(b)3 whitened statistics missing"
+    lo, hi = t["whitened_sigma_ratio_band"]
+    ok = worst <= t["whitened_median_tolerance"] and lo <= lo_ratio and hi_ratio <= hi
+    return ok, (
+        f"(b)3 whitened worst |median| {worst:.2f} ({stats.get('worst_median_key')}), "
+        f"sigma ratio [{lo_ratio:.2f} ({stats.get('sigma_ratio_min_key')}), "
+        f"{hi_ratio:.2f} ({stats.get('sigma_ratio_max_key')})]"
+    )
 
 
 def criterion_modes(row: dict, reference: dict, t: dict = THRESHOLDS) -> tuple[bool | None, str]:
@@ -293,8 +400,9 @@ def criterion_modes(row: dict, reference: dict, t: dict = THRESHOLDS) -> tuple[b
 
 
 #: The separated control's mechanism (D15 option (b), amendment A1): disjoint centre
-#: priors and no assertions exclude no prior volume, so the offset is 0 by construction.
-NO_EXCLUDED_VOLUME = ("disjoint_priors",)
+#: priors and no assertions exclude no prior volume, so the offset is 0 by construction;
+#: likewise ``none``, the ``correlated_nd`` family (no assertions, no label symmetry).
+NO_EXCLUDED_VOLUME = ("disjoint_priors", "none")
 
 
 def run_evidence_offset(run: dict, offsets: dict | None) -> float | None:
@@ -355,6 +463,12 @@ def acceptance(
     map_diagnostic = {"ok": map_ok, "detail": map_text, "criterion": task == "point_map"}
     if task == "point_map":
         criteria = [criterion_map(row, reference, t)]
+    elif is_family_row(row):
+        criteria = criteria_marginals(row, reference, t)
+        if len(criteria) > 1:
+            criteria.append(criterion_whitened(row, t))
+        if task == "evidence":
+            criteria.append(criterion_evidence(row, reference, offsets, t))
     else:
         criteria = criteria_posterior(row, reference, t)
         if task == "evidence":
@@ -478,7 +592,7 @@ def verdict(row: dict, reference: dict | None, offsets: dict | None = None) -> d
     )
     acc = _judged("not_assessed", held, []) if held else acceptance(row, reference, offsets, t)
     conv = convergence(row, t)
-    prefix = "" if pid == PROTOCOL_IDS[1] else f"{pid}: "
+    prefix = "" if pid == PROTOCOL_IDS[1] else f"{pid}: "  # every family id is prefixed
     return {
         "protocol_id": pid,
         "acceptance": acc["acceptance"],

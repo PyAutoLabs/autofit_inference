@@ -172,7 +172,9 @@ def references(root: Path) -> tuple[dict, dict | None]:
     ]
     for path in sorted(paths):
         ref = protocol.load_json(path)
-        if isinstance(ref, dict):
+        # The correlated_nd exact references belong to that family's own outputs, never to
+        # the gaussian_x3 summary (B5c).
+        if isinstance(ref, dict) and not protocol.is_family_row(ref):
             refs[protocol.reference_key(ref)] = ref
     return refs, protocol.load_json(protocol.offsets_file(root))
 
@@ -394,6 +396,10 @@ def build(
             payload = json.loads(path.read_text())
             if not isinstance(payload, dict):
                 raise ValueError("result must be an object")
+            if protocol.is_family_row(payload):
+                # correlated_nd (B5c) is not exported until B5c-2, under its own protocol:
+                # never a gaussian_x3 record, and not listed among its exclusions either.
+                continue
             finite(payload)
             if payload.get("schema_version") != 1:
                 raise ValueError("unsupported result schema_version")

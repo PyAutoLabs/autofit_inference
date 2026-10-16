@@ -61,6 +61,7 @@ for _path in (str(ROOT / "scripts" / "misc"), str(ROOT / "scripts" / "misc" / "t
         sys.path.insert(0, _path)
 
 import export_inference_summary as exporter  # noqa: E402
+from searches import _correlated_nd as cnd  # noqa: E402
 from searches import _pilot as pilot  # noqa: E402
 from searches import _protocol as protocol  # noqa: E402
 from searches import _wave2 as wave2  # noqa: E402
@@ -124,11 +125,13 @@ def scan_rows(root: Path) -> list[tuple[str, dict]]:
         except (OSError, ValueError):
             continue
         # The pilot catalogue (and the calibration built on it) reads wave-1 rows only;
-        # scored wave-2 rows are catalogued under gaussian_x3@2 by their own stage (B5b).
+        # scored wave-2 rows are catalogued under gaussian_x3@2 by their own stage (B5b),
+        # and correlated_nd rows only in that family's own section, never here.
         if (
             isinstance(payload, dict)
             and payload.get("schema_version") == 1
             and protocol.wave_of(payload) == 1
+            and not protocol.is_family_row(payload)
         ):
             rows.append((path.relative_to(root).as_posix(), payload))
     return rows
@@ -251,6 +254,7 @@ def scan_wave2_rows(root: Path) -> list[tuple[str, dict]]:
             isinstance(payload, dict)
             and payload.get("schema_version") == 1
             and protocol.wave_of(payload) == wave2.WAVE
+            and not protocol.is_family_row(payload)
         ):
             rows.append((path.relative_to(root).as_posix(), payload))
     return rows
@@ -683,6 +687,63 @@ def build(root: Path = ROOT, manifest: dict | None = None) -> dict:
         },
         "tasks": tasks,
         wave2.PROTOCOL_ID: wave2_section(root, refs, offsets),
+        cnd.PROTOCOL_ID: correlated_nd_section(root),
+    }
+
+
+#: What judges each task under ``correlated_nd@1`` (its protocol §4).
+CND_TASK_CRITERIA = {
+    "point_map": "correlated_nd §4(a): max_log_posterior >= exact MAP - 1 nat",
+    "posterior": "correlated_nd §4(b): medians, sigma-ratio band, whitened coordinates",
+    "evidence": "correlated_nd §4(b) and §4(c): posterior accuracy and ln Z within 1 nat "
+    "of the exact ln Z",
+}
+
+
+def correlated_nd_section(root: Path) -> dict:
+    """The second family's own section (B5c): by task, then dataset, separately from every
+    gaussian_x3 section. Its pilot ranks nothing, and nothing is ever compared across
+    families. Until the pilot is pulled (B5c-2) every planned leg is ``missing``."""
+    rows = []
+    for path in sorted((root / "results" / "searches").rglob("*.json")):
+        try:
+            payload = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if isinstance(payload, dict) and protocol.is_family_row(payload):
+            rows.append(payload)
+    accounting = cnd.accounting(rows)
+    tasks = {
+        task: {"label": TASK_LABELS[task], "judged_by": CND_TASK_CRITERIA[task], "datasets": {}}
+        for task in TASK_LABELS
+    }
+    for leg in accounting["legs"]:
+        entry = {
+            "sampler": leg["sampler"],
+            "settings": leg["settings"],
+            "config_id": leg["config_id"],
+            "cell_status": leg["cell_status"],
+            "expected": leg["expected"],
+            "rows": leg["row"],
+            "failed": len(leg["failed"]),
+            "missing": len(leg["missing"]),
+            "deferred": len(leg["deferred"]),
+            "reason": leg["reason"],
+        }
+        tasks[leg["task"]]["datasets"].setdefault(leg["dataset"], []).append(entry)
+    return {
+        "protocol_id": cnd.PROTOCOL_ID,
+        "family": cnd.MODEL_TYPE,
+        "campaign_task": cnd.WAVE_ID,
+        "wave": "wave 1 (pilot): ranks nothing (protocol correlated_nd §9)",
+        "ranking": "none",
+        "grouping": "by task, then dataset; tasks and datasets are never compared",
+        "cross_family": "none: this family is catalogued apart from gaussian_x3 and no leg "
+        "is ever ranked or compared across families (protocol correlated_nd §9)",
+        "pyautofit_pin": cnd.PYAUTOFIT_PIN,
+        "datasets": {name: {"dimension": d} for name, d in cnd.DIMENSION.items()},
+        "coverage": {**accounting["totals"], "refused": len(accounting["refused"])},
+        "tasks": tasks,
     }
 
 

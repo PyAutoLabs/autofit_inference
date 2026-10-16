@@ -80,3 +80,24 @@ jobs:
           python scripts/misc/tooling/export_inference_summary.py \
             --rows-root "$RUNNER_TEMP/witness" --output "$RUNNER_TEMP/witness/summary.json" \
             --require-accepted
+
+      # The second family (B5c): one LBFGS on the D = 20 correlated Gaussian, judged by
+      # correlated_nd@1 against the committed exact reference; must be `accepted`.
+      - name: LBFGS, numpy, seed 0, corr_gaussian_d20 (correlated_nd@1)
+        working-directory: autofit_inference
+        env:
+          PYTHONPATH: ${{ github.workspace }}/PyAutoNerves:${{ github.workspace }}/PyAutoFit
+          NUMBA_CACHE_DIR: /tmp/numba_cache
+          MPLCONFIGDIR: /tmp/matplotlib
+          OMP_NUM_THREADS: "1"
+        run: |
+          python scripts/corr_gaussian_d20/searches/lbfgs/correlated_nd.py \
+            --config-name local_numpy_fp64 --seed 0 \
+            --output-dir "$RUNNER_TEMP/output_cnd" --results-root "$RUNNER_TEMP/witness_cnd"
+          python - "$RUNNER_TEMP/witness_cnd" <<'PY'
+          import json, pathlib, sys
+          (path,) = pathlib.Path(sys.argv[1]).rglob("search_seed0.json")
+          verdict = json.loads(path.read_text())["scientific"]
+          print(verdict["protocol_id"], verdict["acceptance"], verdict["acceptance_reason"])
+          assert verdict["protocol_id"] == "correlated_nd@1" and verdict["acceptance"] == "accepted"
+          PY

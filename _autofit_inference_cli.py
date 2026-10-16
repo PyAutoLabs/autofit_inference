@@ -51,8 +51,16 @@ PRECISIONS = ("fp64", "fp32")
 #: ``(where, backend, precision)`` — one group per field.
 CONFIG_NAME_RE = re.compile(r"^(local|ral)_(numpy|jax_cpu)_(fp64|fp32)$")
 
-#: The datasets a leaf may name (``dataset/<name>/``).
-DATASETS = ("gaussian_x3_blend", "gaussian_x3_separated")
+#: The datasets a leaf may name (``dataset/<name>/``): the gaussian_x3 pair, then the
+#: second family's (``correlated_nd``, B5c; ``scripts/misc/simulators/correlated_nd.py``).
+GAUSSIAN_X3_DATASETS = ("gaussian_x3_blend", "gaussian_x3_separated")
+CORRELATED_ND_DATASETS = (
+    "corr_gaussian_d20",
+    "corr_gaussian_d50",
+    "corr_gaussian_d100",
+    "rosenbrock_d20",
+)
+DATASETS = GAUSSIAN_X3_DATASETS + CORRELATED_ND_DATASETS
 
 #: ``--compile-cache``: ``cold`` disables JAX's persistent compilation cache so
 #: ``compile_s`` is a full trace + lower + compile; ``warm`` leaves it on. The two are
@@ -157,8 +165,8 @@ def build_parser(default_config_name: str = "local_numpy_fp64") -> argparse.Argu
         type=int,
         choices=(1, 2),
         default=1,
-        help="1 = the wave-1 pilot (gaussian_x3@1); 2 = scored wave 2 (gaussian_x3@2, "
-        "refused unless autofit is the pinned revision)",
+        help="1 = the wave-1 pilot (gaussian_x3@1; correlated_nd@1 for that family); "
+        "2 = scored wave 2 (gaussian_x3@2, refused unless autofit is the pinned revision)",
     )
     return parser
 
@@ -263,9 +271,17 @@ def library_revisions(libraries=("autonerves", "autofit")) -> dict:
 def dataset_path(dataset: str, data_seed: int | None = None, root: Path = ROOT) -> Path:
     """``dataset/<name>/`` (or ``…/data_seed<n>/`` for a non-default realisation)."""
     sys.path.insert(0, str(root / "scripts" / "misc"))
-    from simulators.gaussian_x3 import dataset_dir
+    if dataset in CORRELATED_ND_DATASETS:
+        from simulators.correlated_nd import dataset_dir
+    else:
+        from simulators.gaussian_x3 import dataset_dir
 
     return dataset_dir(dataset, data_seed, root)
+
+
+def simulator_for(dataset: str) -> str:
+    """The simulator script (below ``scripts/misc/simulators/``) that writes ``dataset``."""
+    return "correlated_nd.py" if dataset in CORRELATED_ND_DATASETS else "gaussian_x3.py"
 
 
 def auto_simulate_if_missing(dataset: str, data_seed: int | None = None, root: Path = ROOT) -> Path:
@@ -275,7 +291,7 @@ def auto_simulate_if_missing(dataset: str, data_seed: int | None = None, root: P
         return path
     command = [
         sys.executable,
-        str(root / "scripts" / "misc" / "simulators" / "gaussian_x3.py"),
+        str(root / "scripts" / "misc" / "simulators" / simulator_for(dataset)),
         "--name",
         dataset,
         "--output-root",

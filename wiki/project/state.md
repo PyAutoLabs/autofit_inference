@@ -11,7 +11,47 @@ answer fastest, and how reliably, from a cold start and across seeds, on toy lik
 where the truth is known. The first benchmark is `gaussian_x3_blend` +
 `gaussian_x3_separated`.
 
-## Now: scored wave 2 complete and judged under `gaussian_x3@2` (B5b, B5b-2)
+## Now: a second family, `correlated_nd`, pre-registered; its pilot on RAL (B5c)
+
+**Protocol first (B5c, 2026-10-15, autofit_inference#14).** `correlated_nd@1`
+(`wiki/project/protocol_correlated_nd.md`) was first committed in **`9ec37795f404`**
+(`9ec37795f404200e72f4ffdacce3d89ff694b3d5`) before the generator, the references, the
+harness and any `correlated_nd` row, and amended in place by A1 (review round 1, commit
+`2d81df8`; completed by the round-2 cap-stub commit) **before any row or submission**. The
+family: correlated Gaussians at D = 20, 50, 100 (condition number 10³) and a D = 20 hybrid
+Rosenbrock banana, with exact posteriors and ln Z. Eight exact references (4 datasets × 2
+backends) are complete and passed the §6 agreement test (backend `Fitness` identity
+≤ 6e-14 nat, 200 000 exact draws, truncation, control verdicts accepted).
+
+**Pilot on RAL.** Job **410866** (`submit_correlated_nd_pilot`, array `0-929%100`,
+`--partition=ral`, excluding `euclid-ral-compute-[1-4]`, no GPU resources, 2 CPUs / 8 GB,
+4 h process cap per run), submitted 2026-10-15 ~23:10 UTC against
+the private pin PyAutoFit `df6d218f10cd` / PyAutoNerves `7f3055b7f3d1`: 930 runs (10
+seeds × realisation 1 × 93 planned cells), 110 deferred with reasons. It runs from the
+**private copy `/mnt/ral/jnightin/inference/autofit_inference_b5c`** (191 delivered files
+from `245a3ef`, sha256-verified, plus its own copy of `.pyauto_pin/`), so B5c-2 pulls
+`results/` from there. The first submission, **409957**, failed at import in every task
+and was cancelled: the shared clone `inference/autofit_inference` had been switched by
+another session to an old local `main` (`6114082`; stash "pre-main-switch", 19:24 UTC) and
+lost `_autofit_inference_cli.py` and `config/` as the array started. No row was written;
+the shared clone is left as found (with this task's delivered, untracked files in it). The
+catalogue's `correlated_nd@1` section groups the family by task and dataset, apart from
+`gaussian_x3`; nothing is ranked across families.
+
+**Pilot complete (2026-10-16).** `sacct` on 410866: **926 of 930 tasks COMPLETED, 4
+OUT_OF_MEMORY** at the 8 G request, all on `corr_gaussian_d50`: task 263 (`nautilus`
+`n_live_100`, numpy, seed 3; MaxRSS 7.6 G at 2:42:50), 273 (`nautilus` `n_live_100`,
+jax_cpu, seed 3; 7.7 G at 2:42:12), 304 (`nautilus` `n_live_400`, numpy, seed 4; 3.1 G
+sampled at 0:52:03) and 383 (`blackjax_nuts_warm` `warmup_200_samples_500`, jax_cpu, seed
+3; 8.4 G at 3:51:52). By the human's decision the four are **not rerun in stage 1**; B5c-2
+either raises the memory request for those cells or excludes them, with the reason
+recorded. The results are **unpulled**: they stay in the private copy
+`/mnt/ral/jnightin/inference/autofit_inference_b5c/results/` and are pulled in B5c-2.
+**Next (B5c-2):** pull `results/` only, judge under `@1` (check what the 4 OOM tasks left
+in `results/`; an OOM kill normally writes no row, so they would count as `missing`), calibrate and freeze
+`correlated_nd@2`, then the scored wave.
+
+## Before: scored wave 2 complete and judged under `gaussian_x3@2` (B5b, B5b-2)
 
 **Judged (B5b and B5b-2, 2026-10-15).** All 12,750 pulled wave-2 rows are admitted by
 `_wave2.admit`: 11,750 from the scored arrays, the 20-run probe and the 980-run
@@ -128,6 +168,18 @@ on RAL. B2 brought the harness and datasets; B3's pilot flips the Cortex row to
 `active` and starts the `fit` instance in PyAutoInsight (`inference-summary@1`).
 
 ## Runs
+
+**`correlated_nd` pilot (B5c), submitted 2026-10-15 ~22:40 UTC** on RAL `--partition=ral`:
+
+| job | array (throttle) | what |
+|---|---|---|
+| 409957 | 0-929 (%100) | first submission from the shared clone: failed at import (clone disturbed), cancelled, no rows |
+| 410866 | 0-929 (%100) | `correlated_nd@1` pilot from the private copy `inference/autofit_inference_b5c`: 930 runs, one per task, 4 h process cap; protocol §7. Finished 2026-10-16: 926 COMPLETED, 4 OUT_OF_MEMORY at 8 G (tasks 263, 273, 304, 383); results unpulled |
+
+Login-node dry run first: pins at their commits and imported, TSV lines and leaves resolve,
+a numpy LBFGS row on `corr_gaussian_d20` was written at the pin under `correlated_nd@1`
+(stopped by the dry run's 900 s `timeout` on the slow login node, so its `Terminated` row
+also exercised the SIGTERM path), and `sbatch --test-only` accepted the script.
 
 **Scored wave 2, submitted 2026-10-14 17:19 BST** on RAL `--partition=ral` (excluding the
 four 252-CPU nodes), 2 CPUs and 6 GB per task, from branch `feature/search-ext-b5a-wave2`

@@ -28,6 +28,11 @@ Regions
     The reference posteriors under ``results/reference/<dataset>/<backend>/``: status,
     the runs included, the normalised log evidence, the agreement statistics and the
     MAP log posterior.
+``correlated_nd``
+    The second family (B5c, protocol ``correlated_nd@1``): per dataset its dimension, the
+    exact ln Z and information of the committed realisation, each backend's exact
+    reference status, and the pilot's planned / deferred / pulled cells, from the
+    catalogue's ``correlated_nd@1`` section. Never compared with ``gaussian_x3``.
 ``searches``
     The pilot's per-cell summaries (from the catalogue), one table per task: attempts,
     verdicts, convergence, the Wilson interval and walls. Never per best seed.
@@ -173,6 +178,8 @@ def render_references() -> str:
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for (dataset, backend, data_seed), ref in sorted(refs.items()):
+        if protocol.is_family_row(ref):
+            continue  # exact references: the correlated_nd region renders them
         agreement = ref.get("agreement_included") or {}
         included = ref.get("included_runs") or []
         lines.append(
@@ -195,6 +202,53 @@ def render_references() -> str:
     lines.append(
         "ln 3! convention (constant likelihood): " + ("; ".join(validated) or "pending") + "."
     )
+    return "\n".join(lines) + "\n"
+
+
+def render_correlated_nd() -> str:
+    """The second family's datasets, exact references and pilot coverage (never ranked,
+    never compared with gaussian_x3)."""
+    doc = _catalogue() or {}
+    section = doc.get(protocol.CND_PROTOCOL_ID)
+    if not section:
+        return "\n_No correlated_nd section in the catalogue yet._\n"
+    refs, _ = _references()
+    counts: dict[str, dict] = {}
+    for group in section["tasks"].values():
+        for dataset, legs in group["datasets"].items():
+            c = counts.setdefault(dataset, {"planned": 0, "deferred": 0, "rows": 0, "failed": 0})
+            for leg in legs:
+                c["planned" if leg["cell_status"] == "planned" else "deferred"] += 1
+                c["rows"] += leg["rows"]
+                c["failed"] += leg["failed"]
+    lines = [
+        "",
+        "| Dataset | D | Exact ln Z | H (nat) | Exact references | Planned cells | "
+        "Deferred cells | Pilot rows (failed) |",
+        "|---|---|---|---|---|---|---|---|",
+    ]
+    for dataset, info in section["datasets"].items():
+        backends = []
+        ln_z = h = None
+        for (name, backend, data_seed), ref in sorted(refs.items()):
+            if name == dataset and data_seed == 1:
+                backends.append(f"`{backend}` {ref.get('status')}")
+                ln_z, h = ref.get("log_evidence"), ref.get("information_nats")
+        c = counts.get(dataset, {})
+        lines.append(
+            f"| `{dataset}` | {info['dimension']} | {_fmt(ln_z, '.3f')} | {_fmt(h, '.1f')} | "
+            f"{', '.join(backends) or DASH} | {c.get('planned', 0)} | {c.get('deferred', 0)} | "
+            f"{c.get('rows', 0)} ({c.get('failed', 0)}) |"
+        )
+    cov = section["coverage"]
+    lines += [
+        "",
+        f"Pilot: {cov['expected']} expected runs — {cov['row']} rows, {cov['failed']} failed, "
+        f"{cov['missing']} not yet pulled, {cov['deferred']} deferred with reasons "
+        f"(`catalogue/search_catalogue.json`, section `{section['protocol_id']}`). "
+        f"{section['wave'][0].upper()}{section['wave'][1:]}. Cross-family ranking: "
+        f"{section['cross_family']}.",
+    ]
     return "\n".join(lines) + "\n"
 
 
@@ -339,6 +393,7 @@ RENDERERS = {
     "wave2": render_wave2,
     "catalogue": render_catalogue,
     "references": render_references,
+    "correlated_nd": render_correlated_nd,
     "searches": render_searches,
 }
 

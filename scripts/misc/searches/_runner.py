@@ -86,7 +86,11 @@ TIMED_CALLS = 200
 #: Equal-weight draws for the posterior-predictive check (protocol §4(b)3).
 PPC_DRAWS = 500
 
-MODEL_TYPES = ("gaussian_x3",)
+#: The benchmark families a leaf may name (``scripts/<dataset>/searches/<sampler>/<model_type>.py``):
+#: ``gaussian_x3`` (protocol ``gaussian_x3@1/@2``) and the second family ``correlated_nd``
+#: (B5c, protocol ``correlated_nd@1``: high-D correlated Gaussians and a Rosenbrock banana
+#: with exact references, ``models/correlated_nd.py``).
+MODEL_TYPES = ("gaussian_x3", "correlated_nd")
 
 EVALS_TO_TARGET_JAX_NOTE = (
     "estimated: the index of the first sample reaching the target in the search's "
@@ -526,6 +530,19 @@ def wave_refusal(wave: int, revisions: dict, pin: str) -> str | None:
     return None
 
 
+def family_refusal(
+    model_type: str, dataset: str, sampler: str, settings: str, wave: int
+) -> str | None:
+    """Why a leg of a family other than gaussian_x3 may not run, or ``None``: its own
+    manifest's waves, datasets, menu settings and deferrals (``searches/_correlated_nd.py``,
+    protocol ``correlated_nd@1`` §7)."""
+    from searches import _correlated_nd as cnd
+
+    if model_type != cnd.MODEL_TYPE:
+        return f"no manifest for model_type {model_type!r}"
+    return cnd.refusal(dataset, sampler, settings, wave)
+
+
 def run_warm_provider(
     af, spec, settings, warm_from, model, analysis, path_prefix, name, seed, record=None, wave=1
 ):
@@ -726,6 +743,9 @@ def run_search(
     refused combination (unknown sampler, a deferred search, a JAX leg of a search that
     is not JAX-native, a ``--dataset`` that disagrees with the leaf).
     """
+    # The process clock a correlated_nd row records (``process_elapsed_s``): its pilot cap
+    # limits the whole process, so censoring compares this, not ``search.fit`` alone.
+    process_start = time.perf_counter()
     cli = parse_inference_cli(argv, default_dataset=dataset_class)
     if sampler not in SAMPLERS:
         print(
@@ -758,7 +778,13 @@ def run_search(
         return 2
     settings = spec.settings[settings_name]
     wave = cli.wave
-    if wave >= 2:
+    family = model_type != "gaussian_x3"
+    if family:
+        refusal = family_refusal(model_type, dataset_class, sampler, settings_name, wave)
+        if refusal:
+            print(f"ERROR: {refusal}", file=sys.stderr)
+            return 2
+    elif wave >= 2:
         from searches import _wave2 as wave2
 
         if (dataset_class, sampler) in wave2.DEFERRED:
@@ -772,11 +798,20 @@ def run_search(
             )
             return 2
     env = set_backend_env(cli.backend, cli.precision, cli.cores, cli.compile_cache)
-    if wave >= 2:
+    if wave >= 2 and not family:
         # After the backend env: library_revisions imports autofit.
         refusal = wave_refusal(wave, library_revisions(), wave2.PYAUTOFIT_PIN)
         if refusal:
             print(f"ERROR: {refusal}", file=sys.stderr)
+            return 2
+    if family and cli.where == "ral":
+        # A correlated_nd run on RAL is a pilot row only at the pin (protocol correlated_nd
+        # §7): refuse any other PyAutoFit before spending the run (local runs are free).
+        from searches import _correlated_nd as cnd
+
+        refusal = wave_refusal(2, library_revisions(), cnd.PYAUTOFIT_PIN)
+        if refusal:
+            print(f"ERROR: correlated_nd pilot: {refusal}", file=sys.stderr)
             return 2
 
     # --- imports: everything below here sees the backend environment above ---
@@ -789,7 +824,11 @@ def run_search(
 
     import numpy as np
     from autofit.non_linear.fitness import Fitness
-    from models import gaussian_x3 as gx3
+
+    if family:
+        from models import correlated_nd as fam
+    else:
+        from models import gaussian_x3 as gx3
 
     from searches import _posterior as post
     from searches import _protocol as protocol
@@ -797,13 +836,21 @@ def run_search(
 
     use_jax = cli.backend == "jax_cpu"
     seed = cli.seed
+    # The A4 search-level seed is passed from gaussian_x3 wave 2 on, and on every
+    # correlated_nd row (protocol correlated_nd §7): its pilot runs at the same pin.
+    seed_wave = max(wave, 2) if family else wave
     root = _ROOT
     np.random.seed(seed)
 
     dataset_dir = auto_simulate_if_missing(dataset_class, cli.data_seed, root)
-    data, noise_map, truth_record = gx3.load_dataset(dataset_dir)
-    data_seed = int(truth_record["data_seed"])
-    truths = gx3.truth_dict(truth_record)
+    if family:
+        ds = fam.load_dataset(dataset_dir)
+        data_seed = ds.data_seed
+        truths = fam.truth_dict(ds)
+    else:
+        data, noise_map, truth_record = gx3.load_dataset(dataset_dir)
+        data_seed = int(truth_record["data_seed"])
+        truths = gx3.truth_dict(truth_record)
 
     output_root = cli.output_dir or Path(os.environ.get("PYAUTO_OUTPUT_DIR") or (root / "output"))
     output_root = Path(output_root).resolve()
@@ -819,12 +866,19 @@ def run_search(
     if reference and reference.get("max_log_likelihood") is not None:
         target_log_l = float(reference["max_log_likelihood"])
 
-    model = gx3.build_model(dataset=dataset_class)
-    keys = gx3.parameter_keys(model)
     tracker = MLTracker()
-    analysis = gx3.TrackedAnalysisGaussianX3(
-        data=data, noise_map=noise_map, use_jax=use_jax, tracker=None if use_jax else tracker
-    )
+    if family:
+        model = fam.build_model(ds)
+        keys = fam.parameter_keys(model)
+        analysis = fam.TrackedAnalysisCorrelatedND(
+            dataset=ds, use_jax=use_jax, tracker=None if use_jax else tracker
+        )
+    else:
+        model = gx3.build_model(dataset=dataset_class)
+        keys = gx3.parameter_keys(model)
+        analysis = gx3.TrackedAnalysisGaussianX3(
+            data=data, noise_map=noise_map, use_jax=use_jax, tracker=None if use_jax else tracker
+        )
 
     compile_cache = cli.compile_cache if use_jax else None
     config_id = config_segment(cli.config_name, compile_cache)
@@ -834,7 +888,13 @@ def run_search(
     )
     search_name = sampler
     search = build_search(
-        af, spec, settings, path_prefix=str(path_prefix), name=search_name, seed=seed, wave=wave
+        af,
+        spec,
+        settings,
+        path_prefix=str(path_prefix),
+        name=search_name,
+        seed=seed,
+        wave=seed_wave,
     )
     search_root = with_test_mode_segment(output_root) / path_prefix
 
@@ -851,7 +911,9 @@ def run_search(
         n_batch = int(settings.get("n_batch", getattr(search, "n_batch", 1) or 1))
         fitness = Fitness(
             model=model,
-            analysis=gx3.AnalysisGaussianX3(data=data, noise_map=noise_map, use_jax=use_jax),
+            analysis=fam.AnalysisCorrelatedND(dataset=ds, use_jax=use_jax)
+            if family
+            else gx3.AnalysisGaussianX3(data=data, noise_map=noise_map, use_jax=use_jax),
             paths=None,
             fom_is_log_likelihood=True,
             resample_figure_of_merit=RESAMPLE_SENTINEL,
@@ -892,6 +954,7 @@ def run_search(
     summary: dict = {}
     log_l_history: list[float] = []
     ppc_chi2 = None
+    whitened = None
     log_evidence = None
     termination = None
     chain_diag: dict = {}
@@ -916,7 +979,7 @@ def run_search(
                 search_name,
                 seed,
                 record=timing["provider"],
-                wave=wave,
+                wave=seed_wave,
             )
         tracker.t0 = time.time()
         fit_start = time.perf_counter()
@@ -935,6 +998,8 @@ def run_search(
             keys,
             np.asarray(samples.log_likelihood_list, dtype=float),
             np.asarray(samples.log_posterior_list, dtype=float),
+            # correlated_nd has no label symmetry: no relabelling, modes or orderings.
+            relabel=not family,
         )
         try:
             log_evidence = float(samples.log_evidence)
@@ -948,18 +1013,24 @@ def run_search(
             termination = nested_termination(sampler, search, internal)
         if spec.family == "chain":
             chain_diag = chain_diagnostics_for(spec, result, search, keys, post)
-        draws = post.relabel_matrix(post.equal_weight_draws(matrix, weights, PPC_DRAWS, seed), keys)
-        xvalues = np.arange(data.shape[0], dtype=float)
-        curves = np.array(
-            [
-                gx3.model_data_from(
-                    model.instance_from_vector(vector=list(row), ignore_assertions=True),
-                    xvalues,
-                )
-                for row in draws
-            ]
-        )
-        ppc_chi2 = float(np.sum(((data - np.median(curves, axis=0)) / noise_map) ** 2))
+        if family:
+            # §4(b)3 of correlated_nd@1: the exact whitening map applied to the samples.
+            whitened = fam.exact.whitened_stats(ds, matrix, weights)
+        else:
+            draws = post.relabel_matrix(
+                post.equal_weight_draws(matrix, weights, PPC_DRAWS, seed), keys
+            )
+            xvalues = np.arange(data.shape[0], dtype=float)
+            curves = np.array(
+                [
+                    gx3.model_data_from(
+                        model.instance_from_vector(vector=list(row), ignore_assertions=True),
+                        xvalues,
+                    )
+                    for row in draws
+                ]
+            )
+            ppc_chi2 = float(np.sum(((data - np.median(curves, axis=0)) / noise_map) ** 2))
     except BaseException as exc:
         status = f"failed: {type(exc).__name__}: {exc}"
         if total_wall_s is None and fit_start is not None:
@@ -1013,7 +1084,7 @@ def run_search(
         ess = summary.get("ess_kish")
         row = {
             "schema_version": SCHEMA_VERSION,
-            "protocol_id": protocol.PROTOCOL_IDS[wave],
+            "protocol_id": protocol.protocol_id_for(model_type, wave),
             "wave": wave,
             "run_id": rid,
             "target": f"{dataset_class}/data_seed{data_seed}/seed{seed}",
@@ -1025,9 +1096,13 @@ def run_search(
             "settings_name": settings_name,
             "settings": settings,
             "model": model_type,
-            "model_description": gx3.model_description(dataset_class),
-            "priors": gx3.priors_record(dataset_class),
-            "assertion_mechanism": gx3.assertion_mechanism(dataset_class, use_jax),
+            "model_description": fam.model_description(ds)
+            if family
+            else gx3.model_description(dataset_class),
+            "priors": fam.priors_record(ds) if family else gx3.priors_record(dataset_class),
+            "assertion_mechanism": fam.assertion_mechanism(ds, use_jax)
+            if family
+            else gx3.assertion_mechanism(dataset_class, use_jax),
             "config_name": cli.config_name,
             "where": cli.where,
             "backend": cli.backend,
@@ -1036,7 +1111,7 @@ def run_search(
             "dataset_class": dataset_class,
             "data_seed": data_seed,
             "seed": seed,
-            "seed_effective": seed_kwarg_for(spec, wave) is not None,
+            "seed_effective": seed_kwarg_for(spec, seed_wave) is not None,
             "version": af.__version__,
             "library_revisions": (revisions := library_revisions()),
             "pyautofit_commit": revisions.get("autofit"),
@@ -1082,6 +1157,15 @@ def run_search(
             "ess_bulk_min": chain_diag.get("ess_bulk_min"),
             "chain_diagnostics": chain_diag or None,
             "ppc_chi2": ppc_chi2,
+            # correlated_nd only (gaussian_x3 rows keep their schema): §4(b)3's statistic.
+            **(
+                {
+                    "whitened": whitened,
+                    "process_elapsed_s": time.perf_counter() - process_start,
+                }
+                if family
+                else {}
+            ),
             "truths": truths,
             "truth_delta_sigma": truth_delta_sigma_from(
                 summary.get("posterior_relabelled", {}), truths
