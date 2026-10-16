@@ -364,14 +364,23 @@ def test_accounting_sums_and_refuses():
         ),
         _pilot_row(planned[0], 4, pyautofit_commit="deadbeef"),
         _pilot_row(planned[0], 5, model="gaussian_x3"),
+        # SLURM's OOM kill (B5c-2a): its own class, never failed or missing.
+        _pilot_row(
+            planned[0],
+            6,
+            status=f"{cnd.OOM_STATUS} (no row: SLURM killed the run at its --mem 8G request)",
+            completed=False,
+            process_elapsed_s=9770.0,
+        ),
     ]
     out = cnd.accounting(rows)
     totals = out["totals"]
     assert totals["expected"] == 1040 and totals["deferred"] == 110
-    assert totals["row"] + totals["failed"] + totals["missing"] + totals["deferred"] == 1040
+    assert sum(totals[state] for state in cnd.ATTEMPT_CLASSES) == 1040
+    assert totals["oom"] == 1
     leg = out["legs"][0]
-    assert leg["row"] == 1 and leg["failed"] == [1, 3]
-    assert leg["missing"] == [2, 4, 5, 6, 7, 8, 9]  # the operational kill is missing
+    assert leg["row"] == 1 and leg["failed"] == [1, 3] and leg["oom"] == [6]
+    assert leg["missing"] == [2, 4, 5, 7, 8, 9]  # the operational kill is missing
     assert len(out["refused"]) == 2
 
 
@@ -502,3 +511,54 @@ def test_cap_stub_row_is_a_censored_admitted_failure(tmp_path):
     first = path.read_text()
     assert stub.main([*argv, "--exit-code", "124"]) == 0  # an existing row is never replaced
     assert path.read_text() == first
+
+
+def test_oom_kill_is_reconciled_from_sacct_never_a_cap_stub(tmp_path):
+    """B5c-2a: SLURM's OOM killer ends a run with SIGKILL, which ``timeout`` reports as
+    137, so the pilot wrote cap stubs for its four OUT_OF_MEMORY tasks. With the process
+    wall a 137 below the cap writes nothing, and ``--reconcile-oom`` rewrites a stub as an
+    ``oom`` row from the sacct record (never a runner-written row)."""
+    import cnd_cap_stub as stub
+
+    lines = (ROOT / "hpc" / "batch_cpu" / "correlated_nd" / "pilot.tsv").read_text().splitlines()
+    dataset, sampler, settings, config, data_seed, limit, seed = lines[263 + 1].split("\t")
+    argv = [
+        "--dataset", dataset, "--sampler", sampler, "--settings", settings, "--config",
+        config, "--data-seed", data_seed, "--seed", seed, "--limit", limit, "--root",
+        str(tmp_path), "--exit-code", "137",
+    ]  # fmt: skip
+    assert stub.main([*argv, "--elapsed-s", "9770"]) == 0
+    assert not list(tmp_path.rglob("*.json"))  # an OOM SIGKILL is not a cap kill
+    assert stub.main(argv) == 0  # without the wall: the pilot's (wrong) cap stub
+    (path,) = tmp_path.rglob("*.json")
+    sacct = tmp_path / "sacct.tsv"
+    sacct.write_text(
+        "# test\ntask\tjob\tstate\texit_code\telapsed_s\tmax_rss_kb\treq_mem\tnode\n"
+        "263\t410866_263\tOUT_OF_MEMORY\t0:125\t9770\t7594264\t8G\tn1\n"
+        "264\t410866_264\tCOMPLETED\t0:0\t14524\t7000000\t8G\tn1\n"
+    )
+    assert stub.main(["--reconcile-oom", str(sacct), "--root", str(tmp_path)]) == 0
+    row = json.loads(path.read_text())
+    assert cnd.out_of_memory(row) and cnd.admit(row) is None
+    assert row["process_elapsed_s"] == 9770.0 and row["oom"]["max_rss_gb"] == 7.24
+    leg = next(
+        leg
+        for leg in cnd.accounting([row])["legs"]
+        if leg["id"].startswith(f"{dataset}/{sampler}/{settings}/{row['config_id']}/")
+    )
+    assert leg["oom"] == [int(seed)] and leg["failed"] == [] and int(seed) in leg["oom"]
+    row.pop("stub")
+    path.write_text(json.dumps(row))
+    with pytest.raises(SystemExit):  # a runner-written row is never replaced
+        stub.reconcile_oom(sacct, tmp_path)
+
+
+def test_committed_pilot_accounts_for_every_task():
+    """Every task of RAL 410866 is exactly one attempt class; the four OUT_OF_MEMORY
+    tasks are the oom rows."""
+    from searches import judge_correlated_nd as judge
+
+    doc = judge.judge(ROOT)
+    assert not doc["problems"], doc["problems"]
+    assert doc["totals"]["expected"] == 1040 and doc["totals"]["oom"] == 4
+    assert sum(doc["totals"][s] for s in cnd.ATTEMPT_CLASSES) == 1040

@@ -103,6 +103,24 @@ def test_chain_diagnostics_flag_a_stuck_chain():
     assert bad["rhat_max"] > 1.2 and bad["ess_bulk_min"] < 100
 
 
+def test_chain_diagnostics_without_label_symmetry():
+    """B5c-2a: the correlated_nd pilot's 80 Emcee/Zeus rows failed after the search
+    because the chain diagnostics relabelled by ``g0.centre``; a family with no label
+    symmetry (``x000 …``) is diagnosed on its parameters as they are."""
+    import numpy as np
+    from searches._posterior import chain_diagnostics
+
+    keys = [f"x{i:03d}" for i in range(20)]
+    rng = np.random.default_rng(1)
+    chain = rng.normal(size=(1000, 50, 20))
+    out = chain_diagnostics(chain, keys, relabel=False)
+    assert out["rhat_max"] < 1.01 and out["ess_bulk_min"] > 1000
+    import pytest
+
+    with pytest.raises(ValueError, match="g0.centre"):
+        chain_diagnostics(chain, keys)
+
+
 def test_a_constant_parameter_fails_convergence_never_drops_out():
     """Review 06 finding 5: a parameter frozen at one value in every draw and chain has
     NaN R-hat/ESS; it must fail convergence, not vanish from the aggregate."""
