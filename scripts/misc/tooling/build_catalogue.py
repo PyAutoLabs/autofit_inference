@@ -702,22 +702,18 @@ CND_TASK_CRITERIA = {
 
 def correlated_nd_section(root: Path) -> dict:
     """The second family's own section (B5c): by task, then dataset, separately from every
-    gaussian_x3 section. Its pilot ranks nothing, and nothing is ever compared across
-    families. Until the pilot is pulled (B5c-2) every planned leg is ``missing``."""
-    rows = []
-    for path in sorted((root / "results" / "searches").rglob("*.json")):
-        try:
-            payload = json.loads(path.read_text())
-        except (OSError, ValueError):
-            continue
-        if isinstance(payload, dict) and protocol.is_family_row(payload):
-            rows.append(payload)
-    accounting = cnd.accounting(rows)
+    gaussian_x3 section. Each leg carries its attempt classes (row / failed / missing /
+    deferred / oom) and its ``correlated_nd@1`` verdict counts from
+    ``searches/judge_correlated_nd.py``. Its pilot **ranks nothing**: legs are listed in
+    menu order, never ordered by a number, and nothing is compared across families."""
+    from searches import judge_correlated_nd as judge
+
+    doc = judge.judge(root)
     tasks = {
         task: {"label": TASK_LABELS[task], "judged_by": CND_TASK_CRITERIA[task], "datasets": {}}
         for task in TASK_LABELS
     }
-    for leg in accounting["legs"]:
+    for leg in doc["legs"]:
         entry = {
             "sampler": leg["sampler"],
             "settings": leg["settings"],
@@ -728,6 +724,14 @@ def correlated_nd_section(root: Path) -> dict:
             "failed": len(leg["failed"]),
             "missing": len(leg["missing"]),
             "deferred": len(leg["deferred"]),
+            "oom": len(leg["oom"]),
+            "attempts": leg["attempts"],
+            "acceptance": leg["acceptance"],
+            "convergence": leg["convergence"],
+            "failures": leg["failures"],
+            "success_rate": leg["success_rate"],
+            "success_rate_wilson_95": leg["success_rate_wilson_95"],
+            "median_attempt_wall_s": leg["median_attempt_wall_s"],
             "reason": leg["reason"],
         }
         tasks[leg["task"]]["datasets"].setdefault(leg["dataset"], []).append(entry)
@@ -736,13 +740,18 @@ def correlated_nd_section(root: Path) -> dict:
         "family": cnd.MODEL_TYPE,
         "campaign_task": cnd.WAVE_ID,
         "wave": "wave 1 (pilot): ranks nothing (protocol correlated_nd §9)",
-        "ranking": "none",
+        "ranking": "none: the pilot calibrates correlated_nd@2; legs are listed in menu order",
         "grouping": "by task, then dataset; tasks and datasets are never compared",
         "cross_family": "none: this family is catalogued apart from gaussian_x3 and no leg "
         "is ever ranked or compared across families (protocol correlated_nd §9)",
         "pyautofit_pin": cnd.PYAUTOFIT_PIN,
+        "slurm_job": judge.JOB,
+        "accounting": "results/accounting/correlated_nd_pilot.json",
+        "calibration": "results/calibration/correlated_nd_wave1.json (frozen as "
+        f"{protocol.CND2_PROTOCOL_ID}, protocol §11 A2)",
         "datasets": {name: {"dimension": d} for name, d in cnd.DIMENSION.items()},
-        "coverage": {**accounting["totals"], "refused": len(accounting["refused"])},
+        "coverage": {**doc["totals"], "refused": doc["refused_rows"]},
+        "acceptance": doc["acceptance"],
         "tasks": tasks,
     }
 
