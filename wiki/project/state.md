@@ -11,7 +11,58 @@ answer fastest, and how reliably, from a cold start and across seeds, on toy lik
 where the truth is known. The first benchmark is `gaussian_x3_blend` +
 `gaussian_x3_separated`.
 
-## Now: a second family, `correlated_nd`, pre-registered; its pilot on RAL (B5c)
+## Now: the `correlated_nd` pilot judged; `correlated_nd@2` frozen (B5c-2a)
+
+**Pulled and judged (B5c-2a, 2026-10-16, autofit_inference#17).** `results/` of RAL 410866
+came from the private copy `/mnt/ral/jnightin/inference/autofit_inference_b5c` (per-dataset
+tar on the login node; 930 rows; the 8 exact references there are byte-identical to the
+committed ones). Every expected run is accounted for
+(`results/accounting/correlated_nd_pilot.json` from `scripts/misc/searches/judge_correlated_nd.py`,
+reconciled with the committed `sacct` extract `results/accounting/correlated_nd_pilot_sacct.tsv`):
+**1040 expected = 749 completed rows + 177 failed + 4 `oom` + 0 missing + 110 deferred**; 930
+admitted, 0 refused. Under `correlated_nd@1`: **307 accepted, 623 rejected** (the 4 `oom`
+and 177 failed rows are rejected as not completed). The submit had given the four
+OUT_OF_MEMORY tasks (263/273/304/383) cap stubs: SLURM's OOM SIGKILL exits 137 under
+`timeout`, as the cap's own kill does. `cnd_cap_stub.py --reconcile-oom` rewrote them as `oom`
+rows carrying the sacct MaxRSS and wall. `oom` is a new attempt class
+(`_correlated_nd.ATTEMPT_CLASSES`), never `failed` or `missing`. The 177 failures:
+- 80 Emcee/Zeus rows (d20, banana) crashed in the runner's chain diagnostics after the
+  search, which relabelled by `g0.centre`. The harness is fixed and no verdict moves.
+- 60 d100 Nautilus rows. At n_live_100, Nautilus needs n_live > D. At n_live_200/400,
+  nautilus's HDF5 checkpoint cannot store a D = 100 bound (h5py "object header message is
+  too large").
+- 10 d100 warm NUTS rows: the provider failed.
+- 27 rows stopped at the 4 h cap (d50 Nautilus n_live_100, d50 warm NUTS).
+
+The catalogue's `correlated_nd@1` section is grouped by task and dataset in menu order. It
+ranks nothing: the pilot ranks nothing, and nothing is ranked across families.
+
+**Frozen.** `correlated_nd@2` (protocol §11 A2, `_protocol.FROZEN_CND2`) was committed in
+**`44c5e77f1fb0`** (`44c5e77f1fb0779f675a8f51247d812183e93b48`) on branch `feature/search-ext-b5c2a-freeze` **before any scored
+run existed**. Its values come from `results/calibration/correlated_nd_wave1.json`
+(`calibrate_correlated_nd.py`):
+- σ-ratio bands per task: evidence [0.85, 1.1] on 79 rows; posterior kept at [0.5, 2.0]
+  (1 row, < 20). The ESS and R-hat bars are kept.
+- 75 timed cells (`max(600 s, 10 × median pilot attempt wall)`) and 8 probe-first cells
+  (Emcee/Zeus on d20 and the banana).
+- 21 cells deferred with reasons: the 11 pre-registered cells (110 runs), the cap rule's
+  d50 Nautilus n_live_100 ×2 and d50 warm NUTS, and A2's d100 Nautilus ×6 and d100 warm
+  NUTS.
+- Memory per cell class `max(8 G, ceil(2 × peak))`: d50 Nautilus n_live_400 16 G, d100
+  cold NUTS 17 G, every other cell 8 G. An `oom` run is rerun once at twice its request.
+
+Pilot rows stay `@1`; scored rows are `@2` (`protocol_for`, tested). For information only,
+with no verdict moving: under the `@2` bands, 34 of the 307 accepted pilot rows would be
+rejected, all of them BlackJAX NUTS.
+
+**Next (B5c-2b, `draft/research/autofit_inference/search_ext_b5c2b_scored_wave_submit.md`):**
+B5c-2b adds the realisations (data seeds 2–3) and their exact references, the scored-wave
+manifest (83 cells × 50 seeds × 3 realisations = 12 450 runs, about 1 430 task-hours at the
+pilot medians) and the probe for the 8 probe-first cells. It then submits on RAL
+`--partition=ral` from a private pinned copy, with the memory requests above. No scored run
+exists yet.
+
+## Before: a second family, `correlated_nd`, pre-registered; its pilot on RAL (B5c)
 
 **Protocol first (B5c, 2026-10-15, autofit_inference#14).** `correlated_nd@1`
 (`wiki/project/protocol_correlated_nd.md`) was first committed in **`9ec37795f404`**

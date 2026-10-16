@@ -230,7 +230,12 @@ that reason. Pilot verdicts stay `@1`.
 harness and any `correlated_nd` row, and amended in place by **A1** (§11; commit
 `2d81df8`, its cap-censoring clause completed by the review-round-2 commit that adds
 `cnd_cap_stub.py`), still before any row or submission. `correlated_nd@1` is §1–§9 with A1
-applied. This line and §10 are bookkeeping added by later commits.
+applied. **`correlated_nd@2`** (§11 A2) was frozen in **`44c5e77f1fb0`** (`44c5e77f1fb0779f675a8f51247d812183e93b48`,
+autofit_inference branch `feature/search-ext-b5c2a-freeze`, autofit_inference#17,
+2026-10-16), before any scored row existed or was submitted; the PR's merge commit makes it
+reachable from `main`. Its scored wave runs at the pilot's pin (PyAutoFit `df6d218f10cd`,
+PyAutoNerves `7f3055b7f3d1`) unless B5c-2b records another with its submit. This line
+and §10 are bookkeeping added by later commits.
 
 ## 8. Headline numbers
 
@@ -340,3 +345,4 @@ Amendments made before any row they could affect exists.
   once at twice its cell's `--mem`; a second `oom` is a failed attempt censored at its
   wall. The other censoring rules are `gaussian_x3@2`'s. *Timing:* committed before any
   scored run exists or is submitted; the scored wave is declared and submitted by B5c-2b.
+  *Freeze commit:* **`44c5e77f1fb0`** (`44c5e77f1fb0779f675a8f51247d812183e93b48`), recorded here by the commit after it.
