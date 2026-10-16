@@ -345,4 +345,18 @@ Amendments made before any row they could affect exists.
   once at twice its cell's `--mem`; a second `oom` is a failed attempt censored at its
   wall. The other censoring rules are `gaussian_x3@2`'s. *Timing:* committed before any
   scored run exists or is submitted; the scored wave is declared and submitted by B5c-2b.
+  *Human rulings (2026-10-16, on autofit_inference#18).* **Per-task bands:** "its task" in
+  §7 means each task calibrates its own band, because a shared band would judge the
+  posterior task's NUTS rows against the evidence task's Nautilus σ noise (34 of the 307
+  accepted pilot rows, all BlackJAX NUTS, would flip); upheld. **ln Z in the evidence
+  calibration set:** requiring §4(c) is a **post-hoc change to the calibration set, made
+  after seeing the pilot**: without it the six collapsed banana Nautilus `n_live_200`
+  rows (σ ratios 0.04–0.13) would have dragged the lower edge to 0 — the evidence bands
+  would have been [0.0, 1.1] (marginal) and [0.05, 1.1] (whitened) on 105 rows instead of
+  [0.85, 1.1] on 79; upheld. Neither ruling touches a pilot verdict: pilot rows stay
+  `@1`, unaffected. **Emcee/Zeus:** the 80 d20/banana failures were a harness bug (chain
+  diagnostics relabelling by `g0.centre`, fixed in autofit_inference#18), not search
+  failures; those 8 cells are re-piloted cleanly before the scored wave (Mind task
+  B5c-2a-rerun), so their calibration and probe-first status here is provisional until
+  that rerun.
   *Freeze commit:* **`44c5e77f1fb0`** (`44c5e77f1fb0779f675a8f51247d812183e93b48`), recorded here by the commit after it.
