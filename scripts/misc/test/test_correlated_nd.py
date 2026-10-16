@@ -453,7 +453,7 @@ def test_family_rows_never_judged_against_another_backend_or_family():
     assert wrong["acceptance"] == "not_assessed" and "backend" in wrong["acceptance_reason"]
     stamped = _judged_row("posterior", _reference(), protocol_id="gaussian_x3@1")
     assert protocol.verdict(stamped, _reference())["acceptance"] == "not_assessed"
-    assert protocol.protocol_for({"model": "correlated_nd", "wave": 2}) is None
+    assert protocol.protocol_for({"model": "correlated_nd", "wave": 3}) is None
     assert protocol.protocol_id_for("correlated_nd", 1) == "correlated_nd@1"
     assert protocol.protocol_id_for("gaussian_x3", 2) == "gaussian_x3@2"
 
@@ -562,3 +562,101 @@ def test_committed_pilot_accounts_for_every_task():
     assert not doc["problems"], doc["problems"]
     assert doc["totals"]["expected"] == 1040 and doc["totals"]["oom"] == 4
     assert sum(doc["totals"][s] for s in cnd.ATTEMPT_CLASSES) == 1040
+
+
+# --- correlated_nd@2: the freeze (B5c-2a) ----------------------------------------------
+
+CND_CALIBRATION = json.loads(
+    (ROOT / "results" / "calibration" / "correlated_nd_wave1.json").read_text()
+)
+
+
+def test_frozen_cnd2_is_the_calibration_record():
+    def plain(v):
+        if isinstance(v, dict):
+            return {k: plain(x) for k, x in v.items()}
+        return list(v) if isinstance(v, tuple) else v
+
+    assert {k: plain(v) for k, v in protocol.FROZEN_CND2.items()} == CND_CALIBRATION["frozen"]
+    assert set(protocol.FROZEN_CND2) == set(protocol.PLACEHOLDERS_CND1)
+    assert protocol.PLACEHOLDERS_BY_PROTOCOL["correlated_nd@2"] == ()
+    for key in ("sigma_ratio_band", "whitened_sigma_ratio_band"):
+        for task in ("posterior", "evidence"):
+            lo, hi = protocol.FROZEN_CND2[key][task]
+            assert lo <= 0.98 and hi >= 1.02  # the §6 exact draws can never fail it
+        # The posterior task had 1 calibration row (< 20): its band does not move.
+        assert protocol.FROZEN_CND2[key]["posterior"] == protocol.THRESHOLDS_CND1[key]
+    t = protocol.task_thresholds(protocol.THRESHOLDS_CND2, "point_map")
+    assert t["sigma_ratio_band"] == protocol.THRESHOLDS_CND1["sigma_ratio_band"]
+
+
+def test_protocol_id_resolves_per_wave():
+    """A real pilot row is judged by ``correlated_nd@1``, a scored (wave-2) row by
+    ``correlated_nd@2``, and each verdict string carries its id; a row stamped with the
+    other wave's id is never judged."""
+    path = (
+        ROOT
+        / "results/searches/corr_gaussian_d20/data_seed1/nautilus/n_live_100/ral_numpy_fp64"
+        / "search_seed0.json"
+    )
+    pilot = json.loads(path.read_text())
+    ref = _reference()
+    assert protocol.protocol_for(pilot) == "correlated_nd@1"
+    v1 = protocol.verdict(pilot, ref)
+    assert v1["protocol_id"] == "correlated_nd@1"
+    assert v1["acceptance_reason"].startswith("correlated_nd@1: ")
+    assert v1["convergence_reason"].startswith("correlated_nd@1: ")
+    assert set(v1["placeholders"]) == set(protocol.PLACEHOLDERS_CND1)
+    scored = {**pilot, "wave": 2, "pilot": False, "protocol_id": "correlated_nd@2"}
+    assert protocol.protocol_for(scored) == "correlated_nd@2"
+    assert protocol.protocol_id_for("correlated_nd", 2) == "correlated_nd@2"
+    v2 = protocol.verdict(scored, ref)
+    assert v2["protocol_id"] == "correlated_nd@2" and v2["placeholders"] == []
+    assert v2["acceptance_reason"].startswith("correlated_nd@2: ")
+    assert v2["convergence_reason"].startswith("correlated_nd@2: ")
+    # The same statistics under the frozen band: a 0.80 sigma ratio passes @1, fails @2.
+    squashed = {**ref["posterior_relabelled"]}
+    key = next(iter(squashed))
+    squashed[key] = {**squashed[key], "sigma": 0.8 * squashed[key]["sigma"]}
+    assert (
+        protocol.verdict({**pilot, "posterior_relabelled": squashed}, ref)["acceptance"]
+        == "accepted"
+    )
+    assert (
+        protocol.verdict({**scored, "posterior_relabelled": squashed}, ref)["acceptance"]
+        == "rejected"
+    )
+    mixed = {**pilot, "wave": 2, "protocol_id": "correlated_nd@1"}
+    assert protocol.protocol_for(mixed) is None
+    assert protocol.verdict(mixed, ref)["acceptance"] == "not_assessed"
+
+
+def test_scored_wave_deferrals_and_memory_are_recorded():
+    deferred = CND_CALIBRATION["scored_deferred"]
+    for key in cnd.A2_DEFERRED:
+        assert any(name.startswith("/".join(key) + "/") for name in deferred)
+    # The cap rule: no pilot attempt of d50 Nautilus n_live_100 ended on its own.
+    assert "cap rule" in deferred["corr_gaussian_d50/nautilus/n_live_100/numpy"]
+    assert (
+        "provider"
+        in deferred["corr_gaussian_d50/blackjax_nuts_warm/warmup_200_samples_500/jax_cpu"]
+    )
+    assert CND_CALIBRATION["memory_raised_gb"] == {
+        "corr_gaussian_d100/blackjax_nuts/warmup_200_samples_500": 17,
+        "corr_gaussian_d50/nautilus/n_live_400": 16,
+    }
+    planned = {"/".join((c.dataset, c.sampler, c.settings, c.backend)) for c in cnd.cells()}
+    covered = set(CND_CALIBRATION["timeouts"]) | set(CND_CALIBRATION["probe_first"]) | set(deferred)
+    assert covered == planned  # every cell has a timeout, a probe or a deferral
+    assert not set(CND_CALIBRATION["timeouts"]) & set(deferred)
+
+
+def test_correlated_nd_rates_are_the_pilot_walls():
+    import calibrate_correlated_nd as calib
+    from wall import rates
+
+    rows = [row for _, row in calib.judge.family_rows(ROOT)]
+    assert rates.CORRELATED_ND_STEP_RATE == calib.derived_rates(rows)
+    assert not set(rates.CORRELATED_ND_STEP_RATE) & set(rates.STEP_RATE)
+    key = ("corr_gaussian_d20", "searches/nautilus", "correlated_nd", "ral_numpy", "fp64", 1, None)
+    assert rates.step_rate_for(*key) == rates.CORRELATED_ND_STEP_RATE[key]

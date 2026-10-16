@@ -298,7 +298,9 @@ def test_wave2_rows_never_enter_the_pilot_tooling(tmp_path):
 
 def test_rates_table_is_the_pilot_walls():
     assert rates.STEP_RATE == plan_wave2.derived_rates()
-    assert set(rates.PROVENANCE) == {key[3] for key in rates.STEP_RATE}
+    assert set(rates.PROVENANCE) == {
+        key[3] for table in (rates.STEP_RATE, rates.CORRELATED_ND_STEP_RATE) for key in table
+    }
 
 
 def test_committed_plan_is_current_and_passes_the_wall_gate():

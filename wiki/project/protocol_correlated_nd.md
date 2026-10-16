@@ -292,3 +292,51 @@ Amendments made before any row they could affect exists.
   at another PyAutoFit is refused by the runner. *Timing:* committed after the first
   commit of this file (`9ec37795f404`) and before any `correlated_nd` row or submission;
   `correlated_nd@1` is this file with A1 applied.
+
+- **A2 — 2026-10-16, before any scored row: `correlated_nd@2` (B5c-2a, autofit_inference#17).**
+  Calibrated on the pilot (RAL 410866: 1040 expected = 749 completed rows + 177 failed +
+  4 `oom` + 0 missing + 110 deferred; 307 accepted and 623 rejected under `@1`, verdicts
+  unchanged) by `scripts/misc/tooling/calibrate_correlated_nd.py` into
+  `results/calibration/correlated_nd_wave1.json`, frozen as `_protocol.FROZEN_CND2`.
+  `correlated_nd@2` is `@1` with this diff; pilot rows stay `@1` (wave 1), scored rows are
+  `@2` (wave 2, `_protocol.protocol_for`), every verdict string carries its id.
+  *(i) §4(b)2 and §4(b)3 σ-ratio bands, per task* ("a band may move only on ≥ 20
+  completed pilot rows of its task", §7). Calibration set per task: completed, converged
+  under §5, passing §4(b)1, the whitened-median half of §4(b)3 and, on the evidence task,
+  §4(c) — the last added after seeing the pilot, because 6 collapsed banana Nautilus
+  `n_live_200` rows (σ ratios 0.04–0.13) pass the medians against the banana's wide
+  reference σ and would have pulled the lower edge to 0. Evidence: 79 rows (all Nautilus
+  on the correlated Gaussians) → both bands **[0.85, 1.1]** (`floor_0.05(q0.5)` of the row
+  minima, `ceil_0.05(q99.5)` of the row maxima; each contains the §6 exact draws'
+  [0.98, 1.02]). Posterior: 1 row (< 20) → both bands **kept at [0.5, 2.0]**. Point/MAP
+  uses no band. *(ii) §5 bars kept:* Kish ESS 500, R-hat 1.01, bulk ESS 400 (1 of 60
+  completed chain rows meets both chain bars; recorded, not loosened). *(iii) §7
+  timeouts:* `max(600 s, 10 × the median pilot attempt wall)` per dataset × search ×
+  settings × backend, from the completed rows (75 cells; largest 36 875 s, d100
+  DynestyDynamic numpy); the 8 Emcee/Zeus cells of d20 and the banana have no completed
+  row — every attempt failed in the runner's chain diagnostics after the search (a
+  harness bug relabelling by `g0.centre`, fixed in B5c-2a) — and probe first. *(iv) §7
+  cap rule:* a cell none of whose pilot attempts ended on its own is deferred: d50
+  Nautilus `n_live_100` (both backends: 9 of 10 at the 4 h cap, the 10th `oom` at 2:42)
+  and d50 warm NUTS (9 at the cap, 1 `oom`; and its provider is deferred, rule 3).
+  *(v) Rulings:* d100 Nautilus `n_live_100` is deferred by construction (Nautilus needs
+  more live points than dimensions: 20 of 20 attempts raised it); d100 Nautilus
+  `n_live_200` and `n_live_400` are **deferred** — every attempt (40 of 40) failed at the
+  pin within 31–74 s, before its first bound was sampled, because nautilus's HDF5
+  checkpoint cannot store a D = 100 bound attribute (h5py "object header message is too
+  large"), so their wall and accuracy are unmeasured and affordability cannot be judged
+  from the pilot (d50 `n_live_200` took a median 820 s); they return only through a later
+  amendment after a fix. d100 warm NUTS is deferred with its provider (rule 3).
+  `_correlated_nd.A2_DEFERRED`; the scored wave is 83 cells (75 timed + 8 probe-first),
+  21 deferred with reasons (`scored_deferred`). *(vi) Memory:* per cell class (dataset ×
+  search × settings, both backends), `--mem = max(8 G, ceil(2 × peak))`, peak = the largest
+  sampled `sacct` MaxRSS, or 8 G when any pilot task was `OUT_OF_MEMORY` (sampled RSS
+  undercounts the peak at a kill: task 304 read 3.1 G when it was killed at 8 G). Raised:
+  d50 Nautilus `n_live_400` → **16 G** (one `oom`), d100 cold NUTS → **17 G** (MaxRSS
+  8.1 G); every other scored class stays at 8 G. The OOM cells' own measured MaxRSS (7.6,
+  7.7 and 8.4 G for tasks 263/273/383) belong to cells deferred under (iv). *(vii) §9
+  attempt classes:* every expected run is `row`, `failed`, `missing`, `deferred` or `oom`
+  (SLURM `OUT_OF_MEMORY`): an `oom` run is an operational failure of the request, rerun
+  once at twice its cell's `--mem`; a second `oom` is a failed attempt censored at its
+  wall. The other censoring rules are `gaussian_x3@2`'s. *Timing:* committed before any
+  scored run exists or is submitted; the scored wave is declared and submitted by B5c-2b.

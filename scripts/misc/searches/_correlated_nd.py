@@ -141,6 +141,35 @@ def deferral(dataset: str, sampler: str, settings: str) -> str | None:
     return None
 
 
+#: Amendment A2 (protocol §11, B5c-2a): cells the pilot showed cannot be scored at the pin,
+#: deferred from the scored wave by ruling (frozen with ``correlated_nd@2``; the pilot's own
+#: rows keep their ``@1`` verdicts). The cap rule's deferrals (every attempt stopped at the
+#: 4 h cap or killed out of memory) are computed by ``tooling/calibrate_correlated_nd.py``
+#: and recorded beside these in ``results/calibration/correlated_nd_wave1.json``.
+A2_DEFERRED = {
+    ("corr_gaussian_d100", "nautilus", "n_live_100"): (
+        "deferred (A2, by construction): Nautilus needs more live points than dimensions; "
+        "n_live 100 at D = 100 raised 'Number of points must be larger than number "
+        "dimensions' in every pilot attempt (20 of 20)"
+    ),
+    ("corr_gaussian_d100", "nautilus", "n_live_200"): (
+        "deferred (A2): every pilot attempt (20 of 20) failed at the pin before its first "
+        "bound was sampled: nautilus's HDF5 checkpoint cannot store a D = 100 bound "
+        "attribute (h5py 'object header message is too large'), so the cell's wall and "
+        "accuracy are unmeasured; re-admitted only by a later amendment after a fix"
+    ),
+    ("corr_gaussian_d100", "nautilus", "n_live_400"): (
+        "deferred (A2): every pilot attempt (20 of 20) failed at the pin before its first "
+        "bound was sampled (nautilus's HDF5 checkpoint, h5py 'object header message is "
+        "too large' at D = 100); re-admitted only by a later amendment after a fix"
+    ),
+    ("corr_gaussian_d100", "blackjax_nuts_warm", "warmup_200_samples_500"): (
+        "deferred (A2, warm-start provider, protocol §7 rule 3): its provider "
+        "nautilus/n_live_100 is deferred at D = 100 (A2)"
+    ),
+}
+
+
 @dataclass(frozen=True)
 class Cell:
     dataset: str
