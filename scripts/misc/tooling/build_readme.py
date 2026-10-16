@@ -241,14 +241,40 @@ def render_correlated_nd() -> str:
             f"{c.get('rows', 0)} ({c.get('failed', 0)}) |"
         )
     cov = section["coverage"]
+    acc = section.get("acceptance") or {}
     lines += [
         "",
-        f"Pilot: {cov['expected']} expected runs — {cov['row']} rows, {cov['failed']} failed, "
-        f"{cov['missing']} not yet pulled, {cov['deferred']} deferred with reasons "
-        f"(`catalogue/search_catalogue.json`, section `{section['protocol_id']}`). "
-        f"{section['wave'][0].upper()}{section['wave'][1:]}. Cross-family ranking: "
+        f"Pilot (RAL {section.get('slurm_job', '?')}): {cov['expected']} expected runs — "
+        f"{cov['row']} completed rows, {cov['failed']} failed, {cov.get('oom', 0)} killed out "
+        f"of memory (`oom`), {cov['missing']} missing, {cov['deferred']} deferred with reasons; "
+        f"under `{section['protocol_id']}` {acc.get('accepted', 0)} accepted and "
+        f"{acc.get('rejected', 0)} rejected (`catalogue/search_catalogue.json`, section "
+        f"`{section['protocol_id']}`). {section['wave'][0].upper()}{section['wave'][1:]}: "
+        "the table below is in menu order, never ranked. Cross-family ranking: "
         f"{section['cross_family']}.",
+        "",
     ]
+    for task, group in section["tasks"].items():
+        lines += [
+            f"**{group['label']}** — {group['judged_by']}",
+            "",
+            "| Dataset | Search | Settings | Config | Rows | Failed | OOM | Deferred | Accepted | "
+            "Success rate (Wilson 95 %) | Median wall (s) |",
+            "|---|---|---|---|---|---|---|---|---|---|---|",
+        ]
+        for dataset, legs in group["datasets"].items():
+            for leg in legs:
+                rate = leg.get("success_rate")
+                ci = leg.get("success_rate_wilson_95") or [None, None]
+                rate_text = f"{rate:.0%} ({ci[0]:.0%}–{ci[1]:.0%})" if rate is not None else DASH
+                lines.append(
+                    f"| `{dataset}` | `{leg['sampler']}` | `{leg['settings']}` | "
+                    f"`{leg['config_id']}` | {leg['rows']} | {leg['failed']} | "
+                    f"{leg.get('oom', 0)} | {leg['deferred']} | "
+                    f"{(leg.get('acceptance') or {}).get('accepted', 0)} | {rate_text} | "
+                    f"{_fmt(leg.get('median_attempt_wall_s'), '.0f')} |"
+                )
+        lines.append("")
     return "\n".join(lines) + "\n"
 
 

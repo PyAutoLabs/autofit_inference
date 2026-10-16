@@ -606,7 +606,9 @@ def run_warm_provider(
     return consumer, record
 
 
-def chain_diagnostics_for(spec: SamplerSpec, result, search, keys, post) -> dict:
+def chain_diagnostics_for(
+    spec: SamplerSpec, result, search, keys, post, relabel: bool = True
+) -> dict:
     """R-hat and bulk ESS for a chain search (protocol §5), from the sampler itself.
 
     BlackJAX NUTS writes ``rhat_max`` / ``ess_bulk_min`` (``blackjax.diagnostics``) into
@@ -633,7 +635,7 @@ def chain_diagnostics_for(spec: SamplerSpec, result, search, keys, post) -> dict
             chain = np.asarray(result.search_internal.get_chain(), dtype=float)
         except Exception as exc:  # pragma: no cover — depends on the sampler object
             return {"rhat_max": None, "ess_bulk_min": None, "reason": f"no chain: {exc}"}
-        out = post.chain_diagnostics(chain, keys)
+        out = post.chain_diagnostics(chain, keys, relabel=relabel)
         out["basis"] = "harness: rank-normalised split R-hat and bulk ESS over walkers"
         return out
     return {"rhat_max": None, "ess_bulk_min": None, "reason": f"{spec.cls} exposes no chain"}
@@ -1012,7 +1014,7 @@ def run_search(
                 internal = None
             termination = nested_termination(sampler, search, internal)
         if spec.family == "chain":
-            chain_diag = chain_diagnostics_for(spec, result, search, keys, post)
+            chain_diag = chain_diagnostics_for(spec, result, search, keys, post, relabel=not family)
         if family:
             # §4(b)3 of correlated_nd@1: the exact whitening map applied to the samples.
             whitened = fam.exact.whitened_stats(ds, matrix, weights)

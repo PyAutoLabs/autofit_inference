@@ -94,14 +94,17 @@ scripts/misc/searches/     _runner.py (run_search + registry), _posterior.py, _p
                            _metrics.py (MLTracker), _pilot.py (wave-1 manifest),
                            _wave2.py (scored wave-2 manifest, identity, accounting, pin),
                            judge_wave2.py (@2 admit/accounting CLI -> results/accounting/),
-                           _correlated_nd.py (the correlated_nd pilot manifest, deferrals)
+                           _correlated_nd.py (the correlated_nd pilot manifest, deferrals,
+                           attempt classes incl. oom, A2 scored-wave rulings),
+                           judge_correlated_nd.py (pilot @1 accounting + sacct reconcile)
 scripts/misc/reference/    reference-posterior, MAP and constant-likelihood runs + combiner;
                            exact_correlated_nd.py (the exact references + §6 self-test)
 scripts/misc/simulators/   the seeded dataset simulators (gaussian_x3, correlated_nd)
 scripts/misc/tooling/      build_readme.py, export_inference_summary.py, build_catalogue.py
                            (wave-1 pilot + gaussian_x3@2 sections), plan_wave2.py,
                            write_probe_timeouts.py (probe-first @2 timeouts),
-                           plan_correlated_nd.py (the correlated_nd pilot submit)
+                           plan_correlated_nd.py (the correlated_nd pilot submit),
+                           calibrate_correlated_nd.py (correlated_nd@2 freeze inputs)
 scripts/misc/wall/         the WALL-BASIS submit gate + rates from the pilot walls
 scripts/misc/test/         unit tests + the exporter fixture
 results/reference/         reference posteriors per dataset and backend

@@ -274,10 +274,13 @@ def _ess(x: np.ndarray) -> float:
     return float(m * n / max(tau, 1.0 / np.log10(m * n)))
 
 
-def chain_diagnostics(chain, keys, burn_in: float = 0.5) -> dict:
+def chain_diagnostics(chain, keys, burn_in: float = 0.5, relabel: bool = True) -> dict:
     """``rhat_max`` (rank-normalised split R-hat, the max of the bulk and folded
     versions) and ``ess_bulk_min`` over the relabelled parameters of a sampler-order
     chain ``(n_steps, n_chains, n_dim)``; the first ``burn_in`` fraction is discarded.
+    ``relabel=False`` for a model with no label symmetry (``correlated_nd``): its
+    parameters are used as they are (the B5c pilot's Emcee/Zeus rows failed here,
+    B5c-2a).
 
     For ensemble samplers (Emcee, Zeus) the walkers stand in for chains: they are not
     independent, so the R-hat is an ensemble-mixing diagnostic, not a strict one.
@@ -288,7 +291,8 @@ def chain_diagnostics(chain, keys, burn_in: float = 0.5) -> dict:
     start = int(arr.shape[0] * burn_in)
     kept = arr[start:]
     steps, chains, dim = kept.shape
-    relabelled = relabel_matrix(kept.reshape(-1, dim), keys).reshape(steps, chains, dim)
+    flat = kept.reshape(-1, dim)
+    relabelled = (relabel_matrix(flat, keys) if relabel else flat).reshape(steps, chains, dim)
     rhats, esses = [], []
     for j in range(dim):
         x = relabelled[:, :, j].T  # (chains, draws)

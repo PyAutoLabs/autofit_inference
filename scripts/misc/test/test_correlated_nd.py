@@ -364,14 +364,23 @@ def test_accounting_sums_and_refuses():
         ),
         _pilot_row(planned[0], 4, pyautofit_commit="deadbeef"),
         _pilot_row(planned[0], 5, model="gaussian_x3"),
+        # SLURM's OOM kill (B5c-2a): its own class, never failed or missing.
+        _pilot_row(
+            planned[0],
+            6,
+            status=f"{cnd.OOM_STATUS} (no row: SLURM killed the run at its --mem 8G request)",
+            completed=False,
+            process_elapsed_s=9770.0,
+        ),
     ]
     out = cnd.accounting(rows)
     totals = out["totals"]
     assert totals["expected"] == 1040 and totals["deferred"] == 110
-    assert totals["row"] + totals["failed"] + totals["missing"] + totals["deferred"] == 1040
+    assert sum(totals[state] for state in cnd.ATTEMPT_CLASSES) == 1040
+    assert totals["oom"] == 1
     leg = out["legs"][0]
-    assert leg["row"] == 1 and leg["failed"] == [1, 3]
-    assert leg["missing"] == [2, 4, 5, 6, 7, 8, 9]  # the operational kill is missing
+    assert leg["row"] == 1 and leg["failed"] == [1, 3] and leg["oom"] == [6]
+    assert leg["missing"] == [2, 4, 5, 7, 8, 9]  # the operational kill is missing
     assert len(out["refused"]) == 2
 
 
@@ -444,7 +453,7 @@ def test_family_rows_never_judged_against_another_backend_or_family():
     assert wrong["acceptance"] == "not_assessed" and "backend" in wrong["acceptance_reason"]
     stamped = _judged_row("posterior", _reference(), protocol_id="gaussian_x3@1")
     assert protocol.verdict(stamped, _reference())["acceptance"] == "not_assessed"
-    assert protocol.protocol_for({"model": "correlated_nd", "wave": 2}) is None
+    assert protocol.protocol_for({"model": "correlated_nd", "wave": 3}) is None
     assert protocol.protocol_id_for("correlated_nd", 1) == "correlated_nd@1"
     assert protocol.protocol_id_for("gaussian_x3", 2) == "gaussian_x3@2"
 
@@ -502,3 +511,152 @@ def test_cap_stub_row_is_a_censored_admitted_failure(tmp_path):
     first = path.read_text()
     assert stub.main([*argv, "--exit-code", "124"]) == 0  # an existing row is never replaced
     assert path.read_text() == first
+
+
+def test_oom_kill_is_reconciled_from_sacct_never_a_cap_stub(tmp_path):
+    """B5c-2a: SLURM's OOM killer ends a run with SIGKILL, which ``timeout`` reports as
+    137, so the pilot wrote cap stubs for its four OUT_OF_MEMORY tasks. With the process
+    wall a 137 below the cap writes nothing, and ``--reconcile-oom`` rewrites a stub as an
+    ``oom`` row from the sacct record (never a runner-written row)."""
+    import cnd_cap_stub as stub
+
+    lines = (ROOT / "hpc" / "batch_cpu" / "correlated_nd" / "pilot.tsv").read_text().splitlines()
+    dataset, sampler, settings, config, data_seed, limit, seed = lines[263 + 1].split("\t")
+    argv = [
+        "--dataset", dataset, "--sampler", sampler, "--settings", settings, "--config",
+        config, "--data-seed", data_seed, "--seed", seed, "--limit", limit, "--root",
+        str(tmp_path), "--exit-code", "137",
+    ]  # fmt: skip
+    assert stub.main([*argv, "--elapsed-s", "9770"]) == 0
+    assert not list(tmp_path.rglob("*.json"))  # an OOM SIGKILL is not a cap kill
+    assert stub.main(argv) == 0  # without the wall: the pilot's (wrong) cap stub
+    (path,) = tmp_path.rglob("*.json")
+    sacct = tmp_path / "sacct.tsv"
+    sacct.write_text(
+        "# test\ntask\tjob\tstate\texit_code\telapsed_s\tmax_rss_kb\treq_mem\tnode\n"
+        "263\t410866_263\tOUT_OF_MEMORY\t0:125\t9770\t7594264\t8G\tn1\n"
+        "264\t410866_264\tCOMPLETED\t0:0\t14524\t7000000\t8G\tn1\n"
+    )
+    assert stub.main(["--reconcile-oom", str(sacct), "--root", str(tmp_path)]) == 0
+    row = json.loads(path.read_text())
+    assert cnd.out_of_memory(row) and cnd.admit(row) is None
+    assert row["process_elapsed_s"] == 9770.0 and row["oom"]["max_rss_gb"] == 7.24
+    leg = next(
+        leg
+        for leg in cnd.accounting([row])["legs"]
+        if leg["id"].startswith(f"{dataset}/{sampler}/{settings}/{row['config_id']}/")
+    )
+    assert leg["oom"] == [int(seed)] and leg["failed"] == [] and int(seed) in leg["oom"]
+    row.pop("stub")
+    path.write_text(json.dumps(row))
+    with pytest.raises(SystemExit):  # a runner-written row is never replaced
+        stub.reconcile_oom(sacct, tmp_path)
+
+
+def test_committed_pilot_accounts_for_every_task():
+    """Every task of RAL 410866 is exactly one attempt class; the four OUT_OF_MEMORY
+    tasks are the oom rows."""
+    from searches import judge_correlated_nd as judge
+
+    doc = judge.judge(ROOT)
+    assert not doc["problems"], doc["problems"]
+    assert doc["totals"]["expected"] == 1040 and doc["totals"]["oom"] == 4
+    assert sum(doc["totals"][s] for s in cnd.ATTEMPT_CLASSES) == 1040
+
+
+# --- correlated_nd@2: the freeze (B5c-2a) ----------------------------------------------
+
+CND_CALIBRATION = json.loads(
+    (ROOT / "results" / "calibration" / "correlated_nd_wave1.json").read_text()
+)
+
+
+def test_frozen_cnd2_is_the_calibration_record():
+    def plain(v):
+        if isinstance(v, dict):
+            return {k: plain(x) for k, x in v.items()}
+        return list(v) if isinstance(v, tuple) else v
+
+    assert {k: plain(v) for k, v in protocol.FROZEN_CND2.items()} == CND_CALIBRATION["frozen"]
+    assert set(protocol.FROZEN_CND2) == set(protocol.PLACEHOLDERS_CND1)
+    assert protocol.PLACEHOLDERS_BY_PROTOCOL["correlated_nd@2"] == ()
+    for key in ("sigma_ratio_band", "whitened_sigma_ratio_band"):
+        for task in ("posterior", "evidence"):
+            lo, hi = protocol.FROZEN_CND2[key][task]
+            assert lo <= 0.98 and hi >= 1.02  # the §6 exact draws can never fail it
+        # The posterior task had 1 calibration row (< 20): its band does not move.
+        assert protocol.FROZEN_CND2[key]["posterior"] == protocol.THRESHOLDS_CND1[key]
+    t = protocol.task_thresholds(protocol.THRESHOLDS_CND2, "point_map")
+    assert t["sigma_ratio_band"] == protocol.THRESHOLDS_CND1["sigma_ratio_band"]
+
+
+def test_protocol_id_resolves_per_wave():
+    """A real pilot row is judged by ``correlated_nd@1``, a scored (wave-2) row by
+    ``correlated_nd@2``, and each verdict string carries its id; a row stamped with the
+    other wave's id is never judged."""
+    path = (
+        ROOT
+        / "results/searches/corr_gaussian_d20/data_seed1/nautilus/n_live_100/ral_numpy_fp64"
+        / "search_seed0.json"
+    )
+    pilot = json.loads(path.read_text())
+    ref = _reference()
+    assert protocol.protocol_for(pilot) == "correlated_nd@1"
+    v1 = protocol.verdict(pilot, ref)
+    assert v1["protocol_id"] == "correlated_nd@1"
+    assert v1["acceptance_reason"].startswith("correlated_nd@1: ")
+    assert v1["convergence_reason"].startswith("correlated_nd@1: ")
+    assert set(v1["placeholders"]) == set(protocol.PLACEHOLDERS_CND1)
+    scored = {**pilot, "wave": 2, "pilot": False, "protocol_id": "correlated_nd@2"}
+    assert protocol.protocol_for(scored) == "correlated_nd@2"
+    assert protocol.protocol_id_for("correlated_nd", 2) == "correlated_nd@2"
+    v2 = protocol.verdict(scored, ref)
+    assert v2["protocol_id"] == "correlated_nd@2" and v2["placeholders"] == []
+    assert v2["acceptance_reason"].startswith("correlated_nd@2: ")
+    assert v2["convergence_reason"].startswith("correlated_nd@2: ")
+    # The same statistics under the frozen band: a 0.80 sigma ratio passes @1, fails @2.
+    squashed = {**ref["posterior_relabelled"]}
+    key = next(iter(squashed))
+    squashed[key] = {**squashed[key], "sigma": 0.8 * squashed[key]["sigma"]}
+    assert (
+        protocol.verdict({**pilot, "posterior_relabelled": squashed}, ref)["acceptance"]
+        == "accepted"
+    )
+    assert (
+        protocol.verdict({**scored, "posterior_relabelled": squashed}, ref)["acceptance"]
+        == "rejected"
+    )
+    mixed = {**pilot, "wave": 2, "protocol_id": "correlated_nd@1"}
+    assert protocol.protocol_for(mixed) is None
+    assert protocol.verdict(mixed, ref)["acceptance"] == "not_assessed"
+
+
+def test_scored_wave_deferrals_and_memory_are_recorded():
+    deferred = CND_CALIBRATION["scored_deferred"]
+    for key in cnd.A2_DEFERRED:
+        assert any(name.startswith("/".join(key) + "/") for name in deferred)
+    # The cap rule: no pilot attempt of d50 Nautilus n_live_100 ended on its own.
+    assert "cap rule" in deferred["corr_gaussian_d50/nautilus/n_live_100/numpy"]
+    assert (
+        "provider"
+        in deferred["corr_gaussian_d50/blackjax_nuts_warm/warmup_200_samples_500/jax_cpu"]
+    )
+    assert CND_CALIBRATION["memory_raised_gb"] == {
+        "corr_gaussian_d100/blackjax_nuts/warmup_200_samples_500": 17,
+        "corr_gaussian_d50/nautilus/n_live_400": 16,
+    }
+    planned = {"/".join((c.dataset, c.sampler, c.settings, c.backend)) for c in cnd.cells()}
+    covered = set(CND_CALIBRATION["timeouts"]) | set(CND_CALIBRATION["probe_first"]) | set(deferred)
+    assert covered == planned  # every cell has a timeout, a probe or a deferral
+    assert not set(CND_CALIBRATION["timeouts"]) & set(deferred)
+
+
+def test_correlated_nd_rates_are_the_pilot_walls():
+    import calibrate_correlated_nd as calib
+    from wall import rates
+
+    rows = [row for _, row in calib.judge.family_rows(ROOT)]
+    assert rates.CORRELATED_ND_STEP_RATE == calib.derived_rates(rows)
+    assert not set(rates.CORRELATED_ND_STEP_RATE) & set(rates.STEP_RATE)
+    key = ("corr_gaussian_d20", "searches/nautilus", "correlated_nd", "ral_numpy", "fp64", 1, None)
+    assert rates.step_rate_for(*key) == rates.CORRELATED_ND_STEP_RATE[key]

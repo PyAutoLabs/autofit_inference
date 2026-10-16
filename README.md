@@ -68,12 +68,132 @@ cell of the gaussian_x3 wave-2 menu × the four datasets) runs on RAL `--partiti
 <!-- BEGIN auto-table:correlated_nd -->
 | Dataset | D | Exact ln Z | H (nat) | Exact references | Planned cells | Deferred cells | Pilot rows (failed) |
 |---|---|---|---|---|---|---|---|
-| `corr_gaussian_d20` | 20 | -93.020 | 53.1 | `jax_cpu` complete, `numpy` complete | 26 | 0 | 0 (0) |
-| `corr_gaussian_d50` | 50 | -233.019 | 133.3 | `jax_cpu` complete, `numpy` complete | 22 | 4 | 0 (0) |
-| `corr_gaussian_d100` | 100 | -467.088 | 267.6 | `jax_cpu` complete, `numpy` complete | 19 | 7 | 0 (0) |
-| `rosenbrock_d20` | 20 | -140.946 | 133.3 | `jax_cpu` complete, `numpy` complete | 26 | 0 | 0 (0) |
+| `corr_gaussian_d20` | 20 | -93.020 | 53.1 | `jax_cpu` complete, `numpy` complete | 26 | 0 | 220 (40) |
+| `corr_gaussian_d50` | 50 | -233.019 | 133.3 | `jax_cpu` complete, `numpy` complete | 22 | 4 | 189 (27) |
+| `corr_gaussian_d100` | 100 | -467.088 | 267.6 | `jax_cpu` complete, `numpy` complete | 19 | 7 | 120 (70) |
+| `rosenbrock_d20` | 20 | -140.946 | 133.3 | `jax_cpu` complete, `numpy` complete | 26 | 0 | 220 (40) |
 
-Pilot: 1040 expected runs — 0 rows, 0 failed, 930 not yet pulled, 110 deferred with reasons (`catalogue/search_catalogue.json`, section `correlated_nd@1`). Wave 1 (pilot): ranks nothing (protocol correlated_nd §9). Cross-family ranking: none: this family is catalogued apart from gaussian_x3 and no leg is ever ranked or compared across families (protocol correlated_nd §9).
+Pilot (RAL 410866): 1040 expected runs — 749 completed rows, 177 failed, 4 killed out of memory (`oom`), 0 missing, 110 deferred with reasons; under `correlated_nd@1` 307 accepted and 623 rejected (`catalogue/search_catalogue.json`, section `correlated_nd@1`). Wave 1 (pilot): ranks nothing (protocol correlated_nd §9): the table below is in menu order, never ranked. Cross-family ranking: none: this family is catalogued apart from gaussian_x3 and no leg is ever ranked or compared across families (protocol correlated_nd §9).
+
+**point/MAP** — correlated_nd §4(a): max_log_posterior >= exact MAP - 1 nat
+
+| Dataset | Search | Settings | Config | Rows | Failed | OOM | Deferred | Accepted | Success rate (Wilson 95 %) | Median wall (s) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `corr_gaussian_d20` | `lbfgs` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 6 |
+| `corr_gaussian_d20` | `lbfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 6 |
+| `corr_gaussian_d20` | `bfgs` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 6 |
+| `corr_gaussian_d20` | `bfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 6 |
+| `corr_gaussian_d20` | `multi_start_adam` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 10 |
+| `corr_gaussian_d20` | `multi_start_prodigy` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 17 |
+| `corr_gaussian_d20` | `multi_start_adabelief` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 10 |
+| `corr_gaussian_d20` | `multi_start_lion` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 8 |
+| `corr_gaussian_d50` | `lbfgs` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 18 |
+| `corr_gaussian_d50` | `lbfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 14 |
+| `corr_gaussian_d50` | `bfgs` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 15 |
+| `corr_gaussian_d50` | `bfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 14 |
+| `corr_gaussian_d50` | `multi_start_adam` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 16 |
+| `corr_gaussian_d50` | `multi_start_prodigy` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 21 |
+| `corr_gaussian_d50` | `multi_start_adabelief` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 16 |
+| `corr_gaussian_d50` | `multi_start_lion` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 18 |
+| `corr_gaussian_d100` | `lbfgs` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 51 |
+| `corr_gaussian_d100` | `lbfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 33 |
+| `corr_gaussian_d100` | `bfgs` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 40 |
+| `corr_gaussian_d100` | `bfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 31 |
+| `corr_gaussian_d100` | `multi_start_adam` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 35 |
+| `corr_gaussian_d100` | `multi_start_prodigy` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 39 |
+| `corr_gaussian_d100` | `multi_start_adabelief` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 35 |
+| `corr_gaussian_d100` | `multi_start_lion` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 34 |
+| `rosenbrock_d20` | `lbfgs` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 7 |
+| `rosenbrock_d20` | `lbfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 8 |
+| `rosenbrock_d20` | `bfgs` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 8 | 80% (49%–94%) | 11 |
+| `rosenbrock_d20` | `bfgs` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 8 | 80% (49%–94%) | 8 |
+| `rosenbrock_d20` | `multi_start_adam` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 10 |
+| `rosenbrock_d20` | `multi_start_prodigy` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 15 |
+| `rosenbrock_d20` | `multi_start_adabelief` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 11 |
+| `rosenbrock_d20` | `multi_start_lion` | `starts_48_steps_300` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 9 |
+
+**posterior** — correlated_nd §4(b): medians, sigma-ratio band, whitened coordinates
+
+| Dataset | Search | Settings | Config | Rows | Failed | OOM | Deferred | Accepted | Success rate (Wilson 95 %) | Median wall (s) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `corr_gaussian_d20` | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d20` | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d20` | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d20` | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d20` | `blackjax_nuts` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 31 |
+| `corr_gaussian_d20` | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 210 |
+| `corr_gaussian_d20` | `smc` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 22 |
+| `corr_gaussian_d50` | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d50` | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d50` | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d50` | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d50` | `blackjax_nuts` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 95 |
+| `corr_gaussian_d50` | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 0 | 9 | 1 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d50` | `smc` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 46 |
+| `corr_gaussian_d100` | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d100` | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d100` | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d100` | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d100` | `blackjax_nuts` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 378 |
+| `corr_gaussian_d100` | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d100` | `smc` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 105 |
+| `rosenbrock_d20` | `emcee` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `rosenbrock_d20` | `emcee` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `rosenbrock_d20` | `zeus` | `walkers_50_steps_2000` | `ral_numpy_fp64` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `rosenbrock_d20` | `zeus` | `walkers_50_steps_2000` | `ral_jax_cpu_fp64_cache_warm` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `rosenbrock_d20` | `blackjax_nuts` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 36 |
+| `rosenbrock_d20` | `blackjax_nuts_warm` | `warmup_200_samples_500` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 2 | 20% (6%–51%) | 485 |
+| `rosenbrock_d20` | `smc` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 32 |
+
+**evidence** — correlated_nd §4(b) and §4(c): posterior accuracy and ln Z within 1 nat of the exact ln Z
+
+| Dataset | Search | Settings | Config | Rows | Failed | OOM | Deferred | Accepted | Success rate (Wilson 95 %) | Median wall (s) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `corr_gaussian_d20` | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 211 |
+| `corr_gaussian_d20` | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 209 |
+| `corr_gaussian_d20` | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 234 |
+| `corr_gaussian_d20` | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 233 |
+| `corr_gaussian_d20` | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 356 |
+| `corr_gaussian_d20` | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 355 |
+| `corr_gaussian_d20` | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 29 |
+| `corr_gaussian_d20` | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 26 |
+| `corr_gaussian_d20` | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 92 |
+| `corr_gaussian_d20` | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 90 |
+| `corr_gaussian_d20` | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 20 |
+| `corr_gaussian_d50` | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 0 | 9 | 1 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d50` | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 0 | 9 | 1 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d50` | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 818 |
+| `corr_gaussian_d50` | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 821 |
+| `corr_gaussian_d50` | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 9 | 0 | 1 | 0 | 9 | 90% (60%–98%) | 3514 |
+| `corr_gaussian_d50` | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 10 | 100% (72%–100%) | 3442 |
+| `corr_gaussian_d50` | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 367 |
+| `corr_gaussian_d50` | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 439 |
+| `corr_gaussian_d50` | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 1524 |
+| `corr_gaussian_d50` | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 1530 |
+| `corr_gaussian_d50` | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 53 |
+| `corr_gaussian_d100` | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d100` | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d100` | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d100` | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d100` | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d100` | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 0 | 10 | 0 | 0 | 0 | 0% (0%–28%) | — |
+| `corr_gaussian_d100` | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d100` | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `corr_gaussian_d100` | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 3688 |
+| `corr_gaussian_d100` | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 3139 |
+| `corr_gaussian_d100` | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 0 | 0 | 0 | 10 | 0 | — | — |
+| `rosenbrock_d20` | `nautilus` | `n_live_100` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 574 |
+| `rosenbrock_d20` | `nautilus` | `n_live_100` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 572 |
+| `rosenbrock_d20` | `nautilus` | `n_live_200` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 1184 |
+| `rosenbrock_d20` | `nautilus` | `n_live_200` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 1028 |
+| `rosenbrock_d20` | `nautilus` | `n_live_400` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 3556 |
+| `rosenbrock_d20` | `nautilus` | `n_live_400` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 3505 |
+| `rosenbrock_d20` | `dynesty_static` | `nlive_200` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 66 |
+| `rosenbrock_d20` | `dynesty_static` | `nlive_200` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 67 |
+| `rosenbrock_d20` | `dynesty_dynamic` | `default` | `ral_numpy_fp64` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 217 |
+| `rosenbrock_d20` | `dynesty_dynamic` | `default` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 211 |
+| `rosenbrock_d20` | `nss` | `n_live_200_mcmc_steps_50` | `ral_jax_cpu_fp64_cache_warm` | 10 | 0 | 0 | 0 | 0 | 0% (0%–28%) | 27 |
+
 <!-- END auto-table:correlated_nd -->
 
 ## Running

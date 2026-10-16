@@ -22,8 +22,10 @@ judged by their own protocol, ``correlated_nd@1`` (``wiki/project/protocol_corre
 reference search): §4(a) and §4(c) as above with no evidence offset (no assertions), and
 §4(b) replaces the posterior-predictive and mode criteria with a whitened-coordinate
 check (§4(b)3 of that protocol, read from the row's ``whitened`` block). Every
-``correlated_nd@1`` verdict string starts with the id. Nothing here ranks or compares
-across families.
+``correlated_nd`` verdict string starts with the id. ``correlated_nd@2``
+(:data:`FROZEN_CND2`, protocol §11 A2) was frozen from the pilot before any scored row
+(B5c-2a): pilot rows (wave 1) stay ``@1``, scored rows (wave 2) are ``@2``
+(:func:`protocol_for`). Nothing here ranks or compares across families.
 """
 
 from __future__ import annotations
@@ -107,10 +109,12 @@ TIMEOUT_RULE_V2 = (
 
 THRESHOLDS_V2 = {**THRESHOLDS, **FROZEN_V2}
 
-#: The second family's protocol per wave (B5c): only its pilot (wave 1) is declared; the
-#: scored wave waits for ``correlated_nd@2``, frozen from the pilot (protocol §7).
-FAMILY_PROTOCOL_IDS = {"correlated_nd": {1: "correlated_nd@1"}}
+#: The second family's protocol per wave (B5c): the pilot (wave 1) is ``correlated_nd@1``;
+#: the scored wave (wave 2) is ``correlated_nd@2``, frozen from the pilot (protocol §7,
+#: §11 A2; B5c-2a). The scored wave's runs are declared and submitted by B5c-2b.
+FAMILY_PROTOCOL_IDS = {"correlated_nd": {1: "correlated_nd@1", 2: "correlated_nd@2"}}
 CND_PROTOCOL_ID = FAMILY_PROTOCOL_IDS["correlated_nd"][1]
+CND2_PROTOCOL_ID = FAMILY_PROTOCOL_IDS["correlated_nd"][2]
 
 #: ``correlated_nd@1`` (protocol ``wiki/project/protocol_correlated_nd.md`` §4, §5). The
 #: values are gaussian_x3@2's frozen ones where the criterion is the same; the
@@ -141,10 +145,44 @@ PLACEHOLDERS_CND1 = (
     "chain_min_ess",
 )
 
+#: ``correlated_nd@2`` — the five PLACEHOLDERs frozen from the calibration record
+#: ``results/calibration/correlated_nd_wave1.json`` (``frozen``; B5c-2a, protocol §11 A2).
+#: The σ-ratio bands are per task ("a band may move only on ≥ 20 completed pilot rows of
+#: its task", §7): on the evidence task both move [0.5, 2.0] → [0.85, 1.1] on 79
+#: calibration rows, each containing the §6 exact draws' [0.98, 1.02]; the posterior task
+#: has 1 calibration row (< 20) and keeps [0.5, 2.0]. The ESS and R-hat bars are kept.
+#: Copied by hand, a human-readable diff (``calibrate_correlated_nd.py`` docstring); a
+#: test pins it to the record. :func:`task_thresholds` resolves a per-task value.
+FROZEN_CND2 = {
+    "sigma_ratio_band": {"posterior": (0.5, 2.0), "evidence": (0.85, 1.1)},
+    "whitened_sigma_ratio_band": {"posterior": (0.5, 2.0), "evidence": (0.85, 1.1)},
+    "nested_min_ess": 500.0,
+    "chain_max_rhat": 1.01,
+    "chain_min_ess": 400.0,
+}
+
+#: The ``correlated_nd@2`` timeout, censoring and memory rules (protocol §7, §11 A2): per
+#: (dataset × search × settings × backend) ``max(600 s, 10 × the median pilot attempt
+#: wall)`` from the calibration record's ``timeouts``; a planned cell with no completed
+#: pilot row probes first; a cell none of whose pilot attempts ended on its own is deferred
+#: (``scored_deferred``). An ``oom`` run is rerun once at twice its cell's request, then a
+#: failed attempt; ``--mem`` per cell class is ``max(8 G, ceil(2 × the pilot peak))``.
+TIMEOUT_RULE_CND2 = (
+    "max(600 s, 10 x median pilot attempt wall) per dataset x search x settings x backend; "
+    "no completed pilot row: probe first; no pilot attempt ended on its own: deferred"
+)
+MEMORY_RULE_CND2 = (
+    "--mem per dataset x search x settings = max(8 G, ceil(2 x pilot peak)); peak = largest "
+    "sampled sacct MaxRSS, or 8 G when any pilot task was OUT_OF_MEMORY"
+)
+
+THRESHOLDS_CND2 = {**THRESHOLDS_CND1, **FROZEN_CND2}
+
 THRESHOLDS_BY_PROTOCOL = {
     PROTOCOL_IDS[1]: THRESHOLDS,
     PROTOCOL_IDS[2]: THRESHOLDS_V2,
     CND_PROTOCOL_ID: THRESHOLDS_CND1,
+    CND2_PROTOCOL_ID: THRESHOLDS_CND2,
 }
 
 #: What is still a PLACEHOLDER under each protocol: nothing, once frozen.
@@ -152,7 +190,19 @@ PLACEHOLDERS_BY_PROTOCOL = {
     PROTOCOL_IDS[1]: PLACEHOLDERS,
     PROTOCOL_IDS[2]: (),
     CND_PROTOCOL_ID: PLACEHOLDERS_CND1,
+    CND2_PROTOCOL_ID: (),
 }
+
+
+def task_thresholds(t: dict, task: str | None) -> dict:
+    """``t`` with every per-task value (a ``{task: value}`` dict, ``correlated_nd@2``'s
+    σ-ratio bands) resolved for ``task``; a task without its own value (point/MAP, which
+    no band judges) keeps the ``@1`` value."""
+    if not any(isinstance(v, dict) for v in t.values()):
+        return t
+    return {
+        k: (v.get(task, THRESHOLDS_CND1.get(k)) if isinstance(v, dict) else v) for k, v in t.items()
+    }
 
 
 def is_family_row(row: dict) -> bool:
@@ -444,6 +494,7 @@ def acceptance(
     task = row.get("task")
     if task not in TASKS:
         return _judged("not_assessed", f"unknown task {task!r}", [])
+    t = task_thresholds(t, task)
     if not reference or reference.get("status") != "complete":
         status = (reference or {}).get("status", "missing")
         return _judged(

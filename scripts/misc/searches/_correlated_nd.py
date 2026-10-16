@@ -25,9 +25,12 @@ catalogue and the cap-stub writer import it).
 Identity: a pilot row belongs to the pilot only when its manifest key —
 ``(dataset, sampler, settings_name, config_id, data_seed, protocol_id, pyautofit_sha)``,
 ``_wave2.manifest_key`` — names a cell, realisation 1, ``correlated_nd@1`` and the pin, and
-its ``model`` is ``correlated_nd``. Every expected run is ``row``, ``failed``, ``missing``
-or ``deferred`` (the wave-2 accounting rules); a run stopped at the pilot's per-run cap
-(:data:`PILOT_CAP_S`) is a failed attempt censored at the cap.
+its ``model`` is ``correlated_nd``. Every expected run is ``row``, ``failed``, ``missing``,
+``deferred`` or ``oom`` (the wave-2 accounting rules plus ``oom``, B5c-2a); a run stopped
+at the pilot's per-run cap (:data:`PILOT_CAP_S`) is a failed attempt censored at the cap.
+A run SLURM killed for exceeding its memory request (``OUT_OF_MEMORY``) is ``oom``: an
+operational failure of the request, not of the search, kept apart from ``failed`` and
+``missing`` (its stub row, :func:`out_of_memory`, carries the measured MaxRSS and wall).
 """
 
 from __future__ import annotations
@@ -138,6 +141,35 @@ def deferral(dataset: str, sampler: str, settings: str) -> str | None:
     return None
 
 
+#: Amendment A2 (protocol §11, B5c-2a): cells the pilot showed cannot be scored at the pin,
+#: deferred from the scored wave by ruling (frozen with ``correlated_nd@2``; the pilot's own
+#: rows keep their ``@1`` verdicts). The cap rule's deferrals (every attempt stopped at the
+#: 4 h cap or killed out of memory) are computed by ``tooling/calibrate_correlated_nd.py``
+#: and recorded beside these in ``results/calibration/correlated_nd_wave1.json``.
+A2_DEFERRED = {
+    ("corr_gaussian_d100", "nautilus", "n_live_100"): (
+        "deferred (A2, by construction): Nautilus needs more live points than dimensions; "
+        "n_live 100 at D = 100 raised 'Number of points must be larger than number "
+        "dimensions' in every pilot attempt (20 of 20)"
+    ),
+    ("corr_gaussian_d100", "nautilus", "n_live_200"): (
+        "deferred (A2): every pilot attempt (20 of 20) failed at the pin before its first "
+        "bound was sampled: nautilus's HDF5 checkpoint cannot store a D = 100 bound "
+        "attribute (h5py 'object header message is too large'), so the cell's wall and "
+        "accuracy are unmeasured; re-admitted only by a later amendment after a fix"
+    ),
+    ("corr_gaussian_d100", "nautilus", "n_live_400"): (
+        "deferred (A2): every pilot attempt (20 of 20) failed at the pin before its first "
+        "bound was sampled (nautilus's HDF5 checkpoint, h5py 'object header message is "
+        "too large' at D = 100); re-admitted only by a later amendment after a fix"
+    ),
+    ("corr_gaussian_d100", "blackjax_nuts_warm", "warmup_200_samples_500"): (
+        "deferred (A2, warm-start provider, protocol §7 rule 3): its provider "
+        "nautilus/n_live_100 is deferred at D = 100 (A2)"
+    ),
+}
+
+
 @dataclass(frozen=True)
 class Cell:
     dataset: str
@@ -191,8 +223,9 @@ def refusal(dataset: str, sampler: str, settings: str, wave: int) -> str | None:
     """Why the runner must not run this ``correlated_nd`` leg, or ``None``."""
     if wave != WAVE:
         return (
-            f"correlated_nd declares only its pilot (wave {WAVE}, {PROTOCOL_ID}); a scored "
-            "wave waits for correlated_nd@2, frozen from the pilot (protocol §7)"
+            f"correlated_nd declares only its pilot (wave {WAVE}, {PROTOCOL_ID}) here; "
+            "correlated_nd@2 is frozen (protocol §11 A2) but its scored wave is declared by "
+            "B5c-2b, with its realisations and submit"
         )
     if dataset not in DIMENSION:
         return f"{dataset} is not a correlated_nd dataset ({', '.join(DATASETS)})"
@@ -247,9 +280,23 @@ def operational_kill(row: dict) -> bool:
     return wall is None or float(wall) < PILOT_CAP_S
 
 
+#: The status prefix of a run SLURM killed at its memory request (``sacct`` state
+#: ``OUT_OF_MEMORY``): written by ``cnd_cap_stub.py --oom`` from the sacct record (B5c-2a).
+OOM_STATUS = "failed: OUT_OF_MEMORY"
+
+#: Every attempt class an expected run resolves to, exactly one each.
+ATTEMPT_CLASSES = ("row", "failed", "missing", "deferred", "oom")
+
+
+def out_of_memory(row: dict) -> bool:
+    """A run killed by SLURM at its ``--mem`` request (an ``oom`` attempt, not ``failed``:
+    the request, not the search, ran out)."""
+    return str(row.get("status")).startswith(OOM_STATUS)
+
+
 def accounting(rows: list[dict]) -> dict:
-    """Per leg: ``expected`` and ``row`` / ``failed`` / ``missing`` / ``deferred`` (summing
-    to it), plus every refused row with why."""
+    """Per leg: ``expected`` and ``row`` / ``failed`` / ``missing`` / ``deferred`` /
+    ``oom`` (summing to it), plus every refused row with why."""
     admitted: dict[tuple, dict] = {}
     refused = []
     for row in rows:
@@ -259,7 +306,7 @@ def accounting(rows: list[dict]) -> dict:
             continue
         admitted[(*wave2.manifest_key(row)[:5], row.get("seed"))] = row
     legs = []
-    totals = {"expected": 0, "row": 0, "failed": 0, "missing": 0, "deferred": 0}
+    totals = {"expected": 0, **{state: 0 for state in ATTEMPT_CLASSES}}
     for cell in cells():
         for data_seed in DATA_SEEDS:
             leg = {
@@ -276,6 +323,7 @@ def accounting(rows: list[dict]) -> dict:
                 "failed": [],
                 "missing": [],
                 "deferred": [],
+                "oom": [],
                 "reason": cell.reason,
             }
             for seed in SEEDS:
@@ -284,11 +332,13 @@ def accounting(rows: list[dict]) -> dict:
                     leg["deferred"].append(seed)
                 elif row is None or operational_kill(row):
                     leg["missing"].append(seed)
+                elif out_of_memory(row):
+                    leg["oom"].append(seed)
                 elif row.get("status") == "complete" and row.get("completed") is True:
                     leg["row"] += 1
                 else:
                     leg["failed"].append(seed)
-            for state in ("failed", "missing", "deferred"):
+            for state in ("failed", "missing", "deferred", "oom"):
                 totals[state] += len(leg[state])
             totals["row"] += leg["row"]
             totals["expected"] += leg["expected"]
