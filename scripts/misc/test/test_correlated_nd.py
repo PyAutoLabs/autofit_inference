@@ -28,13 +28,32 @@ def _committed(name):
 # --- generator: seeds, determinism, structure ----------------------------------------
 
 
+def _float_array(value):
+    """``value`` as a float ndarray if it is a (nested) list holding a float, else None."""
+    if not isinstance(value, list):
+        return None
+    try:
+        array = np.asarray(value)
+    except ValueError:  # ragged
+        return None
+    return array if array.dtype == np.float64 else None
+
+
 def _assert_same_json(regenerated, committed, where):
     """Floats agree to rtol 1e-12; every other value (keys, strings, ints, seeds) is exact.
 
     QR/LAPACK builds differ in the last bit or two across machines, so float arrays are
-    compared numerically; the structure and metadata must still be identical.
+    compared numerically and normwise (atol = 1e-12 x the array's largest magnitude: an
+    orthogonal matrix's near-zero entries carry the matrix's absolute error, not their
+    own); the structure and metadata must still be identical.
     """
-    if isinstance(committed, float) or isinstance(regenerated, float):
+    array = _float_array(committed)
+    if array is not None:
+        other = _float_array(regenerated)
+        assert other is not None and other.shape == array.shape, where
+        scale = float(np.max(np.abs(array))) if array.size else 0.0
+        assert np.allclose(other, array, rtol=1e-12, atol=1e-12 * scale), where
+    elif isinstance(committed, float) or isinstance(regenerated, float):
         assert isinstance(committed, (int, float)) and isinstance(regenerated, (int, float))
         assert not isinstance(committed, bool) and not isinstance(regenerated, bool), where
         assert np.allclose(regenerated, committed, rtol=1e-12, atol=0), where
