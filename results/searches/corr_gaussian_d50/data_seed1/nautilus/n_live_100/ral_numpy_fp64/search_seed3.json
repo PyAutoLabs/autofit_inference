@@ -22,15 +22,25 @@
   "seed": 3,
   "assertion_mechanism": "none",
   "pyautofit_commit": "df6d218f10cd75a7f0d79bb03dca5c131fd29d33",
-  "status": "failed: Terminated (no row: killed by timeout, exit 137)",
+  "status": "failed: OUT_OF_MEMORY (no row: SLURM killed the run at its --mem 8G request after 9770 s)",
   "completed": false,
   "resumed": false,
   "total_wall_s": null,
-  "process_elapsed_s": 14520.0,
-  "stub": "written by scripts/misc/tooling/cnd_cap_stub.py (protocol correlated_nd \u00a77)",
+  "process_elapsed_s": 9770.0,
+  "stub": "written by scripts/misc/tooling/cnd_cap_stub.py --reconcile-oom from sacct (B5c-2a); replaces the cap stub the exit-137 path wrote",
   "host": "euclid-ral-compute-10-3",
   "slurm_job_id": "411130",
   "slurm_array_job_id": "410866",
   "slurm_array_task_id": "263",
-  "measured_at": "2026-10-16T01:37:21Z"
+  "measured_at": "2026-10-16T01:37:21Z",
+  "oom": {
+    "slurm_state": "OUT_OF_MEMORY",
+    "slurm_job": "410866_263",
+    "req_mem": "8G",
+    "max_rss_kb": 7594264,
+    "max_rss_gb": 7.24,
+    "max_rss_note": "sacct samples RSS periodically: the peak at the kill was at least the request",
+    "elapsed_s": 9770.0,
+    "node": "euclid-ral-compute-10-3"
+  }
 }
