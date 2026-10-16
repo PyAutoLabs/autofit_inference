@@ -28,12 +28,37 @@ def _committed(name):
 # --- generator: seeds, determinism, structure ----------------------------------------
 
 
+def _assert_same_json(regenerated, committed, where):
+    """Floats agree to rtol 1e-12; every other value (keys, strings, ints, seeds) is exact.
+
+    QR/LAPACK builds differ in the last bit or two across machines, so float arrays are
+    compared numerically; the structure and metadata must still be identical.
+    """
+    if isinstance(committed, float) or isinstance(regenerated, float):
+        assert isinstance(committed, (int, float)) and isinstance(regenerated, (int, float))
+        assert not isinstance(committed, bool) and not isinstance(regenerated, bool), where
+        assert np.allclose(regenerated, committed, rtol=1e-12, atol=0), where
+    elif isinstance(committed, dict):
+        assert isinstance(regenerated, dict) and list(regenerated) == list(committed), where
+        for key in committed:
+            _assert_same_json(regenerated[key], committed[key], f"{where}.{key}")
+    elif isinstance(committed, list):
+        assert isinstance(regenerated, list) and len(regenerated) == len(committed), where
+        for i, (r, c) in enumerate(zip(regenerated, committed)):
+            _assert_same_json(r, c, f"{where}[{i}]")
+    else:
+        assert type(regenerated) is type(committed) and regenerated == committed, where
+
+
 @pytest.mark.parametrize("name", DATASETS)
 def test_committed_dataset_regenerates_byte_for_byte(name, tmp_path):
+    """Byte-identical where the platform allows; floats to rtol 1e-12 where it does not."""
     sim.simulate(name, output_root=tmp_path)
     for filename in ("data.json", "model.json", "priors.json", "truth.json"):
         committed = (ROOT / "dataset" / name / filename).read_text()
-        assert (tmp_path / "dataset" / name / filename).read_text() == committed, filename
+        regenerated = (tmp_path / "dataset" / name / filename).read_text()
+        if regenerated != committed:
+            _assert_same_json(json.loads(regenerated), json.loads(committed), filename)
 
 
 def test_data_seed_changes_only_the_data():
